@@ -210,7 +210,7 @@
     },
     "IsValidGyroCANbus": true,
     "VerticalTrackSizeInches": 22.5,
-    "HorizontalTrackSizeInches": 22.5,
+    "HorizontalTrackSizeInches": 22.0,
     "WheelRadiusInches": 2.25,
     "IsLeftSideInverted": true,
     "IsRightSideInverted": false,
