@@ -28,6 +28,16 @@ public class RobotContainer {
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
 
+    // this is the closed-loop velocity control request used for tuning the drivetrain's velocity PID constants in SysId.
+    private final SwerveRequest.RobotCentric tuneVel = new SwerveRequest.RobotCentric()
+        .withDriveRequestType(DriveRequestType.Velocity)
+        .withDeadband(0.0)
+        .withRotationalDeadband(0.0);
+
+
+
+
+
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
     private final CommandXboxController joystick = new CommandXboxController(0);
@@ -72,8 +82,40 @@ public class RobotContainer {
         // Reset the field-centric heading on left bumper press.
         joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
+        // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
+        joystick.rightBumper().onTrue(constantVelocitySweep());
+
         drivetrain.registerTelemetry(logger::telemeterize);
     }
+
+
+    /* Robot Functions Begins */
+
+    /**
+     * holdVx(double vxMetersPerSec, double seconds)
+     * returns a command that holds the robot at a specified velocity for a specified duration. Used for SysId tuning.
+     */
+    private Command holdVx(double vxMetersPerSec, double seconds) {
+        return drivetrain.applyRequest(() ->
+            tuneVel.withVelocityX(vxMetersPerSec)
+                    .withVelocityY(0.0)
+                    .withRotationalRate(0.0)
+        ).withTimeout(seconds);
+    }
+
+    /**
+     * constantVelocitySweep()
+     * returns a command that performs a constant velocity sweep for SysId tuning.
+     */
+    private Command constantVelocitySweep() {
+        return Commands.sequence(
+            holdVx(0.5, 2.0),
+            holdVx(1.0, 2.0),
+            holdVx(0.0, 1.0)
+        );
+    }
+    
+    /* Robot Functions Ends */
 
     public Command getAutonomousCommand() {
         // Simple drive forward auton
@@ -93,4 +135,6 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle)
         );
     }
+
+    
 }
