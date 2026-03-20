@@ -39,18 +39,26 @@ public final class Constants {
     }
 
     public static final class Vision {
+
+        /* AprilTag Camera 1 */
         public static final String APRILTAG_CAM1 = "APRILCAM1";
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
             new Translation3d(0, 0, 0),
             new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
         );
 
+        /* AprilTag Camera 2 */
         public static final String APRILTAG_CAM2 = "APRILCAM2";
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
             new Translation3d(0, 0, 0),
             new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
         );
 
+        /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded;
+
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // throw the estimation away if the tag ambiguity > 0.20
+        public static final double MAX_POSE_Z_METERS = 0.75; // estimated robot "z" higher than 0.75m is probably bad estimation
+        public static final double MAX_CORRECTION_METERS = 1.5; // compare the existing pose estimate and vision pose, reject the vision pose if the jump is bigger than 1.5m
     }
 }
