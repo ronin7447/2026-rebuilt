@@ -4,6 +4,12 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation3d;
+
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
@@ -30,5 +36,21 @@ public final class Constants {
         public static final double JERK = 400.0; // Target jerk of 400 rps/s/s 
         
 
+    }
+
+    public static final class Vision {
+        public static final String APRILTAG_CAM1 = "APRILCAM1";
+        public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
+            new Translation3d(0, 0, 0),
+            new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
+        );
+
+        public static final String APRILTAG_CAM2 = "APRILCAM2";
+        public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
+            new Translation3d(0, 0, 0),
+            new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
+        );
+
+        public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded;
     }
 }
