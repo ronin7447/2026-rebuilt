@@ -33,7 +33,9 @@ public final class Constants {
 
         public static final double CRUISE_VELOCITY = 10.0; // 10 rps
         public static final double ACCELERATION = 40.0; // 40 rps /s
-        public static final double JERK = 400.0; // Target jerk of 400 rps/s/s 
+        public static final double JERK = 400.0; // Target jerk of 400 rps/s/s
+        
+        
         
 
     }
@@ -60,5 +62,22 @@ public final class Constants {
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // throw the estimation away if the tag ambiguity > 0.20
         public static final double MAX_POSE_Z_METERS = 0.75; // estimated robot "z" higher than 0.75m is probably bad estimation
         public static final double MAX_CORRECTION_METERS = 1.5; // compare the existing pose estimate and vision pose, reject the vision pose if the jump is bigger than 1.5m
+    }
+
+    public static final class Intake {
+        public static final int ROLLER_KRAKEN_ID = 12;
+        public static final int EXTENSION_KRAKEN_MASTER_ID = 13;
+        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 14;
+        public static final double EXTENSION_VELOCITY = 15.0;
+        public static final double EXTENSION_ACCELERATION = 30.0;
+        public static final double EXTENSION_JERK = 60.0;
+
+
+        public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
+
+        public static final double INTAKE_COLLAPSED_POS = 0.36;
+        public static final double INTAKE_EXTENDED_POS = 2.420;
+
+        public static final double ROLLER_VELOCITY = 72.0;
     }
 }
