@@ -21,9 +21,9 @@ public final class Constants {
     
     public static final class Turret {
         public static final int TURRET_KRAKEN_ID = 12; // Turret X44 Kraken ID
-        public static final double STALL_CURRENT_A = 70.0; 
+        public static final double STALL_CURRENT_A = 6.0;
         public static final double STALL_VEL_RPS = 0.25;
-        public static final double STALL_TIME_S = 0.25;
+        public static final double STALL_TIME_S = 0.10;
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
@@ -31,9 +31,13 @@ public final class Constants {
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
 
-        public static final double CRUISE_VELOCITY = 10.0; // 10 rps
-        public static final double ACCELERATION = 40.0; // 40 rps /s
-        public static final double JERK = 400.0; // Target jerk of 400 rps/s/s
+        public static final double CRUISE_VELOCITY = 6.0;
+        public static final double ACCELERATION = 5.0;
+        public static final double JERK = 7.0;
+        public static final double POSITION_TOLERANCE_ROT = 0.10;
+        public static final double SOFT_LIMIT_LOW = Double.NEGATIVE_INFINITY; // TODO: replace with real turret min rotation
+        public static final double SOFT_LIMIT_HIGH = Double.POSITIVE_INFINITY; // TODO: replace with real turret max rotation
+        public static final double SOFT_LIMIT_THRESHOLD = 0.0; // TODO: replace after real soft limits are known
         
         
         
@@ -83,6 +87,7 @@ public final class Constants {
 
     public static final class Shooter {
         public static final int HOOD_KRAKEN_ID = 23;
+        public static final int ROLLER_KRAKEN_ID = 24;
 
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
@@ -90,6 +95,16 @@ public final class Constants {
         public static final double KP = 35.0; // 35 V per rotation of position error
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
+
+        public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
+        public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
+        public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
+        public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
+        public static final double ROLLER_KI = 0.00; // no output for integrated error
+        public static final double ROLLER_KD = 0.00; // no output for error derivative
+        public static final double ROLLER_VELOCITY = 72.0;
+        public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
+        public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
     }
 }

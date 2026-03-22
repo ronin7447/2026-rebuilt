@@ -2,18 +2,15 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 
 
@@ -32,22 +29,18 @@ public class TurretSubsystem extends SubsystemBase{
     private double targetPosRot = getPosition(); 
     private final Timer stallTimer = new Timer(); // a timer for stall check
 
-    // in init function
-    private TalonFXConfiguration talonFXConfigs;
-
     // stall check
     private static final double kStallCurrentA = Constants.Turret.STALL_CURRENT_A;
     private static final double kStallVelRps = Constants.Turret.STALL_VEL_RPS;
     private static final double kStallTimeS = Constants.Turret.STALL_TIME_S;
 
-    private static final double kPosToleranceRot = 0.01;
+    private static final double kPosToleranceRot = Constants.Turret.POSITION_TOLERANCE_ROT;
 
     private boolean positionMode = true;
     
 
 
     public TurretSubsystem() {
-        // reset position when init subsystem
         TalonFXConfiguration cfg = new TalonFXConfiguration();
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
@@ -72,6 +65,8 @@ public class TurretSubsystem extends SubsystemBase{
 
         turretKraken.getPosition().setUpdateFrequency(100);
         turretKraken.getVelocity().setUpdateFrequency(100);
+        turretKraken.getStatorCurrent().setUpdateFrequency(100);
+        turretKraken.getMotorVoltage().setUpdateFrequency(1000);
         turretKraken.optimizeBusUtilization();
     }
 
@@ -85,14 +80,13 @@ public class TurretSubsystem extends SubsystemBase{
         
     }
 
+    public boolean hitSoftLimHigh(){
+        return getPosition() >= (Constants.Turret.SOFT_LIMIT_HIGH - Constants.Turret.SOFT_LIMIT_THRESHOLD);
+    }
 
-    // public boolean hitSoftLimHigh(){
-    //     return turretKraken.getPosition().getValueAsDouble() >= (Constants.Kraken.softLimHigh - Constants.Kraken.softLimThres);
-    // }
-
-    // public boolean hitSoftLimLow(){
-    //     return turretKraken.getPosition().getValueAsDouble() <= (Constants.Kraken.softLimLow + Constants.Kraken.softLimThres);
-    // }
+    public boolean hitSoftLimLow(){
+        return getPosition() <= (Constants.Turret.SOFT_LIMIT_LOW + Constants.Turret.SOFT_LIMIT_THRESHOLD);
+    }
 
     /**
      * TODO: Stall Check
@@ -115,12 +109,61 @@ public class TurretSubsystem extends SubsystemBase{
     
 
     public void setTargetPositionRotation(double pos) {
-
         positionMode = true;
-        // update pos
-        // targetPosRot = MathUtil.clamp(pos, Constants.Kraken.softLimLow, Constants.Kraken.softLimHigh);
-        // clamp is removed for now, directly setting the target
-        targetPosRot = pos;
+        targetPosRot = Math.max(Constants.Turret.SOFT_LIMIT_LOW, Math.min(pos, Constants.Turret.SOFT_LIMIT_HIGH));
+    }
+
+    public double getTargetPositionRotation() {
+        return targetPosRot;
+    }
+
+    public void setPositionMode(boolean mode) {
+        positionMode = mode;
+        if (!positionMode) {
+            turretKraken.setControl(openLoopVolts.withOutput(0.0));
+        }
+    }
+
+    public boolean getPositionMode() {
+        return positionMode;
+    }
+
+    public void setVoltage(double output) {
+        if (!positionMode) {
+            turretKraken.setControl(openLoopVolts.withOutput(output));
+        }
+    }
+
+    public void zeroEncoder() {
+        turretKraken.setPosition(0);
+        setTargetPositionRotation(0);
+    }
+
+    public void zeroEncoderAtHardStop() {
+        setVoltage(0.0);
+        zeroEncoder();
+    }
+
+    public boolean isStallDetected() {
+        statorCurrentSig.refresh();
+        velocitySig.refresh();
+
+        double amps = statorCurrentSig.getValueAsDouble();
+        double vel = Math.abs(velocitySig.getValueAsDouble());
+
+        boolean stalledNow = amps >= kStallCurrentA && vel <= kStallVelRps;
+
+        if (stalledNow) {
+            if (!stallTimer.isRunning()) {
+                stallTimer.reset();
+                stallTimer.start();
+            }
+        } else {
+            stallTimer.stop();
+            stallTimer.reset();
+        }
+
+        return stallTimer.hasElapsed(kStallTimeS);
     }
 
 
