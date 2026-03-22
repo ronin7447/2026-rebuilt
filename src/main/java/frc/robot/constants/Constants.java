@@ -80,4 +80,16 @@ public final class Constants {
 
         public static final double ROLLER_VELOCITY = 72.0;
     }
+
+    public static final class Shooter {
+        public static final int HOOD_KRAKEN_ID = 23;
+
+        public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
+        public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
+        public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
+        public static final double KP = 35.0; // 35 V per rotation of position error
+        public static final double KI = 0.00; // no output for integrated error
+        public static final double KD = 0.20; // 0.20 V output for error derivative
+
+    }
 }
