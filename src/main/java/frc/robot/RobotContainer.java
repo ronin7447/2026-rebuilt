@@ -13,9 +13,11 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.AutoAimTurretCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 
 public class RobotContainer {
@@ -44,11 +46,11 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-
-    // uncomment this to enable vision subsystem
-    // private final VisionSubsystem vision = new VisionSubsystem(drivetrain);
+    public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
+    public final TurretSubsystem turret = new TurretSubsystem();
 
     public RobotContainer() {
+        turret.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, turret));
         configureBindings();
     }
 
@@ -88,6 +90,9 @@ public class RobotContainer {
 
         // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
         joystick.rightBumper().onTrue(constantVelocitySweep());
+
+        joystick.rightStick().onTrue(Commands.runOnce(() -> turret.setAutoAimSuppressed(true)));
+        joystick.rightStick().onFalse(Commands.runOnce(() -> turret.setAutoAimSuppressed(false)));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

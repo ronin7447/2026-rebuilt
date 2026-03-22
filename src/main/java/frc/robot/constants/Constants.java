@@ -4,11 +4,17 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import java.util.List;
+
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
 
 public final class Constants {
     /* Drivebase Constants */
@@ -34,17 +40,21 @@ public final class Constants {
         public static final double CRUISE_VELOCITY = 6.0;
         public static final double ACCELERATION = 5.0;
         public static final double JERK = 7.0;
-        public static final double POSITION_TOLERANCE_ROT = 0.10;
-        public static final double SOFT_LIMIT_LOW = Double.NEGATIVE_INFINITY; // TODO: replace with real turret min rotation
-        public static final double SOFT_LIMIT_HIGH = Double.POSITIVE_INFINITY; // TODO: replace with real turret max rotation
-        public static final double SOFT_LIMIT_THRESHOLD = 0.0; // TODO: replace after real soft limits are known
-        
-        
-        
-
+        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(0.0, 0.0); // TODO: set turret pivot offset in robot coordinates
+        public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // TODO: set encoder-zero-to-forward offset
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-180.0); // TODO: set real turret lower software limit
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(180.0); // TODO: set real turret upper software limit
+        public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
+        public static final double AIM_TOLERANCE_DEG = 2.0;
+        public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
+        public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
+        public static final double SOFT_LIMIT_LOW = MIN_ANGLE.getRotations();
+        public static final double SOFT_LIMIT_HIGH = MAX_ANGLE.getRotations();
+        public static final double SOFT_LIMIT_THRESHOLD = Rotation2d.fromDegrees(2.0).getRotations();
     }
 
     public static final class Vision {
+        public static final AprilTagFieldLayout FIELD_LAYOUT_OBJECT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
         /* AprilTag Camera 1 */
         public static final String APRILTAG_CAM1 = "APRILCAM1";
@@ -63,9 +73,54 @@ public final class Constants {
         /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded;
 
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // throw the estimation away if the tag ambiguity > 0.20
-        public static final double MAX_POSE_Z_METERS = 0.75; // estimated robot "z" higher than 0.75m is probably bad estimation
-        public static final double MAX_CORRECTION_METERS = 1.5; // compare the existing pose estimate and vision pose, reject the vision pose if the jump is bigger than 1.5m
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20;
+        public static final double MAX_POSE_Z_METERS = 0.75;
+        public static final double MAX_POSE_ROLL_PITCH_DEG = 15.0;
+        public static final double MAX_CORRECTION_METERS = 1.5;
+        public static final double MAX_MEASUREMENT_AGE_SEC = 0.50;
+        public static final double VISION_HEALTHY_AGE_SEC = 0.30;
+        public static final double SINGLE_TAG_MAX_DISTANCE_METERS = 4.5;
+        public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.20;
+        public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.50;
+        public static final double MULTI_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(3.0);
+        public static final double SINGLE_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(8.0);
+        public static final double DISTANCE_STD_DEV_SCALE = 1.0 / 25.0;
+    }
+
+    public static final class FieldTargets {
+        private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2);
+        private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
+        private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
+
+        // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
+        public static final Translation2d BLUE_HUB_AIM_POINT =
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+        public static final Translation2d RED_HUB_AIM_POINT =
+            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+
+        public static final List<Translation2d> BLUE_ALLIANCE_ZONE = List.of(
+            new Translation2d(0.0, 0.0),
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, 0.0),
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS),
+            new Translation2d(0.0, FIELD_WIDTH_METERS)
+        );
+
+        public static final List<Translation2d> RED_ALLIANCE_ZONE = List.of(
+            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, 0.0),
+            new Translation2d(FIELD_LENGTH_METERS, 0.0),
+            new Translation2d(FIELD_LENGTH_METERS, FIELD_WIDTH_METERS),
+            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS)
+        );
+
+        private FieldTargets() {}
+
+        public static Translation2d getHubForAlliance(DriverStation.Alliance alliance) {
+            return alliance == DriverStation.Alliance.Red ? RED_HUB_AIM_POINT : BLUE_HUB_AIM_POINT;
+        }
+
+        public static List<Translation2d> getAllianceZone(DriverStation.Alliance alliance) {
+            return alliance == DriverStation.Alliance.Red ? RED_ALLIANCE_ZONE : BLUE_ALLIANCE_ZONE;
+        }
     }
 
     public static final class Intake {
