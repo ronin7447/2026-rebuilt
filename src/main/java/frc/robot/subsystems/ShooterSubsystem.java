@@ -12,6 +12,7 @@ import frc.robot.constants.Constants;
 public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX hoodKraken = new TalonFX(Constants.Shooter.HOOD_KRAKEN_ID);
     private final TalonFX rollerKraken;
+    
     private final MotionMagicVoltage mmPos = new MotionMagicVoltage(0.0);
     private final MotionMagicVelocityVoltage rollerVel = new MotionMagicVelocityVoltage(0.0);
     private double targetPosRot = getHoodPosition(); 
