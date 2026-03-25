@@ -14,9 +14,12 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.AutoAimTurretCommand;
+import frc.robot.commands.intake.DisableIntakeCommand;
+import frc.robot.commands.intake.EnableIntakeCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 
@@ -47,10 +50,12 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
-    public final TurretSubsystem turret = new TurretSubsystem();
+    public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
+
+    public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
 
     public RobotContainer() {
-        turret.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, turret));
+        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, m_TurretSubsystem));
         configureBindings();
     }
 
@@ -80,19 +85,25 @@ public class RobotContainer {
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
-        joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        // joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+        // joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+        // joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+        // joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
 
-        // Reset the field-centric heading on left bumper press.
-        joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        // Reset the field-centric heading on POV LEFT.
+        joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
+
+        /* Right Bumper: Enable Intake */
+        joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
+
+        /* Left Bumper: Disable Intake */
+        joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
 
         // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
-        joystick.rightBumper().onTrue(constantVelocitySweep());
+        // joystick.rightBumper().onTrue(constantVelocitySweep());
 
-        joystick.rightStick().onTrue(Commands.runOnce(() -> turret.setAutoAimSuppressed(true)));
-        joystick.rightStick().onFalse(Commands.runOnce(() -> turret.setAutoAimSuppressed(false)));
+        joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
+        joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
@@ -104,25 +115,25 @@ public class RobotContainer {
      * holdVx(double vxMetersPerSec, double seconds)
      * returns a command that holds the robot at a specified velocity for a specified duration. Used for SysId tuning.
      */
-    private Command holdVx(double vxMetersPerSec, double seconds) {
-        return drivetrain.applyRequest(() ->
-            tuneVel.withVelocityX(vxMetersPerSec)
-                    .withVelocityY(0.0)
-                    .withRotationalRate(0.0)
-        ).withTimeout(seconds);
-    }
+    // private Command holdVx(double vxMetersPerSec, double seconds) {
+    //     return drivetrain.applyRequest(() ->
+    //         tuneVel.withVelocityX(vxMetersPerSec)
+    //                 .withVelocityY(0.0)
+    //                 .withRotationalRate(0.0)
+    //     ).withTimeout(seconds);
+    // }
 
     /**
      * constantVelocitySweep()
      * returns a command that performs a constant velocity sweep for SysId tuning.
      */
-    private Command constantVelocitySweep() {
-        return Commands.sequence(
-            holdVx(0.5, 2.0),
-            holdVx(1.0, 2.0),
-            holdVx(0.0, 1.0)
-        );
-    }
+    // private Command constantVelocitySweep() {
+    //     return Commands.sequence(
+    //         holdVx(0.5, 2.0),
+    //         holdVx(1.0, 2.0),
+    //         holdVx(0.0, 1.0)
+    //     );
+    // }
     
     /* Robot Functions Ends */
 
