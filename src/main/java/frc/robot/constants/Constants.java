@@ -51,6 +51,9 @@ public final class Constants {
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
         public static final double SOFT_LIMIT_LOW = MIN_ANGLE.getRotations();
         public static final double SOFT_LIMIT_HIGH = MAX_ANGLE.getRotations();
+        // the Talon FX soft limit for the motor
+        public static final double TALON_SOFT_LIMIT_LOW = SOFT_LIMIT_LOW * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        public static final double TALON_SOFT_LIMIT_HIGH = SOFT_LIMIT_HIGH * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
         public static final double SOFT_LIMIT_THRESHOLD = Rotation2d.fromDegrees(2.0).getRotations();
     }
 

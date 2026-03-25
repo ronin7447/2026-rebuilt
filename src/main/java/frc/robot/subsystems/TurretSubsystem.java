@@ -63,6 +63,12 @@ public class TurretSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = Constants.Turret.ACCELERATION;
         motionMagicConfigs.MotionMagicJerk = Constants.Turret.JERK;
 
+        var softLimitConfigs = cfg.SoftwareLimitSwitch;
+        softLimitConfigs.ReverseSoftLimitEnable = true;
+        softLimitConfigs.ReverseSoftLimitThreshold = Constants.Turret.TALON_SOFT_LIMIT_LOW;
+        softLimitConfigs.ForwardSoftLimitEnable = true;
+        softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.TALON_SOFT_LIMIT_HIGH;
+
         turretKraken.getConfigurator().apply(cfg);
         turretKraken.getPosition().setUpdateFrequency(100);
         turretKraken.getVelocity().setUpdateFrequency(100);

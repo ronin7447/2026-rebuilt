@@ -57,6 +57,8 @@ class TurretMathTest {
     void convertsTurretAnglesToMotorRotationsForTenToOneRatio() {
         double ratio = Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION;
 
+        assertEquals(0.0, Constants.Turret.TALON_SOFT_LIMIT_LOW, EPSILON);
+        assertEquals(10.0, Constants.Turret.TALON_SOFT_LIMIT_HIGH, EPSILON);
         assertEquals(0.5555555555555556, TurretMath.convertTurretDegreesToMotorRotations(20.0, ratio), EPSILON);
         assertEquals(9.444444444444445, TurretMath.convertTurretDegreesToMotorRotations(340.0, ratio), EPSILON);
         assertEquals(5.0, TurretMath.convertTurretDegreesToMotorRotations(180.0, ratio), EPSILON);
