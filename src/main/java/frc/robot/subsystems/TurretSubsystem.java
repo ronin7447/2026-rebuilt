@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.TurretMath;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretKraken = new TalonFX(Constants.Turret.TURRET_KRAKEN_ID);
@@ -27,7 +28,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final StatusSignal<Current> statorCurrentSig = turretKraken.getStatorCurrent();
     private final StatusSignal<AngularVelocity> velocitySig = turretKraken.getVelocity();
 
-    private double targetPosRot = 0.0;
+    private double targetTurretRot = 0.0;
     private final Timer stallTimer = new Timer();
 
     private boolean positionMode = true;
@@ -69,7 +70,7 @@ public class TurretSubsystem extends SubsystemBase {
         turretKraken.getMotorVoltage().setUpdateFrequency(1000);
         turretKraken.optimizeBusUtilization();
 
-        targetPosRot = getPosition();
+        targetTurretRot = getTurretPositionRotations();
         stallTimer.stop();
         stallTimer.reset();
     }
@@ -83,27 +84,37 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public boolean hitSoftLimHigh() {
-        return getPosition() >= (Constants.Turret.SOFT_LIMIT_HIGH - Constants.Turret.SOFT_LIMIT_THRESHOLD);
+        return getTurretPositionRotations() >= (Constants.Turret.SOFT_LIMIT_HIGH - Constants.Turret.SOFT_LIMIT_THRESHOLD);
     }
 
     public boolean hitSoftLimLow() {
-        return getPosition() <= (Constants.Turret.SOFT_LIMIT_LOW + Constants.Turret.SOFT_LIMIT_THRESHOLD);
+        return getTurretPositionRotations() <= (Constants.Turret.SOFT_LIMIT_LOW + Constants.Turret.SOFT_LIMIT_THRESHOLD);
     }
 
-    public double getPosition() {
+    private double getMotorPositionRotations() {
         return turretKraken.getPosition().getValueAsDouble();
     }
 
+    public double getTurretPositionRotations() {
+        return TurretMath.convertMotorRotationsToTurretRotations(
+            getMotorPositionRotations(),
+            Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
+        );
+    }
+
     public double getVelocityRps() {
-        return turretKraken.getVelocity().getValueAsDouble();
+        return TurretMath.convertMotorRotationsToTurretRotations(
+            turretKraken.getVelocity().getValueAsDouble(),
+            Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
+        );
     }
 
     public Rotation2d getTurretAngle() {
-        return Rotation2d.fromRotations(getPosition());
+        return Rotation2d.fromRotations(getTurretPositionRotations());
     }
 
     public Rotation2d getTurretGoal() {
-        return Rotation2d.fromRotations(targetPosRot);
+        return Rotation2d.fromRotations(targetTurretRot);
     }
 
     public Rotation2d getDesiredTurretAngle() {
@@ -130,28 +141,30 @@ public class TurretSubsystem extends SubsystemBase {
         return atGoal();
     }
 
-    public void setTargetPositionRotation(double posRot) {
+    public void setTargetTurretRotation(double posRot) {
         positionMode = true;
-        targetPosRot = Math.max(Constants.Turret.SOFT_LIMIT_LOW, Math.min(posRot, Constants.Turret.SOFT_LIMIT_HIGH));
+        targetTurretRot = Math.max(Constants.Turret.SOFT_LIMIT_LOW, Math.min(posRot, Constants.Turret.SOFT_LIMIT_HIGH));
     }
 
-    public double getTargetPositionRotation() {
-        return targetPosRot;
+    public double getTargetTurretRotation() {
+        return targetTurretRot;
     }
 
     public void setTurretGoal(Rotation2d goal) {
-        Rotation2d clampedGoal = clampToSoftwareLimits(goal);
+        Rotation2d clampedGoal = wrapTurretAngleToLegalRange(goal);
         desiredTurretAngle = goal;
         goalClampedBySoftwareLimit = Math.abs(clampedGoal.minus(goal).getDegrees()) > 1e-3;
-        setTargetPositionRotation(clampedGoal.getRotations());
+        setTargetTurretRotation(clampedGoal.getRotations());
     }
 
-    public Rotation2d clampToSoftwareLimits(Rotation2d requested) {
-        double requestedRot = requested.getRotations();
-        double currentRot = getPosition();
-        double wrappedCandidate = requestedRot + Math.rint(currentRot - requestedRot);
-        double clampedRot = Math.max(Constants.Turret.SOFT_LIMIT_LOW, Math.min(wrappedCandidate, Constants.Turret.SOFT_LIMIT_HIGH));
-        return Rotation2d.fromRotations(clampedRot);
+    public Rotation2d wrapTurretAngleToLegalRange(Rotation2d requested) {
+        double legalRot = TurretMath.getNearestEquivalentLegalTurretRotation(
+            requested.getRotations(),
+            getTurretPositionRotations(),
+            Constants.Turret.SOFT_LIMIT_LOW,
+            Constants.Turret.SOFT_LIMIT_HIGH
+        );
+        return Rotation2d.fromRotations(legalRot);
     }
 
     public void holdCurrentPosition() {
@@ -181,7 +194,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     public void zeroEncoder() {
         turretKraken.setPosition(0);
-        setTargetPositionRotation(0);
+        setTargetTurretRotation(0);
     }
 
     public void zeroEncoderAtHardStop() {
@@ -265,7 +278,14 @@ public class TurretSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         if (positionMode) {
-            turretKraken.setControl(mmPos.withPosition(targetPosRot));
+            turretKraken.setControl(
+                mmPos.withPosition(
+                    TurretMath.convertTurretRotationsToMotorRotations(
+                        targetTurretRot,
+                        Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
+                    )
+                )
+            );
         }
 
         publishTelemetry();

@@ -40,10 +40,11 @@ public final class Constants {
         public static final double CRUISE_VELOCITY = 6.0;
         public static final double ACCELERATION = 5.0;
         public static final double JERK = 7.0;
+        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 10.0;
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(0.0, 0.0); // TODO: set turret pivot offset in robot coordinates
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // TODO: set encoder-zero-to-forward offset
-        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-180.0); // TODO: set real turret lower software limit
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(180.0); // TODO: set real turret upper software limit
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0); // TODO: set real turret lower software limit
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(360.0); // TODO: set real turret upper software limit
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 2.0;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
