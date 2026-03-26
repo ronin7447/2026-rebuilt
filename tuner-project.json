@@ -10,7 +10,7 @@
         "Name": "CANCoder FL",
         "Model": "CANCoder",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": null
       },
       "SteerMotor": {
@@ -18,7 +18,7 @@
         "Name": "x44 FL",
         "Model": "Talon FX vers. F",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x44",
           "FreeSpeedRps": 125.5,
@@ -31,7 +31,7 @@
         "Name": "x60 FL",
         "Model": "Talon FX vers. C",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x60",
           "FreeSpeedRps": 96.7,
@@ -59,7 +59,7 @@
         "Name": "CANCoder FR",
         "Model": "CANCoder",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": null
       },
       "SteerMotor": {
@@ -67,7 +67,7 @@
         "Name": "x44 FR",
         "Model": "Talon FX vers. F",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x44",
           "FreeSpeedRps": 125.5,
@@ -80,7 +80,7 @@
         "Name": "x60 FR",
         "Model": "Talon FX vers. C",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x60",
           "FreeSpeedRps": 96.7,
@@ -108,7 +108,7 @@
         "Name": "CANCoder BL",
         "Model": "CANCoder",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": null
       },
       "SteerMotor": {
@@ -116,7 +116,7 @@
         "Name": "x44 BL",
         "Model": "Talon FX vers. F",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x44",
           "FreeSpeedRps": 125.5,
@@ -129,7 +129,7 @@
         "Name": "x60 BL",
         "Model": "Talon FX vers. C",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x60",
           "FreeSpeedRps": 96.7,
@@ -157,7 +157,7 @@
         "Name": "CANCoder BR",
         "Model": "CANCoder",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": null
       },
       "SteerMotor": {
@@ -165,7 +165,7 @@
         "Name": "x44 BR",
         "Model": "Talon FX vers. F",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x44",
           "FreeSpeedRps": 125.5,
@@ -178,7 +178,7 @@
         "Name": "x60 BR",
         "Model": "Talon FX vers. C",
         "CANbus": "2431D7E150374E5320202047101710FF",
-        "CANbusFriendly": "CANivore Center",
+        "CANbusFriendly": "CANivore1",
         "SelectedMotorType": {
           "Name": "WCP Kraken x60",
           "FreeSpeedRps": 96.7,
@@ -205,7 +205,7 @@
       "Name": "Pigeon 2 vers. S (Device ID 13)",
       "Model": "Pigeon 2 vers. S",
       "CANbus": "2431D7E150374E5320202047101710FF",
-      "CANbusFriendly": "CANivore Center",
+      "CANbusFriendly": "CANivore1",
       "SelectedMotorType": null
     },
     "IsValidGyroCANbus": true,

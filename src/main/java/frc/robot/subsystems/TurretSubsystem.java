@@ -25,8 +25,8 @@ public class TurretSubsystem extends SubsystemBase {
     private final MotionMagicVoltage mmPos = new MotionMagicVoltage(0.0);
     private final VoltageOut openLoopVolts = new VoltageOut(0.0);
 
-    private final StatusSignal<Current> statorCurrentSig = turretKraken.getStatorCurrent();
-    private final StatusSignal<AngularVelocity> velocitySig = turretKraken.getVelocity();
+    // private final StatusSignal<Current> statorCurrentSig = turretKraken.getStatorCurrent();
+    // private final StatusSignal<AngularVelocity> velocitySig = turretKraken.getVelocity();
 
     private double targetTurretRot = 0.0;
     private final Timer stallTimer = new Timer();
@@ -209,6 +209,9 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public boolean isStallDetected() {
+        StatusSignal<Current> statorCurrentSig = turretKraken.getStatorCurrent();
+        StatusSignal<AngularVelocity> velocitySig = turretKraken.getVelocity();
+
         statorCurrentSig.refresh();
         velocitySig.refresh();
 

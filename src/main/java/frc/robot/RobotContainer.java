@@ -50,12 +50,12 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
     public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
-    public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
+    // public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
     public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
 
     public RobotContainer() {
-        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, m_TurretSubsystem));
+        // m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, m_TurretSubsystem));
         configureBindings();
     }
 
@@ -102,8 +102,8 @@ public class RobotContainer {
         // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
         // joystick.rightBumper().onTrue(constantVelocitySweep());
 
-        joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
-        joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
+        // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
+        // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

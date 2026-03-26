@@ -26,7 +26,7 @@ public final class Constants {
     }
     
     public static final class Turret {
-        public static final int TURRET_KRAKEN_ID = 12; // Turret X44 Kraken ID
+        public static final int TURRET_KRAKEN_ID = 37; // Turret X44 Kraken ID
         public static final double STALL_CURRENT_A = 6.0;
         public static final double STALL_VEL_RPS = 0.25;
         public static final double STALL_TIME_S = 0.10;
@@ -128,9 +128,9 @@ public final class Constants {
     }
 
     public static final class Intake {
-        public static final int ROLLER_KRAKEN_ID = 12;
-        public static final int EXTENSION_KRAKEN_MASTER_ID = 13;
-        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 14;
+        public static final int ROLLER_KRAKEN_ID = 40;
+        public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
+        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
         public static final double EXTENSION_VELOCITY = 15.0;
         public static final double EXTENSION_ACCELERATION = 30.0;
         public static final double EXTENSION_JERK = 60.0;
@@ -189,6 +189,6 @@ public final class Constants {
         public static final double ROLLER_VELOCITY = 72.0;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
-        public static final int ROLLER_KRAKEN_ID = 25;
+        public static final int ROLLER_KRAKEN_ID = 36;
     }
 }
