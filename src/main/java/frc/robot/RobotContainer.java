@@ -14,12 +14,16 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.AutoAimTurretCommand;
+import frc.robot.commands.ShootCommand;
 import frc.robot.commands.intake.DisableIntakeCommand;
 import frc.robot.commands.intake.EnableIntakeCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.IndexerSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.OuttakeSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 
@@ -53,6 +57,10 @@ public class RobotContainer {
     // public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
     public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
+    public final ShooterSubsystem m_ShooterSubsystem = new ShooterSubsystem();
+
+    public final IndexerSubsystem m_IndexerSubsystem = new IndexerSubsystem();
+    public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     public RobotContainer() {
         // m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, m_TurretSubsystem));
@@ -98,6 +106,9 @@ public class RobotContainer {
 
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
+
+        /* Right Trigger (while holdiing): Starts Shooter + Outtake + Indexer */
+        joystick.rightTrigger().whileTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
 
         // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
         // joystick.rightBumper().onTrue(constantVelocitySweep());
