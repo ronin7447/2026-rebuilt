@@ -37,20 +37,20 @@ public final class Constants {
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
 
-        public static final double CRUISE_VELOCITY = 6.0;
-        public static final double ACCELERATION = 5.0;
+        public static final double CRUISE_VELOCITY = 2.0;
+        public static final double ACCELERATION = 2.0;
         public static final double JERK = 7.0;
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 10.0;
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(0.0, 0.0); // TODO: set turret pivot offset in robot coordinates
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // TODO: set encoder-zero-to-forward offset
-        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(0); // TODO: set real turret lower software limit
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(360.0); // TODO: set real turret upper software limit
+        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-149.38); // TODO: set real turret lower software limit
+        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(76.62); // TODO: set real turret upper software limit
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 2.0;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
-        public static final double SOFT_LIMIT_LOW = MIN_ANGLE.getRotations();
-        public static final double SOFT_LIMIT_HIGH = MAX_ANGLE.getRotations();
+        public static final double SOFT_LIMIT_LOW = -4.24;
+        public static final double SOFT_LIMIT_HIGH = 2.50;
         // the Talon FX soft limit for the motor
         public static final double TALON_SOFT_LIMIT_LOW = SOFT_LIMIT_LOW * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
         public static final double TALON_SOFT_LIMIT_HIGH = SOFT_LIMIT_HIGH * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
@@ -138,15 +138,15 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.36;
-        public static final double INTAKE_EXTENDED_POS = 2.420;
+        public static final double INTAKE_COLLAPSED_POS = 0.1;
+        public static final double INTAKE_EXTENDED_POS = 2.017578125;
 
         public static final double ROLLER_VELOCITY = 72.0;
     }
 
     public static final class Shooter {
-        public static final int HOOD_KRAKEN_ID = 23;
-        public static final int ROLLER_KRAKEN_ID = 24;
+        public static final int HOOD_KRAKEN_ID = 21;
+        public static final int ROLLER_KRAKEN_ID = 31;
 
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
@@ -161,7 +161,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = 72.0;
+        public static final double ROLLER_VELOCITY = -31.98;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
@@ -174,7 +174,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = 72.0;
+        public static final double ROLLER_VELOCITY = -49.99;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 25;
@@ -186,7 +186,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = 72.0;
+        public static final double ROLLER_VELOCITY = -96.0;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 36;

@@ -20,7 +20,7 @@ import frc.robot.constants.Constants;
 import frc.robot.util.TurretMath;
 
 public class TurretSubsystem extends SubsystemBase {
-    private final TalonFX turretKraken = new TalonFX(Constants.Turret.TURRET_KRAKEN_ID);
+    private final TalonFX turretKraken = new TalonFX(Constants.Turret.TURRET_KRAKEN_ID, "CANivore1");
 
     private final MotionMagicVoltage mmPos = new MotionMagicVoltage(0.0);
     private final VoltageOut openLoopVolts = new VoltageOut(0.0);
@@ -70,11 +70,11 @@ public class TurretSubsystem extends SubsystemBase {
         softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.TALON_SOFT_LIMIT_HIGH;
 
         turretKraken.getConfigurator().apply(cfg);
-        turretKraken.getPosition().setUpdateFrequency(100);
-        turretKraken.getVelocity().setUpdateFrequency(100);
-        turretKraken.getStatorCurrent().setUpdateFrequency(100);
-        turretKraken.getMotorVoltage().setUpdateFrequency(1000);
-        turretKraken.optimizeBusUtilization();
+        // turretKraken.getPosition().setUpdateFrequency(100);
+        // turretKraken.getVelocity().setUpdateFrequency(100);
+        // turretKraken.getStatorCurrent().setUpdateFrequency(100);
+        // turretKraken.getMotorVoltage().setUpdateFrequency(1000);
+        // turretKraken.optimizeBusUtilization();
 
         targetTurretRot = getTurretPositionRotations();
         stallTimer.stop();

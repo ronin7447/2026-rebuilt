@@ -8,6 +8,7 @@ import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -53,8 +54,8 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
-    // public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
+    // public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
+    public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
     public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
     public final ShooterSubsystem m_ShooterSubsystem = new ShooterSubsystem();
@@ -86,10 +87,10 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
-        joystick.b().whileTrue(drivetrain.applyRequest(() ->
-            point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
-        ));
+        // joystick.a().whileTrue(drivetrain.applyRequest(() -> brake));
+        // joystick.b().whileTrue(drivetrain.applyRequest(() ->
+        //     point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
+        // ));
 
         // Run SysId routines when holding back/start and X/Y.
         // Note that each routine should be run exactly once in a single log.
@@ -102,19 +103,84 @@ public class RobotContainer {
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
 
         /* Right Bumper: Enable Intake */
-        joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
+        // joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
+
+        joystick.rightBumper().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("extending!!");
+            m_IntakeSubsystem.enableExtension();
+            m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_EXTENDED_POS);
+            m_IntakeSubsystem.enableRoller();
+        })))));
 
         /* Left Bumper: Disable Intake */
-        joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
+        // joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
+
+        joystick.leftBumper().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("disending!!");
+            m_IntakeSubsystem.enableExtension();
+            m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
+            m_IntakeSubsystem.disableRoller();
+        })))));
+
+        joystick.rightTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("on!!");
+            m_IndexerSubsystem.enableRoller();
+            m_IndexerSubsystem.setRollerTargetVelocity(Constants.Indexer.ROLLER_VELOCITY);
+        })))));
+
+        joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("off!!");
+            m_IndexerSubsystem.disableRoller();
+            m_IndexerSubsystem.setRollerTargetVelocity(0);
+        })))));
+
+        joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("onn!!");
+            m_OuttakeSubsystem.enableRoller();
+            m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
+        })))));
+
+        joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("off!!");
+            m_OuttakeSubsystem.disableRoller();
+            m_OuttakeSubsystem.setRollerTargetVelocity(0);
+        })))));
+
+        joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("onnn!!");
+            m_ShooterSubsystem.enableRoller();
+            m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
+        })))));
+
+        joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            System.out.println("offf!!");
+            m_ShooterSubsystem.disableRoller();
+            m_ShooterSubsystem.setRollerTargetVelocity(0);
+        })))));
+
+        joystick.povDown().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            m_TurretSubsystem.setAutoAimSuppressed(false);
+            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getTurretPositionRotations()), false);
+            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getKraken().getPosition().getValueAsDouble()), false);
+        })))));
 
         /* Right Trigger (while holdiing): Starts Shooter + Outtake + Indexer */
-        joystick.rightTrigger().whileTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
+        // joystick.a().whileTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
 
         // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
         // joystick.rightBumper().onTrue(constantVelocitySweep());
 
         // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
         // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
+
+        joystick.x().onTrue((Commands.runOnce(() -> {
+            m_IntakeSubsystem.zeroEncoder();
+        })));
+
+        joystick.y().onTrue((Commands.runOnce(() -> {
+            DriverStation.reportError(String.valueOf(m_IntakeSubsystem.getIntakePosition()), false);
+           System.out.print(m_IntakeSubsystem.getIntakePosition());
+        })));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

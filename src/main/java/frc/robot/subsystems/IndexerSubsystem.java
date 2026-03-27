@@ -18,7 +18,7 @@ public class IndexerSubsystem extends SubsystemBase {
     public IndexerSubsystem() {
 
 
-        rollerKraken = new TalonFX(Constants.Indexer.ROLLER_KRAKEN_ID);
+        rollerKraken = new TalonFX(Constants.Indexer.ROLLER_KRAKEN_ID, "CANivore1");
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration();
 
@@ -35,9 +35,9 @@ public class IndexerSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Indexer.ROLLER_JERK;
 
         rollerKraken.getConfigurator().apply(rollerCfg);
-        rollerKraken.getVelocity().setUpdateFrequency(100);
-        rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
-        rollerKraken.optimizeBusUtilization();
+        // rollerKraken.getVelocity().setUpdateFrequency(100);
+        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
+        // rollerKraken.optimizeBusUtilization();
     }
     
 
@@ -65,8 +65,6 @@ public class IndexerSubsystem extends SubsystemBase {
             rollerKraken.stopMotor();
         }
     }
-
-
 
     public double getRollerVelocity() {
         if (rollerKraken == null) {

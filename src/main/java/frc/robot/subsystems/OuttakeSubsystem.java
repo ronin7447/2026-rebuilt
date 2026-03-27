@@ -20,7 +20,7 @@ public class OuttakeSubsystem extends SubsystemBase {
     public OuttakeSubsystem() {
 
 
-        rollerKraken = new TalonFX(Constants.Outtake.ROLLER_KRAKEN_ID);
+        rollerKraken = new TalonFX(Constants.Outtake.ROLLER_KRAKEN_ID, "CANivore1");
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration();
 
@@ -37,9 +37,9 @@ public class OuttakeSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Outtake.ROLLER_JERK;
 
         rollerKraken.getConfigurator().apply(rollerCfg);
-        rollerKraken.getVelocity().setUpdateFrequency(100);
-        rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
-        rollerKraken.optimizeBusUtilization();
+        // rollerKraken.getVelocity().setUpdateFrequency(100);
+        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
+        // rollerKraken.optimizeBusUtilization();
     }
     
 

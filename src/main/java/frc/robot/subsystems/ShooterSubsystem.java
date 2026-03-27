@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 
 public class ShooterSubsystem extends SubsystemBase {
-    private final TalonFX hoodKraken = new TalonFX(Constants.Shooter.HOOD_KRAKEN_ID);
+    private final TalonFX hoodKraken = new TalonFX(Constants.Shooter.HOOD_KRAKEN_ID, "CANivore1");
     private final TalonFX rollerKraken;
     
     private final MotionMagicVoltage mmPos = new MotionMagicVoltage(0.0);
@@ -42,11 +42,11 @@ public class ShooterSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicJerk = Constants.Turret.JERK;
 
         hoodKraken.getConfigurator().apply(cfg);
-        hoodKraken.getPosition().setUpdateFrequency(100);
-        hoodKraken.getVelocity().setUpdateFrequency(100);
-        hoodKraken.optimizeBusUtilization();
+        // hoodKraken.getPosition().setUpdateFrequency(100);
+        // hoodKraken.getVelocity().setUpdateFrequency(100);
+        // hoodKraken.optimizeBusUtilization();
 
-        rollerKraken = new TalonFX(Constants.Shooter.ROLLER_KRAKEN_ID);
+        rollerKraken = new TalonFX(Constants.Shooter.ROLLER_KRAKEN_ID, "CANivore1");
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration();
 
@@ -63,9 +63,9 @@ public class ShooterSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Shooter.ROLLER_JERK;
 
         rollerKraken.getConfigurator().apply(rollerCfg);
-        rollerKraken.getVelocity().setUpdateFrequency(100);
-        rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
-        rollerKraken.optimizeBusUtilization();
+        // rollerKraken.getVelocity().setUpdateFrequency(100);
+        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
+        // rollerKraken.optimizeBusUtilization();
     }
     
      public TalonFX getHoodKraken(){
@@ -117,7 +117,7 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
 
-        hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        // hoodKraken.setControl(mmPos.withPosition(targetPosRot));
 
         if (rollerEnabled && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
