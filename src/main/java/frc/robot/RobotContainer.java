@@ -16,8 +16,7 @@ import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
-import frc.robot.commands.intake.DisableIntakeCommand;
-import frc.robot.commands.intake.EnableIntakeCommand;
+import frc.robot.commands.intake.ManipulateIntake;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -104,10 +103,10 @@ public class RobotContainer {
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
 
         /* Right Bumper: Enable Intake */
-        joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
+        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
 
         /* Left Bumper: Disable Intake */
-        joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
+        joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
         // joystick.rightTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
         //     m_IndexerSubsystem.enableRoller();
