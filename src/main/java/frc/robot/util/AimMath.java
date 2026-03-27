@@ -21,11 +21,24 @@ public final class AimMath {
         Translation2d hubFieldPoint
     ) {
         Translation2d turretPivotFieldPosition = computeTurretPivotFieldPosition(robotPose, robotToTurretPivot);
-        Translation2d toHub = hubFieldPoint.minus(turretPivotFieldPosition);
-        Rotation2d desiredFieldYaw = toHub.getAngle();
+        Rotation2d desiredFieldYaw = computeDesiredFieldYaw(turretPivotFieldPosition, hubFieldPoint);
+        return computeTurretRelativeYaw(desiredFieldYaw, robotPose.getRotation(), turretZeroOffset);
+    }
 
-        return desiredFieldYaw
-            .minus(robotPose.getRotation())
+    public static Rotation2d computeDesiredFieldYaw(
+        Translation2d shooterFieldPosition,
+        Translation2d targetFieldPosition
+    ) {
+        return targetFieldPosition.minus(shooterFieldPosition).getAngle();
+    }
+
+    public static Rotation2d computeTurretRelativeYaw(
+        Rotation2d fieldYaw,
+        Rotation2d robotHeading,
+        Rotation2d turretZeroOffset
+    ) {
+        return fieldYaw
+            .minus(robotHeading)
             .minus(turretZeroOffset);
     }
 }

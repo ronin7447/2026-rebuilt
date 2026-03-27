@@ -100,6 +100,7 @@ public final class Constants {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2);
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
+        public static final double HUB_TARGET_HEIGHT_METERS = 0.0;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
@@ -125,6 +126,11 @@ public final class Constants {
 
         public static Translation2d getHubForAlliance(DriverStation.Alliance alliance) {
             return alliance == DriverStation.Alliance.Red ? RED_HUB_AIM_POINT : BLUE_HUB_AIM_POINT;
+        }
+
+        public static Translation3d getHubAimPoint3d(DriverStation.Alliance alliance) {
+            Translation2d hubPoint = getHubForAlliance(alliance);
+            return new Translation3d(hubPoint.getX(), hubPoint.getY(), HUB_TARGET_HEIGHT_METERS);
         }
 
         public static List<Translation2d> getAllianceZone(DriverStation.Alliance alliance) {
@@ -174,6 +180,10 @@ public final class Constants {
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
         public static final double ROLLER_TOLERANCE = 1.0; // How much the actual velocity in rps can differ from target
+        public static final double EXIT_HEIGHT_METERS = 0.5;
+        public static final double MIN_LAUNCH_ANGLE_DEG = 10.0;
+        public static final double MAX_LAUNCH_ANGLE_DEG = 80.0;
+        public static final double MAX_EXIT_SPEED_MPS = 12.0;
     }
 
     public static final class Outtake {

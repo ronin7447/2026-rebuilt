@@ -54,15 +54,23 @@ class TurretMathTest {
     }
 
     @Test
-    void convertsTurretAnglesToMotorRotationsForTenToOneRatio() {
+    void convertsTurretAnglesToMotorRotationsForCurrentRatio() {
         double ratio = Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION;
 
-        assertEquals(0.0, Constants.Turret.TALON_SOFT_LIMIT_LOW, EPSILON);
-        assertEquals(10.0, Constants.Turret.TALON_SOFT_LIMIT_HIGH, EPSILON);
-        assertEquals(0.5555555555555556, TurretMath.convertTurretDegreesToMotorRotations(20.0, ratio), EPSILON);
-        assertEquals(9.444444444444445, TurretMath.convertTurretDegreesToMotorRotations(340.0, ratio), EPSILON);
-        assertEquals(5.0, TurretMath.convertTurretDegreesToMotorRotations(180.0, ratio), EPSILON);
-        assertEquals(10.0, TurretMath.convertTurretDegreesToMotorRotations(360.0, ratio), EPSILON);
-        assertEquals(36.0, TurretMath.convertMotorRotationsToTurretDegrees(1.0, ratio), EPSILON);
+        assertEquals(
+            Constants.Turret.SOFT_LIMIT_LOW * ratio,
+            Constants.Turret.TALON_SOFT_LIMIT_LOW,
+            EPSILON
+        );
+        assertEquals(
+            Constants.Turret.SOFT_LIMIT_HIGH * ratio,
+            Constants.Turret.TALON_SOFT_LIMIT_HIGH,
+            EPSILON
+        );
+        assertEquals((20.0 / 360.0) * ratio, TurretMath.convertTurretDegreesToMotorRotations(20.0, ratio), EPSILON);
+        assertEquals((340.0 / 360.0) * ratio, TurretMath.convertTurretDegreesToMotorRotations(340.0, ratio), EPSILON);
+        assertEquals(0.5 * ratio, TurretMath.convertTurretDegreesToMotorRotations(180.0, ratio), EPSILON);
+        assertEquals(ratio, TurretMath.convertTurretDegreesToMotorRotations(360.0, ratio), EPSILON);
+        assertEquals(360.0 / ratio, TurretMath.convertMotorRotationsToTurretDegrees(1.0, ratio), EPSILON);
     }
 }

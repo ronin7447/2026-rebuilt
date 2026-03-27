@@ -38,11 +38,21 @@ public class TurretSubsystem extends SubsystemBase {
     private boolean visionHealthy = false;
     private boolean autoAimSuppressed = false;
     private boolean goalClampedBySoftwareLimit = false;
+    private boolean movingShotSolutionValid = false;
+    private boolean mappedHoodPositionAvailable = false;
+    private boolean mappedRollerRpsAvailable = false;
 
     private Rotation2d desiredTurretAngle = Rotation2d.kZero;
+    private Rotation2d desiredFieldYaw = Rotation2d.kZero;
     private Translation2d turretPivotFieldPosition = Translation2d.kZero;
     private Translation2d selectedHubPoint = Translation2d.kZero;
     private String allianceName = "Unknown";
+    private double recommendedLaunchPitchDeg = Double.NaN;
+    private double requiredExitSpeedMps = Double.NaN;
+    private double flightTimeSec = Double.NaN;
+    private double leadYawDeg = Double.NaN;
+    private double mappedHoodPosition = Double.NaN;
+    private double mappedRollerRps = Double.NaN;
 
     private BooleanSupplier shooterReadySupplier = () -> true;
 
@@ -258,9 +268,12 @@ public class TurretSubsystem extends SubsystemBase {
 
     public boolean isShotReady() {
         return autoAimActive
+            && movingShotSolutionValid
             && poseFreshForShooting
             && isTurretAtAimGoal()
             && !isOnSoftwareLimit()
+            && mappedHoodPositionAvailable
+            && mappedRollerRpsAvailable
             && shooterReadySupplier.getAsBoolean();
     }
 
@@ -272,7 +285,17 @@ public class TurretSubsystem extends SubsystemBase {
         boolean autoAimActive,
         Translation2d turretPivotFieldPosition,
         Translation2d selectedHubPoint,
-        Rotation2d desiredTurretAngle
+        Rotation2d desiredTurretAngle,
+        Rotation2d desiredFieldYaw,
+        boolean movingShotSolutionValid,
+        double recommendedLaunchPitchDeg,
+        double requiredExitSpeedMps,
+        double flightTimeSec,
+        double leadYawDeg,
+        boolean mappedHoodPositionAvailable,
+        double mappedHoodPosition,
+        boolean mappedRollerRpsAvailable,
+        double mappedRollerRps
     ) {
         this.allianceName = allianceName;
         this.inAllianceZone = inAllianceZone;
@@ -282,6 +305,16 @@ public class TurretSubsystem extends SubsystemBase {
         this.turretPivotFieldPosition = turretPivotFieldPosition;
         this.selectedHubPoint = selectedHubPoint;
         this.desiredTurretAngle = desiredTurretAngle;
+        this.desiredFieldYaw = desiredFieldYaw;
+        this.movingShotSolutionValid = movingShotSolutionValid;
+        this.recommendedLaunchPitchDeg = recommendedLaunchPitchDeg;
+        this.requiredExitSpeedMps = requiredExitSpeedMps;
+        this.flightTimeSec = flightTimeSec;
+        this.leadYawDeg = leadYawDeg;
+        this.mappedHoodPositionAvailable = mappedHoodPositionAvailable;
+        this.mappedHoodPosition = mappedHoodPosition;
+        this.mappedRollerRpsAvailable = mappedRollerRpsAvailable;
+        this.mappedRollerRps = mappedRollerRps;
     }
 
     @Override
@@ -304,6 +337,7 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/ActualAngleDeg", getTurretAngle().getDegrees());
         SmartDashboard.putNumber("Turret/GoalAngleDeg", getTurretGoal().getDegrees());
         SmartDashboard.putNumber("Turret/DesiredAngleDeg", desiredTurretAngle.getDegrees());
+        SmartDashboard.putNumber("Turret/DesiredFieldYawDeg", desiredFieldYaw.getDegrees());
         SmartDashboard.putNumber("Turret/AimErrorDeg", getTurretAimErrorDeg());
         SmartDashboard.putBoolean("Turret/AtAimGoal", isTurretAtAimGoal());
         SmartDashboard.putBoolean("Turret/ShotReady", isShotReady());
@@ -313,10 +347,19 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putBoolean("Turret/VisionHealthy", visionHealthy);
         SmartDashboard.putBoolean("Turret/PoseFreshForShot", poseFreshForShooting);
         SmartDashboard.putBoolean("Turret/OnSoftwareLimit", isOnSoftwareLimit());
+        SmartDashboard.putBoolean("Turret/MovingShotSolutionValid", movingShotSolutionValid);
+        SmartDashboard.putBoolean("Turret/MappedHoodPositionAvailable", mappedHoodPositionAvailable);
+        SmartDashboard.putBoolean("Turret/MappedRollerRpsAvailable", mappedRollerRpsAvailable);
         SmartDashboard.putString("Turret/Alliance", allianceName);
         SmartDashboard.putNumber("Turret/PivotFieldX", turretPivotFieldPosition.getX());
         SmartDashboard.putNumber("Turret/PivotFieldY", turretPivotFieldPosition.getY());
         SmartDashboard.putNumber("Turret/HubX", selectedHubPoint.getX());
         SmartDashboard.putNumber("Turret/HubY", selectedHubPoint.getY());
+        SmartDashboard.putNumber("Turret/RecommendedLaunchPitchDeg", recommendedLaunchPitchDeg);
+        SmartDashboard.putNumber("Turret/RequiredExitSpeedMps", requiredExitSpeedMps);
+        SmartDashboard.putNumber("Turret/FlightTimeSec", flightTimeSec);
+        SmartDashboard.putNumber("Turret/LeadYawDeg", leadYawDeg);
+        SmartDashboard.putNumber("Turret/MappedHoodPosition", mappedHoodPosition);
+        SmartDashboard.putNumber("Turret/MappedRollerRps", mappedRollerRps);
     }
 }
