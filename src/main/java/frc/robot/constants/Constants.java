@@ -140,10 +140,13 @@ public final class Constants {
         public static final double EXTENSION_ACCELERATION = 30.0;
         public static final double EXTENSION_JERK = 60.0;
 
+        public static final double INTAKE_STALL_CURRENT = 6.0;
+        public static final double INTAKE_STALL_VELOCITY = 10;
+        public static final double STALL_TIME_S = 0.25;
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.1;
+        public static final double INTAKE_COLLAPSED_POS = 0.15;
         public static final double INTAKE_EXTENDED_POS = 2.017578125;
 
         public static final double ROLLER_VELOCITY = 72.0;

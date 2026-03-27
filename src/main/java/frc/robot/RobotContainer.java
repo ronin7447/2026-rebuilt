@@ -161,7 +161,6 @@ public class RobotContainer {
 
         joystick.y().onTrue((Commands.runOnce(() -> {
             DriverStation.reportError(String.valueOf(m_IntakeSubsystem.getIntakePosition()), false);
-           System.out.print(m_IntakeSubsystem.getIntakePosition());
         })));
 
         drivetrain.registerTelemetry(logger::telemeterize);

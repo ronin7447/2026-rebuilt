@@ -1,6 +1,8 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -9,13 +11,19 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 
 public class IntakeSubsystem extends SubsystemBase {
+
     private final TalonFX rollerKraken = new TalonFX(Constants.Intake.ROLLER_KRAKEN_ID, "CANivore1");
     private final TalonFX extensionKrakenMaster = new TalonFX(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, "CANivore1");  
     private final TalonFX extensionKrakenFollower = new TalonFX(Constants.Intake.EXTENSION_KRAKEN_FOLLOWER_ID, "CANivore1");
+
+    private final Timer stallTimer = new Timer();
 
     private double targetPosRot = getIntakePosition();
 
@@ -27,7 +35,6 @@ public class IntakeSubsystem extends SubsystemBase {
     private int currentLevel = 0;
     
     public IntakeSubsystem() {
-
 
         TalonFXConfiguration cfgFollower = new TalonFXConfiguration();
 
@@ -50,16 +57,18 @@ public class IntakeSubsystem extends SubsystemBase {
         extensionKrakenMaster.getConfigurator().apply(cfgFollower);
         extensionKrakenFollower.getConfigurator().apply(cfgFollower);
         
-        // extensionKrakenMaster.getPosition().setUpdateFrequency(100);
-        // extensionKrakenMaster.getVelocity().setUpdateFrequency(100);
-        // extensionKrakenMaster.getMotorVoltage().setUpdateFrequency(1000);
-        // extensionKrakenMaster.optimizeBusUtilization();
+        extensionKrakenMaster.getPosition().setUpdateFrequency(100);
+        extensionKrakenMaster.getVelocity().setUpdateFrequency(100);
+        extensionKrakenMaster.getMotorVoltage().setUpdateFrequency(1000);
+        extensionKrakenMaster.optimizeBusUtilization();
 
-        // extensionKrakenFollower.getPosition().setUpdateFrequency(100);
-        // extensionKrakenFollower.getVelocity().setUpdateFrequency(100);
-        // extensionKrakenFollower.getMotorVoltage().setUpdateFrequency(1000);
-        // extensionKrakenFollower.optimizeBusUtilization();
+        extensionKrakenFollower.getPosition().setUpdateFrequency(100);
+        extensionKrakenFollower.getVelocity().setUpdateFrequency(100);
+        extensionKrakenFollower.getMotorVoltage().setUpdateFrequency(1000);
+        extensionKrakenFollower.optimizeBusUtilization();
 
+        extensionKrakenMaster.setNeutralMode(NeutralModeValue.Brake);
+        extensionKrakenFollower.setNeutralMode(NeutralModeValue.Brake);
 
         // in init function
         var rollerTalonFXConfigs = new TalonFXConfiguration();
@@ -78,12 +87,20 @@ public class IntakeSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = 400; // Target acceleration of 400 rps/s (0.25 seconds to max)
         motionMagicConfigs.MotionMagicJerk = 4000; // Target jerk of 4000 rps/s/s (0.1 seconds)
 
-        rollerKraken.getConfigurator().apply(rollerTalonFXConfigs);
+        stallTimer.stop();
+        stallTimer.reset();
 
+        rollerKraken.getConfigurator().apply(rollerTalonFXConfigs);
     }
 
-    public TalonFX getExtensionKrakenMaster(){
+    public TalonFX getExtensionKrakenMaster() {
+
         return extensionKrakenMaster;
+    }
+
+    public TalonFX getExtensionKrakenFollower() {
+
+        return extensionKrakenFollower;
     }
 
     public void runRoller(double vel) {
@@ -99,8 +116,9 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void disableExtension() {
-        System.out.println("Jun..,,,");
         mmPosEnabled = false;
+
+        extensionKrakenMaster.setControl(new VoltageOut(0));
     }
 
     public void enableRoller() {
@@ -111,16 +129,11 @@ public class IntakeSubsystem extends SubsystemBase {
         rollerEnabled = false;
     }
 
-    // public void setMotorCoast() {
-    //     extensionKrakenMaster.set
-    // }
-
     public void zeroEncoder() {
 
         mmPosEnabled = false;
 
         extensionKrakenMaster.setPosition(0);
-        this.targetPosRot = 0;
     }
 
     public void setIntakePosition(double targetPosRot) {
@@ -131,27 +144,39 @@ public class IntakeSubsystem extends SubsystemBase {
         return currentLevel;
     }
     
+    public boolean isStallDetected() {
+        StatusSignal<Current> statorCurrentSig = extensionKrakenMaster.getStatorCurrent();
+
+        statorCurrentSig.refresh();
+
+        double amps = statorCurrentSig.getValueAsDouble();
+        boolean stalledNow = amps >= Constants.Intake.INTAKE_STALL_CURRENT && mmPos.Position == Constants.Intake.INTAKE_EXTENDED_POS;
+
+        if (stalledNow) {
+            if (!stallTimer.isRunning()) {
+                stallTimer.reset();
+                stallTimer.start();
+            }
+        } else {
+            stallTimer.stop();
+            stallTimer.reset();
+        }
+
+        return stallTimer.hasElapsed(Constants.Intake.STALL_TIME_S);
+    }
+
     @Override
     public void periodic() {
 
         if (mmPosEnabled) {
-            System.out.print("Its enabled with pos " + targetPosRot + "and current pose" + getIntakePosition());
+
             extensionKrakenMaster.setControl(mmPos.withPosition(targetPosRot));
-            extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Opposed));
-            if (Math.abs(this.getIntakePosition() - targetPosRot) <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE) {
-                this.disableExtension();
-                if (Math.abs(this.getIntakePosition() - Constants.Intake.INTAKE_COLLAPSED_POS) <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE) {
-                    System.out.print("jun..");
-                    // when we collapse our intake
-                    // we stop our motor
-                    extensionKrakenMaster.stopMotor();
-                    extensionKrakenFollower.stopMotor();
-                }
-                // otherwise pid will hold it
-            }
         }
+
+        extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Opposed));
         
         if (rollerEnabled) {
+
             rollerKraken.setControl(rollerVel.withVelocity(Constants.Intake.ROLLER_VELOCITY));
         } else {
 
