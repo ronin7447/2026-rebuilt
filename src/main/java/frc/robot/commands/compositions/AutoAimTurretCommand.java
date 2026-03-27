@@ -1,4 +1,4 @@
-package frc.robot.commands;
+package frc.robot.commands.compositions;
 
 import java.util.Optional;
 
@@ -57,6 +57,7 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (allianceOpt.isEmpty()) {
+            DriverStation.reportError("notWorking", false);
             turret.park();
             turret.updateAimState(
                 "Unknown",

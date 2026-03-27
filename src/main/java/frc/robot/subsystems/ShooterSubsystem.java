@@ -114,6 +114,11 @@ public class ShooterSubsystem extends SubsystemBase {
         return rollerKraken.getVelocity().getValueAsDouble();
     }
 
+    public boolean atTargetSpeed() {
+
+        return Math.abs(rollerKraken.getClosedLoopError().getValueAsDouble()) < Constants.Shooter.ROLLER_TOLERANCE;
+    }
+
     @Override
     public void periodic() {
 

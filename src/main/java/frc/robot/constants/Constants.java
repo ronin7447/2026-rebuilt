@@ -37,23 +37,28 @@ public final class Constants {
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
 
-        public static final double CRUISE_VELOCITY = 2.0;
-        public static final double ACCELERATION = 2.0;
+        public static final double CRUISE_VELOCITY = 6.0;
+        public static final double ACCELERATION = 6.0;
         public static final double JERK = 7.0;
-        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 10.0;
+        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 6.67; // 100:15
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(0.0, 0.0); // TODO: set turret pivot offset in robot coordinates
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // TODO: set encoder-zero-to-forward offset
-        public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-149.38); // TODO: set real turret lower software limit
-        public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(76.62); // TODO: set real turret upper software limit
+        // public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-149.38); // TODO: set real turret lower software limit
+        // public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(76.62); // TODO: set real turret upper software limit
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 2.0;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
+        
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
-        public static final double SOFT_LIMIT_LOW = -4.24;
-        public static final double SOFT_LIMIT_HIGH = 2.50;
+
         // the Talon FX soft limit for the motor
-        public static final double TALON_SOFT_LIMIT_LOW = SOFT_LIMIT_LOW * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
-        public static final double TALON_SOFT_LIMIT_HIGH = SOFT_LIMIT_HIGH * MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        public static final double TALON_SOFT_LIMIT_LOW = -4.24;
+        public static final double TALON_SOFT_LIMIT_HIGH = 2.50;
+
+
+        public static final double SOFT_LIMIT_LOW = TALON_SOFT_LIMIT_LOW / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        public static final double SOFT_LIMIT_HIGH = TALON_SOFT_LIMIT_HIGH / MOTOR_ROTATIONS_PER_TURRET_ROTATION ;
+        
         public static final double SOFT_LIMIT_THRESHOLD = Rotation2d.fromDegrees(2.0).getRotations();
     }
 
@@ -165,6 +170,7 @@ public final class Constants {
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
+        public static final double ROLLER_TOLERANCE = 1.0; // How much the actual velocity in rps can differ from target
     }
 
     public static final class Outtake {

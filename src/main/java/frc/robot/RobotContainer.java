@@ -14,8 +14,8 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.commands.AutoAimTurretCommand;
-import frc.robot.commands.ShootCommand;
+import frc.robot.commands.compositions.AutoAimTurretCommand;
+import frc.robot.commands.compositions.ShootCommand;
 import frc.robot.commands.intake.DisableIntakeCommand;
 import frc.robot.commands.intake.EnableIntakeCommand;
 import frc.robot.constants.Constants;
@@ -54,7 +54,8 @@ public class RobotContainer {
     private final CommandXboxController joystick = new CommandXboxController(0);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
-    // public final VisionSubsystem vision = new VisionSubsystem(drivetrain);
+
+    public final VisionSubsystem m_vision = new VisionSubsystem(drivetrain);
     public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
     public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
@@ -64,7 +65,7 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     public RobotContainer() {
-        // m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, vision, m_TurretSubsystem));
+        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, m_vision, m_TurretSubsystem));
         configureBindings();
     }
 
@@ -103,57 +104,39 @@ public class RobotContainer {
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
 
         /* Right Bumper: Enable Intake */
-        // joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
-
-        joystick.rightBumper().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("extending!!");
-            m_IntakeSubsystem.enableExtension();
-            m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_EXTENDED_POS);
-            m_IntakeSubsystem.enableRoller();
-        })))));
+        joystick.rightBumper().onTrue(new EnableIntakeCommand(m_IntakeSubsystem));
 
         /* Left Bumper: Disable Intake */
-        // joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
+        joystick.leftBumper().onTrue(new DisableIntakeCommand(m_IntakeSubsystem));
 
-        joystick.leftBumper().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("disending!!");
-            m_IntakeSubsystem.enableExtension();
-            m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
-            m_IntakeSubsystem.disableRoller();
-        })))));
+        // joystick.rightTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
+        //     m_IndexerSubsystem.enableRoller();
+        //     m_IndexerSubsystem.setRollerTargetVelocity(Constants.Indexer.ROLLER_VELOCITY);
+        // })))));
 
-        joystick.rightTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("on!!");
-            m_IndexerSubsystem.enableRoller();
-            m_IndexerSubsystem.setRollerTargetVelocity(Constants.Indexer.ROLLER_VELOCITY);
-        })))));
+        joystick.rightTrigger().onTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
 
         joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("off!!");
             m_IndexerSubsystem.disableRoller();
             m_IndexerSubsystem.setRollerTargetVelocity(0);
         })))));
 
         joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("onn!!");
             m_OuttakeSubsystem.enableRoller();
             m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
         })))));
 
         joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("off!!");
             m_OuttakeSubsystem.disableRoller();
             m_OuttakeSubsystem.setRollerTargetVelocity(0);
         })))));
 
         joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("onnn!!");
             m_ShooterSubsystem.enableRoller();
             m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
         })))));
 
         joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            System.out.println("offf!!");
             m_ShooterSubsystem.disableRoller();
             m_ShooterSubsystem.setRollerTargetVelocity(0);
         })))));
