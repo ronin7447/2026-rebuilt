@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 
@@ -66,6 +67,8 @@ public class ShooterSubsystem extends SubsystemBase {
         // rollerKraken.getVelocity().setUpdateFrequency(100);
         // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
         // rollerKraken.optimizeBusUtilization();
+
+        SmartDashboard.putNumber("HoodPosition", getHoodPosition());
     }
     
      public TalonFX getHoodKraken(){
@@ -122,7 +125,7 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
 
-        // hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        hoodKraken.setControl(mmPos.withPosition(SmartDashboard.getNumber("HoodPosition", getHoodPosition())));
 
         if (rollerEnabled && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
