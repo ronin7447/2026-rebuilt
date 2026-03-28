@@ -76,15 +76,23 @@ public final class Constants {
         /* AprilTag Camera 1 */
         public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
-            new Translation3d(1.0, 12.0, 18.625),
-            new Rotation3d(0.0, Math.toRadians(90), 0.0) //
+            new Translation3d(
+                Units.inchesToMeters(1.0),
+                Units.inchesToMeters(12.0),
+                Units.inchesToMeters(18.625)
+            ),
+            new Rotation3d(0.0, 0.0, Units.degreesToRadians(90.0))
         );
 
         /* AprilTag Camera 2 */
         public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT";
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
-            new Translation3d(1.0, -12, 17.00),
-            new Rotation3d(0.0, Math.toRadians(-90), 0.0) // 
+            new Translation3d(
+                Units.inchesToMeters(1.0),
+                Units.inchesToMeters(-12.0),
+                Units.inchesToMeters(17.0)
+            ),
+            new Rotation3d(0.0, 0.0, Units.degreesToRadians(-90.0))
         );
 
         /* Field layout, CA district is welded */
