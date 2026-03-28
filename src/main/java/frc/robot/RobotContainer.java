@@ -64,7 +64,12 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     public RobotContainer() {
-        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, m_vision, m_TurretSubsystem));
+        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(
+            drivetrain,
+            m_vision,
+            m_TurretSubsystem,
+            m_ShooterSubsystem
+        ));
         configureBindings();
     }
 

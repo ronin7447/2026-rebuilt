@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.AimMath;
@@ -24,16 +25,19 @@ public class AutoAimTurretCommand extends Command {
     private final CommandSwerveDrivetrain drivetrain;
     private final VisionSubsystem vision;
     private final TurretSubsystem turret;
+    private final ShooterSubsystem shooter;
     private final ShooterCalibration shooterCalibration = new LinearShooterCalibration();
 
     public AutoAimTurretCommand(
         CommandSwerveDrivetrain drivetrain,
         VisionSubsystem vision,
-        TurretSubsystem turret
+        TurretSubsystem turret,
+        ShooterSubsystem shooter
     ) {
         this.drivetrain = drivetrain;
         this.vision = vision;
         this.turret = turret;
+        this.shooter = shooter;
         addRequirements(turret);
     }
 
@@ -147,7 +151,7 @@ public class AutoAimTurretCommand extends Command {
             );
             mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
 
-            mappedHoodPosition.ifPresent(hoodPosition -> SmartDashboard.putNumber("HoodPosition", hoodPosition));
+            mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
             mappedRollerRps.ifPresent(rollerRps -> SmartDashboard.putNumber("ShooterRPS", rollerRps));
         }
 

@@ -82,8 +82,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
     public void setTargetPositionRotation(double pos) {
-
         targetPosRot = pos;
+        SmartDashboard.putNumber("HoodPosition", pos);
     }
 
     public void setRollerTargetVelocity(double velRps) {
@@ -125,8 +125,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-
-        hoodKraken.setControl(mmPos.withPosition(SmartDashboard.getNumber("HoodPosition", getHoodPosition())));
+        hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        SmartDashboard.putNumber("HoodPosition", targetPosRot);
         setRollerTargetVelocity(SmartDashboard.getNumber("ShooterRPS", 0));
 
 
