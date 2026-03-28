@@ -19,6 +19,8 @@ class ShooterKinematicsTest {
     private static final ShooterCalibration CALIBRATION = new LinearShooterCalibration();
     private static final double MIN_HOOD_POSITION_ROT = -10.0;
     private static final double MAX_HOOD_POSITION_ROT = 10.0;
+    private static final double FAR_SHOT_DISTANCE_METERS = 4.0;
+    private static final double FAR_SHOT_MIN_HOOD_POSITION_ROT = -1.40;
 
     @Test
     void zeroVelocityMatchesStationaryAimYaw() {
@@ -43,6 +45,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -65,6 +69,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -86,6 +92,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -108,6 +116,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 1.0
             )
         );
@@ -128,6 +138,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -148,6 +160,8 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 MIN_HOOD_POSITION_ROT,
                 MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -170,10 +184,38 @@ class ShooterKinematicsTest {
                 CALIBRATION,
                 -20.0,
                 -15.0,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
                 20.0
             )
         );
 
         assertTrue(solution.isEmpty());
+    }
+
+    @Test
+    void farShotsRespectHigherHoodFloor() {
+        Optional<ShooterKinematics.MovingShotSolution> solution = ShooterKinematics.solveMovingShot(
+            new ShooterKinematics.MovingShotRequest(
+                new Pose2d(),
+                new ChassisSpeeds(),
+                Translation2d.kZero,
+                0.5,
+                new Translation3d(6.0, 0.0, 2.0),
+                Rotation2d.kZero,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
+                FAR_SHOT_DISTANCE_METERS,
+                FAR_SHOT_MIN_HOOD_POSITION_ROT,
+                20.0
+            )
+        );
+
+        assertTrue(solution.isPresent());
+        double hoodPosition = CALIBRATION.hoodPositionForLaunchAngleDeg(
+            solution.get().recommendedLaunchPitch().getDegrees()
+        ).orElseThrow();
+        assertTrue(hoodPosition >= FAR_SHOT_MIN_HOOD_POSITION_ROT - EPSILON);
     }
 }

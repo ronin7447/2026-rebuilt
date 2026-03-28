@@ -46,6 +46,7 @@ public final class ShooterKinematics {
             request.shooterExitHeightMeters()
         );
         Translation3d delta = request.targetFieldPoint().minus(shooterFieldPoint);
+        double horizontalDistanceMeters = new Translation2d(delta.getX(), delta.getY()).getNorm();
         Rotation2d stationaryFieldYaw = AimMath.computeDesiredFieldYaw(
             shooterFieldPosition,
             new Translation2d(request.targetFieldPoint().getX(), request.targetFieldPoint().getY())
@@ -83,7 +84,15 @@ public final class ShooterKinematics {
             }
 
             double hoodPositionRot = hoodPositionOpt.getAsDouble();
-            if (hoodPositionRot < request.minHoodPositionRot()
+            double minAllowedHoodPositionRot = request.minHoodPositionRot();
+            if (horizontalDistanceMeters > request.farShotDistanceMeters()) {
+                minAllowedHoodPositionRot = Math.max(
+                    minAllowedHoodPositionRot,
+                    request.farShotMinHoodPositionRot()
+                );
+            }
+
+            if (hoodPositionRot < minAllowedHoodPositionRot
                 || hoodPositionRot > request.maxHoodPositionRot()) {
                 continue;
             }
@@ -136,6 +145,8 @@ public final class ShooterKinematics {
         ShooterCalibration shooterCalibration,
         double minHoodPositionRot,
         double maxHoodPositionRot,
+        double farShotDistanceMeters,
+        double farShotMinHoodPositionRot,
         double maxExitSpeedMps
     ) {}
 
