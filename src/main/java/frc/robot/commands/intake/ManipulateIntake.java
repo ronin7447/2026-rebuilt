@@ -25,7 +25,7 @@ public class ManipulateIntake extends Command {
 
             intake.setIntakePosition(Constants.Intake.INTAKE_EXTENDED_POS);
             intake.enableExtension();
-            intake.enableRoller();
+    
         } else {
 
             intake.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
@@ -61,6 +61,7 @@ public class ManipulateIntake extends Command {
             if (extend) {
 
                 new ManipulateIntake(false, intake);
+                
             } else {
 
                 intake.setIntakePosition(intake.getIntakePosition());
@@ -72,6 +73,10 @@ public class ManipulateIntake extends Command {
         if (!extend) {
 
             intake.disableExtension();
+        }
+
+        if (extend) {
+            intake.enableRoller();
         }
     }
 }

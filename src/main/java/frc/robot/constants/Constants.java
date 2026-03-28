@@ -19,8 +19,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
-        public static final double MAX_SPEED = 0.3 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
-        public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.75).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
+        public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+        public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.2; // 20% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.2; // 20% of max angular rate as deadband
     }
@@ -119,7 +119,7 @@ public final class Constants {
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, (FIELD_WIDTH_METERS / 2.0) + 0.00);
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.20, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(2.26, 6.00);
@@ -205,8 +205,8 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.15;
-        public static final double INTAKE_EXTENDED_POS = 2.017578125;
+        public static final double INTAKE_COLLAPSED_POS = 0.441;
+        public static final double INTAKE_EXTENDED_POS = 2.487;
 
         public static final double ROLLER_VELOCITY = 72.0;
     }
@@ -265,7 +265,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -96.0;
+        public static final double ROLLER_VELOCITY = -120.0;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 36;

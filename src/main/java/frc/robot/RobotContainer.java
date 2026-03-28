@@ -63,6 +63,8 @@ public class RobotContainer {
     public final IndexerSubsystem m_IndexerSubsystem = new IndexerSubsystem();
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
+    private boolean hoodForTrenchDown = false;
+
     public RobotContainer() {
         m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(
             drivetrain,
@@ -122,14 +124,25 @@ public class RobotContainer {
         ));
 
         joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IndexerSubsystem.disableRoller();
-            m_IndexerSubsystem.setRollerTargetVelocity(0);
+            // m_IndexerSubsystem.disableRoller();
+            // m_IndexerSubsystem.setRollerTargetVelocity(0);
         })))));
 
-        // joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_OuttakeSubsystem.enableRoller();
-        //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
-        // })))));
+        joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            if (!hoodForTrenchDown) {
+                // we lower it down
+                hoodForTrenchDown = true;
+                m_TurretSubsystem.setAutoAimSuppressed(true); // disable the autoaim
+                // m_TurretSubsystem.
+                m_ShooterSubsystem.setTargetPositionRotation(Constants.Shooter.MAX_HOOD_POSITION_ROT);
+                System.out.println("driver move down the hood for trench");
+            } else {
+                hoodForTrenchDown = false;
+                m_TurretSubsystem.setAutoAimSuppressed(false);
+             System.out.println("driver move up the hood for trench");
+            }
+            
+        })))));
 
         // joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
         //     m_OuttakeSubsystem.disableRoller();
