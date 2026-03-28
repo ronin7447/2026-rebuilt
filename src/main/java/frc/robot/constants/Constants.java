@@ -115,12 +115,17 @@ public final class Constants {
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
         public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30;
+        public static final double BACK_TARGET_HEIGHT_METERS = 0.2;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(2.26, 6.00);
+        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(2.26, 2.50);
+        public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(14.5, 6.00);
+        public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(14.5, 2.50);
 
         public static final List<Translation2d> BLUE_ALLIANCE_ZONE = List.of(
             new Translation2d(0.0, 0.0),
@@ -145,6 +150,40 @@ public final class Constants {
         public static Translation3d getHubAimPoint3d(DriverStation.Alliance alliance) {
             Translation2d hubPoint = getHubForAlliance(alliance);
             return new Translation3d(hubPoint.getX(), hubPoint.getY(), HUB_TARGET_HEIGHT_METERS);
+        }
+
+        public static List<Translation2d> getBackTargetsForAlliance(DriverStation.Alliance alliance) {
+            return alliance == DriverStation.Alliance.Red
+                ? List.of(RED_BACK_TARGET_UPPER, RED_BACK_TARGET_LOWER)
+                : List.of(BLUE_BACK_TARGET_UPPER, BLUE_BACK_TARGET_LOWER);
+        }
+
+        public static Translation2d getPreferredBackTargetForAlliance(
+            DriverStation.Alliance alliance,
+            double robotPoseY
+        ) {
+            Translation2d bestTarget = null;
+            double bestDistance = Double.POSITIVE_INFINITY;
+
+            for (Translation2d candidate : getBackTargetsForAlliance(alliance)) {
+                double distance = Math.abs(candidate.getY() - robotPoseY);
+                if (distance < bestDistance
+                    || (Math.abs(distance - bestDistance) <= 1e-9
+                        && (bestTarget == null || candidate.getY() < bestTarget.getY()))) {
+                    bestTarget = candidate;
+                    bestDistance = distance;
+                }
+            }
+
+            return bestTarget;
+        }
+
+        public static Translation3d getPreferredBackTarget3dForAlliance(
+            DriverStation.Alliance alliance,
+            double robotPoseY
+        ) {
+            Translation2d backTarget = getPreferredBackTargetForAlliance(alliance, robotPoseY);
+            return new Translation3d(backTarget.getX(), backTarget.getY(), BACK_TARGET_HEIGHT_METERS);
         }
 
         public static List<Translation2d> getAllianceZone(DriverStation.Alliance alliance) {

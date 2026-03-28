@@ -8,7 +8,6 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -16,8 +15,8 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.AimMath;
+import frc.robot.util.AutoAimTargeting;
 import frc.robot.util.LinearShooterCalibration;
-import frc.robot.util.PolygonUtil;
 import frc.robot.util.ShooterCalibration;
 import frc.robot.util.ShooterKinematics;
 
@@ -55,7 +54,9 @@ public class AutoAimTurretCommand extends Command {
         if (!DriverStation.isTeleopEnabled() || turret.isAutoAimSuppressed()) {
             turret.holdCurrentPosition();
             publishAimState(
+                AutoAimTargeting.TargetMode.HOLD.name(),
                 allianceOpt.map(Enum::name).orElse("Unknown"),
+                false,
                 false,
                 visionHealthy,
                 poseFresh,
@@ -74,7 +75,9 @@ public class AutoAimTurretCommand extends Command {
         if (allianceOpt.isEmpty()) {
             turret.park();
             publishAimState(
+                AutoAimTargeting.TargetMode.PARK.name(),
                 "Unknown",
+                false,
                 false,
                 visionHealthy,
                 poseFresh,
@@ -91,32 +94,37 @@ public class AutoAimTurretCommand extends Command {
         }
 
         DriverStation.Alliance alliance = allianceOpt.get();
-        Translation2d hubPoint = Constants.FieldTargets.getHubForAlliance(alliance);
-        Translation3d hubTargetPoint = Constants.FieldTargets.getHubAimPoint3d(alliance);
+        AutoAimTargeting.TargetSelection targetSelection = AutoAimTargeting.selectTarget(
+            alliance,
+            robotPose.getTranslation(),
+            robotPose.getY()
+        );
+        Translation2d selectedTargetPoint = targetSelection.targetPoint();
+        Translation3d selectedTargetPoint3d = targetSelection.targetPoint3d();
         Rotation2d stationaryDesiredTurretAngle = AimMath.computeDesiredTurretAngle(
             robotPose,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT,
             Rotation2d.kZero,
-            hubPoint
+            selectedTargetPoint
         );
-        Rotation2d stationaryFieldYaw = AimMath.computeDesiredFieldYaw(pivotFieldPosition, hubPoint);
-        boolean inAllianceZone = PolygonUtil.contains(
-            Constants.FieldTargets.getAllianceZone(alliance),
-            robotPose.getTranslation()
-        );
+        Rotation2d stationaryFieldYaw = AimMath.computeDesiredFieldYaw(pivotFieldPosition, selectedTargetPoint);
+        boolean inAllianceZone = targetSelection.inAllianceZone();
+        boolean inNeutralZone = targetSelection.inNeutralZone();
 
-        if (!inAllianceZone) {
+        if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HOLD) {
             turret.holdCurrentPosition();
             publishAimState(
+                targetSelection.targetMode().name(),
                 alliance.name(),
+                false,
                 false,
                 visionHealthy,
                 poseFresh,
                 false,
                 pivotFieldPosition,
-                hubPoint,
-                stationaryDesiredTurretAngle,
-                stationaryFieldYaw,
+                Translation2d.kZero,
+                turret.getTurretGoal(),
+                Rotation2d.kZero,
                 Optional.empty(),
                 OptionalDouble.empty(),
                 OptionalDouble.empty()
@@ -129,7 +137,7 @@ public class AutoAimTurretCommand extends Command {
             drivetrain.getState().Speeds,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT,
             Constants.Shooter.EXIT_HEIGHT_METERS,
-            hubTargetPoint,
+            selectedTargetPoint3d,
             Rotation2d.kZero,
             shooterCalibration,
             Constants.Shooter.MIN_HOOD_POSITION_ROT,
@@ -160,13 +168,15 @@ public class AutoAimTurretCommand extends Command {
 
         turret.setTurretGoal(commandedTurretAngle);
         publishAimState(
+            targetSelection.targetMode().name(),
             alliance.name(),
-            true,
+            inAllianceZone,
+            inNeutralZone,
             visionHealthy,
             poseFresh,
             true,
             pivotFieldPosition,
-            hubPoint,
+            selectedTargetPoint,
             commandedTurretAngle,
             desiredFieldYaw,
             movingShotSolution,
@@ -186,13 +196,15 @@ public class AutoAimTurretCommand extends Command {
     }
 
     private void publishAimState(
+        String targetMode,
         String allianceName,
         boolean inAllianceZone,
+        boolean inNeutralZone,
         boolean visionHealthy,
         boolean poseFresh,
         boolean autoAimActive,
         Translation2d pivotFieldPosition,
-        Translation2d hubPoint,
+        Translation2d selectedTargetPoint,
         Rotation2d desiredTurretAngle,
         Rotation2d desiredFieldYaw,
         Optional<ShooterKinematics.MovingShotSolution> movingShotSolution,
@@ -214,13 +226,15 @@ public class AutoAimTurretCommand extends Command {
             : Double.NaN;
 
         turret.updateAimState(
+            targetMode,
             allianceName,
             inAllianceZone,
+            inNeutralZone,
             visionHealthy,
             poseFresh,
             autoAimActive,
             pivotFieldPosition,
-            hubPoint,
+            selectedTargetPoint,
             desiredTurretAngle,
             desiredFieldYaw,
             movingShotSolutionValid,
