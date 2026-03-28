@@ -116,11 +116,11 @@ public final class Constants {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2);
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
-        public static final double HUB_TARGET_HEIGHT_METERS = 1.83;
+        public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.05;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, (FIELD_WIDTH_METERS / 2.0) + 0.20);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
 
@@ -200,7 +200,7 @@ public final class Constants {
         public static final double EXIT_HEIGHT_METERS = 0.4064;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_SLOPE = 0.0857913;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT = -7.49442;
-        public static final double MIN_HOOD_POSITION_ROT = -2.346942;
+        public static final double MIN_HOOD_POSITION_ROT = -2.266942;
         public static final double MAX_HOOD_POSITION_ROT = -0.631116;
         public static final double MAX_EXIT_SPEED_MPS = 12.0;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922;

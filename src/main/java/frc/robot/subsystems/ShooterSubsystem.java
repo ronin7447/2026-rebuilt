@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
@@ -68,6 +69,10 @@ public class ShooterSubsystem extends SubsystemBase {
         // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
         // rollerKraken.optimizeBusUtilization();
 
+        // zeroE
+
+        zeroEncoder();
+
         SmartDashboard.putNumber("HoodPosition", getHoodPosition());
         SmartDashboard.putNumber("ShooterRPS", getRollerVelocity());
     }
@@ -76,9 +81,14 @@ public class ShooterSubsystem extends SubsystemBase {
         return hoodKraken;
     }
 
+    public void zeroEncoder() {
+        hoodKraken.setPosition(Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS);
+        setTargetPositionRotation(0.0);
+    }
     public TalonFX getRollerKraken() {
         return rollerKraken;
     }
+    
 
 
     public void setTargetPositionRotation(double pos) {
