@@ -41,10 +41,11 @@ public final class Constants {
         public static final double ACCELERATION = 6.0;
         public static final double JERK = 7.0;
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 6.67; // 100:15
+        public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // TODO: set turret pivot offset in robot coordinates
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
-               public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
+        public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 2.0;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
         
@@ -56,8 +57,13 @@ public final class Constants {
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_LOW = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_LOW;
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_HIGH = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_HIGH;
 
-        public static final double SOFT_LIMIT_LOW = TALON_SOFT_LIMIT_LOW / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
-        public static final double SOFT_LIMIT_HIGH = TALON_SOFT_LIMIT_HIGH / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        private static final double LOGICAL_LIMIT_FROM_RAW_LOW =
+            (TALON_SOFT_LIMIT_LOW * POSITIVE_TURRET_YAW_MOTOR_SIGN) / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        private static final double LOGICAL_LIMIT_FROM_RAW_HIGH =
+            (TALON_SOFT_LIMIT_HIGH * POSITIVE_TURRET_YAW_MOTOR_SIGN) / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+
+        public static final double SOFT_LIMIT_LOW = Math.min(LOGICAL_LIMIT_FROM_RAW_LOW, LOGICAL_LIMIT_FROM_RAW_HIGH);
+        public static final double SOFT_LIMIT_HIGH = Math.max(LOGICAL_LIMIT_FROM_RAW_LOW, LOGICAL_LIMIT_FROM_RAW_HIGH);
         
         public static final double SOFT_LIMIT_THRESHOLD = Rotation2d.fromDegrees(2.0).getRotations();
     }
