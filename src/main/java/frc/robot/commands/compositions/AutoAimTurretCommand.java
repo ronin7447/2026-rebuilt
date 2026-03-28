@@ -91,7 +91,7 @@ public class AutoAimTurretCommand extends Command {
         Rotation2d stationaryDesiredTurretAngle = AimMath.computeDesiredTurretAngle(
             robotPose,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT,
-            Constants.Turret.TURRET_ZERO_OFFSET,
+            Rotation2d.kZero,
             hubPoint
         );
         Rotation2d stationaryFieldYaw = AimMath.computeDesiredFieldYaw(pivotFieldPosition, hubPoint);
@@ -125,7 +125,7 @@ public class AutoAimTurretCommand extends Command {
             Constants.Turret.ROBOT_TO_TURRET_PIVOT,
             Constants.Shooter.EXIT_HEIGHT_METERS,
             hubTargetPoint,
-            Constants.Turret.TURRET_ZERO_OFFSET,
+            Rotation2d.kZero,
             Constants.Shooter.MIN_LAUNCH_ANGLE_DEG,
             Constants.Shooter.MAX_LAUNCH_ANGLE_DEG,
             Constants.Shooter.MAX_EXIT_SPEED_MPS

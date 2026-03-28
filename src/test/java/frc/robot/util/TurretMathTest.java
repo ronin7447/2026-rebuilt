@@ -67,6 +67,16 @@ class TurretMathTest {
             Constants.Turret.TALON_SOFT_LIMIT_HIGH,
             EPSILON
         );
+        assertEquals(
+            Constants.Turret.TALON_SOFT_LIMIT_LOW + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS,
+            Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_LOW,
+            EPSILON
+        );
+        assertEquals(
+            Constants.Turret.TALON_SOFT_LIMIT_HIGH + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS,
+            Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_HIGH,
+            EPSILON
+        );
         assertEquals((20.0 / 360.0) * ratio, TurretMath.convertTurretDegreesToMotorRotations(20.0, ratio), EPSILON);
         assertEquals((340.0 / 360.0) * ratio, TurretMath.convertTurretDegreesToMotorRotations(340.0, ratio), EPSILON);
         assertEquals(0.5 * ratio, TurretMath.convertTurretDegreesToMotorRotations(180.0, ratio), EPSILON);

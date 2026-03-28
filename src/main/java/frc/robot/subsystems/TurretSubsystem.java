@@ -75,9 +75,9 @@ public class TurretSubsystem extends SubsystemBase {
 
         var softLimitConfigs = cfg.SoftwareLimitSwitch;
         softLimitConfigs.ReverseSoftLimitEnable = true;
-        softLimitConfigs.ReverseSoftLimitThreshold = Constants.Turret.TALON_SOFT_LIMIT_LOW;
+        softLimitConfigs.ReverseSoftLimitThreshold = Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_LOW;
         softLimitConfigs.ForwardSoftLimitEnable = true;
-        softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.TALON_SOFT_LIMIT_HIGH;
+        softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_HIGH;
 
         turretKraken.getConfigurator().apply(cfg);
         // turretKraken.getPosition().setUpdateFrequency(100);
@@ -107,13 +107,17 @@ public class TurretSubsystem extends SubsystemBase {
         return getTurretPositionRotations() <= (Constants.Turret.SOFT_LIMIT_LOW + Constants.Turret.SOFT_LIMIT_THRESHOLD);
     }
 
-    private double getMotorPositionRotations() {
+    private double getRawMotorPositionRotations() {
         return turretKraken.getPosition().getValueAsDouble();
+    }
+
+    private double getMotorPositionRelativeToForwardRotations() {
+        return getRawMotorPositionRotations() - Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS;
     }
 
     public double getTurretPositionRotations() {
         return TurretMath.convertMotorRotationsToTurretRotations(
-            getMotorPositionRotations(),
+            getMotorPositionRelativeToForwardRotations(),
             Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
         );
     }
@@ -209,8 +213,8 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void zeroEncoder() {
-        turretKraken.setPosition(0);
-        setTargetTurretRotation(0);
+        turretKraken.setPosition(Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS);
+        setTurretGoal(Rotation2d.kZero);
     }
 
     public void zeroEncoderAtHardStop() {
@@ -325,7 +329,7 @@ public class TurretSubsystem extends SubsystemBase {
                     TurretMath.convertTurretRotationsToMotorRotations(
                         targetTurretRot,
                         Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
-                    )
+                    ) + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
                 )
             );
         }
