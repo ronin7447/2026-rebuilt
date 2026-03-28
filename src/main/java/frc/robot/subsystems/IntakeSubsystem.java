@@ -136,6 +136,11 @@ public class IntakeSubsystem extends SubsystemBase {
         extensionKrakenMaster.setPosition(0);
     }
 
+    public double getTargetRot() {
+
+        return targetPosRot;
+    }
+
     public void setIntakePosition(double targetPosRot) {
         this.targetPosRot = targetPosRot;
     }

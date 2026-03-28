@@ -42,7 +42,7 @@ public final class Constants {
         public static final double JERK = 7.0;
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 6.67; // 100:15
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(0.0, 0.0); // TODO: set turret pivot offset in robot coordinates
-        public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // TODO: set encoder-zero-to-forward offset
+        public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(-85.0); // TODO: set encoder-zero-to-forward offset
         // public static final Rotation2d MIN_ANGLE = Rotation2d.fromDegrees(-149.38); // TODO: set real turret lower software limit
         // public static final Rotation2d MAX_ANGLE = Rotation2d.fromDegrees(76.62); // TODO: set real turret upper software limit
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
@@ -193,7 +193,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -49.99;
+        public static final double ROLLER_VELOCITY = -35;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 25;

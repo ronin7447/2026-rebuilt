@@ -1,5 +1,6 @@
 package frc.robot.commands.intake;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.IntakeSubsystem;
@@ -36,20 +37,24 @@ public class ManipulateIntake extends Command {
     @Override
     public void execute() {
 
-        if (intake.isStallDetected()) {
+        // if (intake.isStallDetected()) {
 
-            cancel();
-        }
+        //     cancel();
+        // }
     }
 
     @Override
     public boolean isFinished() {
 
-            return intake.getExtensionKrakenMaster().getClosedLoopError().getValueAsDouble() <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE;
+            DriverStation.reportError(String.valueOf(intake.getExtensionKrakenMaster().getClosedLoopError().getValueAsDouble()), false);
+            
+            return Math.abs(intake.getIntakePosition() - intake.getTargetRot()) <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE;
     }
 
     @Override
     public void end(boolean interrupted) {
+
+        System.out.println("hfISHDFldSHFhSDHFsDHfshf");
 
         if (interrupted) {
 

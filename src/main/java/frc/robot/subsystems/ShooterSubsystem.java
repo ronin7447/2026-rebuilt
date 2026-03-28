@@ -69,6 +69,7 @@ public class ShooterSubsystem extends SubsystemBase {
         // rollerKraken.optimizeBusUtilization();
 
         SmartDashboard.putNumber("HoodPosition", getHoodPosition());
+        SmartDashboard.putNumber("ShooterRPS", getRollerVelocity());
     }
     
      public TalonFX getHoodKraken(){
@@ -126,6 +127,8 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
 
         hoodKraken.setControl(mmPos.withPosition(SmartDashboard.getNumber("HoodPosition", getHoodPosition())));
+        setRollerTargetVelocity(SmartDashboard.getNumber("ShooterRPS", 0));
+
 
         if (rollerEnabled && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
