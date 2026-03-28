@@ -80,11 +80,11 @@ public class TurretSubsystem extends SubsystemBase {
         softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_HIGH;
 
         turretKraken.getConfigurator().apply(cfg);
-        // turretKraken.getPosition().setUpdateFrequency(100);
-        // turretKraken.getVelocity().setUpdateFrequency(100);
-        // turretKraken.getStatorCurrent().setUpdateFrequency(100);
-        // turretKraken.getMotorVoltage().setUpdateFrequency(1000);
-        // turretKraken.optimizeBusUtilization();
+        turretKraken.getPosition().setUpdateFrequency(100);
+        turretKraken.getVelocity().setUpdateFrequency(100);
+        turretKraken.getStatorCurrent().setUpdateFrequency(100);
+        turretKraken.getMotorVoltage().setUpdateFrequency(1000);
+        turretKraken.optimizeBusUtilization();
 
         zeroEncoder();
         // targetTurretRot = getTurretPositionRotations();

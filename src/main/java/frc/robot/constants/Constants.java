@@ -33,12 +33,12 @@ public final class Constants {
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 35.0; // 35 V per rotation of position error
+        public static final double KP = 45.0; // 35 V per rotation of position error
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
 
-        public static final double CRUISE_VELOCITY = 60.0;
-        public static final double ACCELERATION = 200.0;
+        public static final double CRUISE_VELOCITY = 100.0;
+        public static final double ACCELERATION = 400.0;
         public static final double JERK = 400.0;
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:15?? 100;25
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
@@ -66,6 +66,7 @@ public final class Constants {
         public static final double SOFT_LIMIT_HIGH = Math.max(LOGICAL_LIMIT_FROM_RAW_LOW, LOGICAL_LIMIT_FROM_RAW_HIGH);
         
         public static final double SOFT_LIMIT_THRESHOLD = Rotation2d.fromDegrees(2.0).getRotations();
+        
     }
 
     public static final class Vision {
@@ -89,13 +90,13 @@ public final class Constants {
         /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded;
 
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20;
-        public static final double MAX_POSE_Z_METERS = 0.75;
-        public static final double MAX_POSE_ROLL_PITCH_DEG = 15.0;
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.60;
+        public static final double MAX_POSE_Z_METERS = 2.05;
+        public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0;
         public static final double MAX_CORRECTION_METERS = 15.0;
-        public static final double MAX_MEASUREMENT_AGE_SEC = 0.50;
-        public static final double VISION_HEALTHY_AGE_SEC = 0.30;
-        public static final double SINGLE_TAG_MAX_DISTANCE_METERS = 4.5;
+        public static final double MAX_MEASUREMENT_AGE_SEC = 1.00;
+        public static final double VISION_HEALTHY_AGE_SEC = 0.70;
+        public static final double SINGLE_TAG_MAX_DISTANCE_METERS = 6.0;
         public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.20;
         public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.50;
         public static final double MULTI_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(3.0);
@@ -107,7 +108,7 @@ public final class Constants {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2);
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
-        public static final double HUB_TARGET_HEIGHT_METERS = 0.0;
+        public static final double HUB_TARGET_HEIGHT_METERS = 1.83;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
