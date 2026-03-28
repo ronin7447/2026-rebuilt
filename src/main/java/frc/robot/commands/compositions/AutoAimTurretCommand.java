@@ -131,8 +131,9 @@ public class AutoAimTurretCommand extends Command {
             Constants.Shooter.EXIT_HEIGHT_METERS,
             hubTargetPoint,
             Rotation2d.kZero,
-            Constants.Shooter.MIN_LAUNCH_ANGLE_DEG,
-            Constants.Shooter.MAX_LAUNCH_ANGLE_DEG,
+            shooterCalibration,
+            Constants.Shooter.MIN_HOOD_POSITION_ROT,
+            Constants.Shooter.MAX_HOOD_POSITION_ROT,
             Constants.Shooter.MAX_EXIT_SPEED_MPS
         );
         Optional<ShooterKinematics.MovingShotSolution> movingShotSolution = ShooterKinematics.solveMovingShot(request);

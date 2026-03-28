@@ -188,11 +188,11 @@ public final class Constants {
 
         public static final double ROLLER_TOLERANCE = 1.0; // How much the actual velocity in rps can differ from target
         public static final double EXIT_HEIGHT_METERS = 0.4064;
-        public static final double MIN_LAUNCH_ANGLE_DEG = 60.0;
-        public static final double MAX_LAUNCH_ANGLE_DEG = 80.0;
-        public static final double MAX_EXIT_SPEED_MPS = 12.0;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_SLOPE = 0.0857913;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT = -7.49442;
+        public static final double MIN_HOOD_POSITION_ROT = -2.346942;
+        public static final double MAX_HOOD_POSITION_ROT = -0.631116;
+        public static final double MAX_EXIT_SPEED_MPS = 12.0;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;
     }

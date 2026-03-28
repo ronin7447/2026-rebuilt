@@ -16,6 +16,9 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 
 class ShooterKinematicsTest {
     private static final double EPSILON = 1e-6;
+    private static final ShooterCalibration CALIBRATION = new LinearShooterCalibration();
+    private static final double MIN_HOOD_POSITION_ROT = -10.0;
+    private static final double MAX_HOOD_POSITION_ROT = 10.0;
 
     @Test
     void zeroVelocityMatchesStationaryAimYaw() {
@@ -37,8 +40,9 @@ class ShooterKinematicsTest {
                 0.5,
                 target,
                 Rotation2d.fromDegrees(5.0),
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -58,8 +62,9 @@ class ShooterKinematicsTest {
                 0.5,
                 new Translation3d(5.0, 0.0, 2.0),
                 Rotation2d.kZero,
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -78,8 +83,9 @@ class ShooterKinematicsTest {
                 0.5,
                 new Translation3d(6.0, 0.0, 2.0),
                 Rotation2d.kZero,
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -99,8 +105,9 @@ class ShooterKinematicsTest {
                 0.5,
                 new Translation3d(8.0, 0.0, 3.0),
                 Rotation2d.kZero,
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 1.0
             )
         );
@@ -118,8 +125,9 @@ class ShooterKinematicsTest {
                 0.5,
                 new Translation3d(5.0, 0.0, 0.0),
                 Rotation2d.kZero,
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -137,8 +145,9 @@ class ShooterKinematicsTest {
                 1.0,
                 new Translation3d(4.0, 0.0, 1.0),
                 Rotation2d.kZero,
-                10.0,
-                80.0,
+                CALIBRATION,
+                MIN_HOOD_POSITION_ROT,
+                MAX_HOOD_POSITION_ROT,
                 20.0
             )
         );
@@ -146,5 +155,25 @@ class ShooterKinematicsTest {
         assertTrue(solution.isPresent());
         assertEquals(45.0, solution.get().recommendedLaunchPitch().getDegrees(), 5.0);
         assertFalse(Double.isNaN(solution.get().requiredExitSpeedMps()));
+    }
+
+    @Test
+    void outOfRangeHoodPositionReturnsEmpty() {
+        Optional<ShooterKinematics.MovingShotSolution> solution = ShooterKinematics.solveMovingShot(
+            new ShooterKinematics.MovingShotRequest(
+                new Pose2d(),
+                new ChassisSpeeds(),
+                Translation2d.kZero,
+                1.0,
+                new Translation3d(4.0, 0.0, 1.0),
+                Rotation2d.kZero,
+                CALIBRATION,
+                -20.0,
+                -15.0,
+                20.0
+            )
+        );
+
+        assertTrue(solution.isEmpty());
     }
 }
