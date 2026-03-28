@@ -82,6 +82,10 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     private void processResult(VisionCamera camera, PhotonPipelineResult result) {
+        if (!result.hasTargets()) {
+            return;
+        }
+
         Optional<EstimatedRobotPose> estimateOpt = estimateRobotPose(camera.estimator, result);
         if (estimateOpt.isEmpty()) {
             camera.rejectedCount++;
@@ -90,13 +94,11 @@ public class VisionSubsystem extends SubsystemBase {
 
         EstimatedRobotPose estimatedRobotPose = estimateOpt.get();
         Pose2d visionPose = estimatedRobotPose.estimatedPose.toPose2d();
-        Pose2d referencePose = drivetrain.samplePoseAt(estimatedRobotPose.timestampSeconds)
-            .orElse(drivetrain.getState().Pose);
         double measurementAgeSec = Timer.getFPGATimestamp() - estimatedRobotPose.timestampSeconds;
         double averageDistanceMeters = averageTargetDistanceMeters(estimatedRobotPose.targetsUsed);
         Matrix<N3, N1> stdDevs = calculateVisionStdDevs(estimatedRobotPose.targetsUsed.size(), averageDistanceMeters);
 
-        if (!isValidMeasurement(result, estimatedRobotPose, visionPose, referencePose, measurementAgeSec, averageDistanceMeters)) {
+        if (!isValidMeasurement(result, estimatedRobotPose, visionPose, measurementAgeSec)) {
             camera.rejectedCount++;
             return;
         }
@@ -125,13 +127,8 @@ public class VisionSubsystem extends SubsystemBase {
         PhotonPipelineResult result,
         EstimatedRobotPose estimatedRobotPose,
         Pose2d visionPose,
-        Pose2d referencePose,
-        double measurementAgeSec,
-        double averageDistanceMeters
+        double measurementAgeSec
     ) {
-        if (!result.hasTargets()) {
-            return false;
-        }
         if (Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS) {
             return true;
         }
@@ -147,13 +144,10 @@ public class VisionSubsystem extends SubsystemBase {
         if (Math.abs(estimatedRobotPose.estimatedPose.getZ()) > Constants.Vision.MAX_POSE_Z_METERS) {
             return false;
         }
-        if (visionPose.getTranslation().getDistance(referencePose.getTranslation()) > Constants.Vision.MAX_CORRECTION_METERS) {
-            return false;
-        }
         if (result.getTargets().size() == 1 && hasHighSingleTagAmbiguity(result)) {
             return false;
         }
-        return result.getTargets().size() > 1 || averageDistanceMeters <= Constants.Vision.SINGLE_TAG_MAX_DISTANCE_METERS;
+        return true;
     }
 
     private boolean isPoseOnField(Pose2d pose) {

@@ -71,7 +71,7 @@ public final class Constants {
 
     public static final class Vision {
         public static final AprilTagFieldLayout FIELD_LAYOUT_OBJECT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-        public static final boolean FORCE_ACCEPT_VISION_MEASUREMENTS = true;
+        public static final boolean FORCE_ACCEPT_VISION_MEASUREMENTS = false;
 
         /* AprilTag Camera 1 */
         public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
@@ -101,10 +101,8 @@ public final class Constants {
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.60;
         public static final double MAX_POSE_Z_METERS = 2.05;
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0;
-        public static final double MAX_CORRECTION_METERS = 15.0;
         public static final double MAX_MEASUREMENT_AGE_SEC = 1.00;
         public static final double VISION_HEALTHY_AGE_SEC = 0.70;
-        public static final double SINGLE_TAG_MAX_DISTANCE_METERS = 6.0;
         public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.20;
         public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.50;
         public static final double MULTI_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(3.0);
