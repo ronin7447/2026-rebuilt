@@ -201,6 +201,8 @@ public final class Constants {
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT = -7.49442;
         public static final double MIN_HOOD_POSITION_ROT = -2.346942;
         public static final double MAX_HOOD_POSITION_ROT = -0.631116;
+        public static final double FAR_SHOT_DISTANCE_METERS = 4.0;
+        public static final double FAR_SHOT_MIN_HOOD_POSITION_ROT = -1.40;
         public static final double MAX_EXIT_SPEED_MPS = 12.0;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;
