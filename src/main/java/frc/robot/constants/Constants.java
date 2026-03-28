@@ -71,7 +71,7 @@ public final class Constants {
 
     public static final class Vision {
         public static final AprilTagFieldLayout FIELD_LAYOUT_OBJECT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
-        public static final boolean FORCE_ACCEPT_VISION_MEASUREMENTS = false;
+        public static final boolean FORCE_ACCEPT_VISION_MEASUREMENTS = true;
 
         /* AprilTag Camera 1 */
         public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
