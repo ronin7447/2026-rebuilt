@@ -152,7 +152,7 @@ public class AutoAimTurretCommand extends Command {
             mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
 
             mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
-            mappedRollerRps.ifPresent(rollerRps -> SmartDashboard.putNumber("ShooterRPS", rollerRps));
+            mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
         }
 
         turret.setTurretGoal(commandedTurretAngle);

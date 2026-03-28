@@ -115,12 +115,11 @@ public class RobotContainer {
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
-        joystick.rightTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IndexerSubsystem.enableRoller();
-            m_IndexerSubsystem.setRollerTargetVelocity(Constants.Indexer.ROLLER_VELOCITY);
-        })))));
-
-        // joystick.rightTrigger().onTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
+        joystick.rightTrigger().whileTrue(new ShootCommand(
+            m_ShooterSubsystem,
+            m_IndexerSubsystem,
+            m_OuttakeSubsystem
+        ));
 
         joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
             m_IndexerSubsystem.disableRoller();

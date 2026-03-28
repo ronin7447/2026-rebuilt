@@ -88,6 +88,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void setRollerTargetVelocity(double velRps) {
         targetRollerVelRps = velRps;
+        SmartDashboard.putNumber("ShooterRPS", velRps);
     }
 
     public void runRoller(double velRps) {
@@ -127,7 +128,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public void periodic() {
         hoodKraken.setControl(mmPos.withPosition(targetPosRot));
         SmartDashboard.putNumber("HoodPosition", targetPosRot);
-        setRollerTargetVelocity(SmartDashboard.getNumber("ShooterRPS", 0));
+        SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
 
 
         if (rollerEnabled && rollerKraken != null) {
