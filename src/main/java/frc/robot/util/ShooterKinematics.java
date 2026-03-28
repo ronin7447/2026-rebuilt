@@ -1,6 +1,7 @@
 package frc.robot.util;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -23,14 +24,15 @@ public final class ShooterKinematics {
             || request.robotPose() == null
             || request.robotRelativeSpeeds() == null
             || request.robotToTurretPivot() == null
-            || request.turretZeroOffset() == null) {
+            || request.turretZeroOffset() == null
+            || request.shooterCalibration() == null) {
             return Optional.empty();
         }
 
         if (request.targetFieldPoint().getZ() <= 0.0
             || request.shooterExitHeightMeters() < 0.0
             || request.maxExitSpeedMps() <= 0.0
-            || request.maxLaunchAngleDeg() < request.minLaunchAngleDeg()) {
+            || request.maxHoodPositionRot() < request.minHoodPositionRot()) {
             return Optional.empty();
         }
 
@@ -73,10 +75,16 @@ public final class ShooterKinematics {
             double horizontalSpeed = requiredHorizontalVelocity.getNorm();
             double exitSpeed = Math.hypot(horizontalSpeed, requiredVerticalVelocity);
             double launchPitchDeg = Math.toDegrees(Math.atan2(requiredVerticalVelocity, horizontalSpeed));
+            OptionalDouble hoodPositionOpt = request.shooterCalibration().hoodPositionForLaunchAngleDeg(launchPitchDeg);
 
             if (exitSpeed > request.maxExitSpeedMps()
-                || launchPitchDeg < request.minLaunchAngleDeg()
-                || launchPitchDeg > request.maxLaunchAngleDeg()) {
+                || hoodPositionOpt.isEmpty()) {
+                continue;
+            }
+
+            double hoodPositionRot = hoodPositionOpt.getAsDouble();
+            if (hoodPositionRot < request.minHoodPositionRot()
+                || hoodPositionRot > request.maxHoodPositionRot()) {
                 continue;
             }
 
@@ -125,8 +133,9 @@ public final class ShooterKinematics {
         double shooterExitHeightMeters,
         Translation3d targetFieldPoint,
         Rotation2d turretZeroOffset,
-        double minLaunchAngleDeg,
-        double maxLaunchAngleDeg,
+        ShooterCalibration shooterCalibration,
+        double minHoodPositionRot,
+        double maxHoodPositionRot,
         double maxExitSpeedMps
     ) {}
 
