@@ -54,6 +54,23 @@ class TurretMathTest {
     }
 
     @Test
+    void wrapsRequestsIntoCurrentTurretLegalRange() {
+        double legalLow = Constants.Turret.SOFT_LIMIT_LOW;
+        double legalHigh = Constants.Turret.SOFT_LIMIT_HIGH;
+
+        assertEquals(
+            -140.0 / 360.0,
+            TurretMath.getNearestEquivalentLegalTurretRotation(220.0 / 360.0, 0.0, legalLow, legalHigh),
+            EPSILON
+        );
+        assertEquals(
+            -180.0 / 360.0,
+            TurretMath.getNearestEquivalentLegalTurretRotation(540.0 / 360.0, 0.2, legalLow, legalHigh),
+            EPSILON
+        );
+    }
+
+    @Test
     void convertsTurretAnglesToMotorRotationsForCurrentRatio() {
         double ratio = Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION;
 

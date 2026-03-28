@@ -89,10 +89,6 @@ public class TurretSubsystem extends SubsystemBase {
         targetTurretRot = getTurretPositionRotations();
         stallTimer.stop();
         stallTimer.reset();
-        
-        zeroEncoder();
-
-
         setPositionMode(true);
     }
 
@@ -140,6 +136,13 @@ public class TurretSubsystem extends SubsystemBase {
 
     public Rotation2d getTurretGoal() {
         return Rotation2d.fromRotations(targetTurretRot);
+    }
+
+    public double getTargetMotorRotations() {
+        return TurretMath.convertTurretRotationsToMotorRotations(
+            targetTurretRot,
+            Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
+        ) + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS;
     }
 
     public Rotation2d getDesiredTurretAngle() {
@@ -347,6 +350,12 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/GoalAngleDeg", getTurretGoal().getDegrees());
         SmartDashboard.putNumber("Turret/DesiredAngleDeg", desiredTurretAngle.getDegrees());
         SmartDashboard.putNumber("Turret/DesiredFieldYawDeg", desiredFieldYaw.getDegrees());
+        SmartDashboard.putNumber("Turret/RawMotorRot", getRawMotorPositionRotations());
+        SmartDashboard.putNumber("Turret/RelativeMotorRot", getMotorPositionRelativeToForwardRotations());
+        SmartDashboard.putNumber("Turret/GoalMotorRot", getTargetMotorRotations());
+        SmartDashboard.putNumber("Turret/ForwardReferenceMotorRot", Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS);
+        SmartDashboard.putNumber("Turret/AbsSoftLimitLowMotorRot", Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_LOW);
+        SmartDashboard.putNumber("Turret/AbsSoftLimitHighMotorRot", Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_HIGH);
         SmartDashboard.putNumber("Turret/AimErrorDeg", getTurretAimErrorDeg());
         SmartDashboard.putBoolean("Turret/AtAimGoal", isTurretAtAimGoal());
         SmartDashboard.putBoolean("Turret/ShotReady", isShotReady());

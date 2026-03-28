@@ -8,22 +8,23 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.AimMath;
+import frc.robot.util.LinearShooterCalibration;
 import frc.robot.util.PolygonUtil;
 import frc.robot.util.ShooterCalibration;
 import frc.robot.util.ShooterKinematics;
-import frc.robot.util.UncalibratedShooterCalibration;
 
 public class AutoAimTurretCommand extends Command {
     private final CommandSwerveDrivetrain drivetrain;
     private final VisionSubsystem vision;
     private final TurretSubsystem turret;
-    private final ShooterCalibration shooterCalibration = new UncalibratedShooterCalibration();
+    private final ShooterCalibration shooterCalibration = new LinearShooterCalibration();
 
     public AutoAimTurretCommand(
         CommandSwerveDrivetrain drivetrain,
@@ -145,6 +146,9 @@ public class AutoAimTurretCommand extends Command {
                 solution.recommendedLaunchPitch().getDegrees()
             );
             mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
+
+            mappedHoodPosition.ifPresent(hoodPosition -> SmartDashboard.putNumber("HoodPosition", hoodPosition));
+            mappedRollerRps.ifPresent(rollerRps -> SmartDashboard.putNumber("ShooterRPS", rollerRps));
         }
 
         turret.setTurretGoal(commandedTurretAngle);
