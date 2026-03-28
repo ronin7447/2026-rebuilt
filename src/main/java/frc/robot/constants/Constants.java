@@ -58,7 +58,6 @@ public final class Constants {
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_LOW = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_LOW;
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_HIGH = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_HIGH;
 
-
         public static final double SOFT_LIMIT_LOW = TALON_SOFT_LIMIT_LOW / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
         public static final double SOFT_LIMIT_HIGH = TALON_SOFT_LIMIT_HIGH / MOTOR_ROTATIONS_PER_TURRET_ROTATION;
         
@@ -196,7 +195,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -49.99;
+        public static final double ROLLER_VELOCITY = -35;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 25;

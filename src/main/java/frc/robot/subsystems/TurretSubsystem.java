@@ -89,6 +89,11 @@ public class TurretSubsystem extends SubsystemBase {
         targetTurretRot = getTurretPositionRotations();
         stallTimer.stop();
         stallTimer.reset();
+        
+        zeroEncoder();
+
+
+        setPositionMode(true);
     }
 
     public TalonFX getKraken() {
