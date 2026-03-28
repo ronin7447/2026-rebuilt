@@ -117,18 +117,26 @@ public class TurretSubsystem extends SubsystemBase {
         return getRawMotorPositionRotations() - Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS;
     }
 
-    public double getTurretPositionRotations() {
+    private double convertMotorRotationsToLogicalTurretRotations(double motorRotations) {
         return TurretMath.convertMotorRotationsToTurretRotations(
-            getMotorPositionRelativeToForwardRotations(),
+            motorRotations * Constants.Turret.POSITIVE_TURRET_YAW_MOTOR_SIGN,
             Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
         );
     }
 
-    public double getVelocityRps() {
-        return TurretMath.convertMotorRotationsToTurretRotations(
-            turretKraken.getVelocity().getValueAsDouble(),
+    private double convertLogicalTurretRotationsToMotorRotations(double turretRotations) {
+        return TurretMath.convertTurretRotationsToMotorRotations(
+            turretRotations,
             Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
-        );
+        ) * Constants.Turret.POSITIVE_TURRET_YAW_MOTOR_SIGN;
+    }
+
+    public double getTurretPositionRotations() {
+        return convertMotorRotationsToLogicalTurretRotations(getMotorPositionRelativeToForwardRotations());
+    }
+
+    public double getVelocityRps() {
+        return convertMotorRotationsToLogicalTurretRotations(turretKraken.getVelocity().getValueAsDouble());
     }
 
     public Rotation2d getTurretAngle() {
@@ -140,10 +148,8 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public double getTargetMotorRotations() {
-        return TurretMath.convertTurretRotationsToMotorRotations(
-            targetTurretRot,
-            Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
-        ) + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS;
+        return convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
+            + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS;
     }
 
     public Rotation2d getDesiredTurretAngle() {
@@ -335,10 +341,8 @@ public class TurretSubsystem extends SubsystemBase {
         if (positionMode) {
             turretKraken.setControl(
                 mmPos.withPosition(
-                    TurretMath.convertTurretRotationsToMotorRotations(
-                        targetTurretRot,
-                        Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION
-                    ) + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
+                    convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
+                        + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
                 )
             );
         }

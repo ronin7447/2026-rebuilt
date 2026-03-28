@@ -73,15 +73,22 @@ class TurretMathTest {
     @Test
     void convertsTurretAnglesToMotorRotationsForCurrentRatio() {
         double ratio = Constants.Turret.MOTOR_ROTATIONS_PER_TURRET_ROTATION;
+        double sign = Constants.Turret.POSITIVE_TURRET_YAW_MOTOR_SIGN;
 
         assertEquals(
-            Constants.Turret.SOFT_LIMIT_LOW * ratio,
-            Constants.Turret.TALON_SOFT_LIMIT_LOW,
+            Constants.Turret.SOFT_LIMIT_LOW,
+            Math.min(
+                (Constants.Turret.TALON_SOFT_LIMIT_LOW * sign) / ratio,
+                (Constants.Turret.TALON_SOFT_LIMIT_HIGH * sign) / ratio
+            ),
             EPSILON
         );
         assertEquals(
-            Constants.Turret.SOFT_LIMIT_HIGH * ratio,
-            Constants.Turret.TALON_SOFT_LIMIT_HIGH,
+            Constants.Turret.SOFT_LIMIT_HIGH,
+            Math.max(
+                (Constants.Turret.TALON_SOFT_LIMIT_LOW * sign) / ratio,
+                (Constants.Turret.TALON_SOFT_LIMIT_HIGH * sign) / ratio
+            ),
             EPSILON
         );
         assertEquals(
@@ -99,5 +106,6 @@ class TurretMathTest {
         assertEquals(0.5 * ratio, TurretMath.convertTurretDegreesToMotorRotations(180.0, ratio), EPSILON);
         assertEquals(ratio, TurretMath.convertTurretDegreesToMotorRotations(360.0, ratio), EPSILON);
         assertEquals(360.0 / ratio, TurretMath.convertMotorRotationsToTurretDegrees(1.0, ratio), EPSILON);
+        assertEquals(-1.0, sign, EPSILON);
     }
 }
