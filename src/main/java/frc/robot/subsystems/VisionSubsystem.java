@@ -53,8 +53,8 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
 
-        // visionHealthy = getVisionAgeSec() <= Constants.Vision.VISION_HEALTHY_AGE_SEC;
-        visionHealthy = true;
+        visionHealthy = Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS
+            || getVisionAgeSec() <= Constants.Vision.VISION_HEALTHY_AGE_SEC;
         publishTelemetry();
     }
 
@@ -132,6 +132,9 @@ public class VisionSubsystem extends SubsystemBase {
         if (!result.hasTargets()) {
             return false;
         }
+        if (Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS) {
+            return true;
+        }
         if (measurementAgeSec > Constants.Vision.MAX_MEASUREMENT_AGE_SEC) {
             return false;
         }
@@ -196,6 +199,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     private void publishTelemetry() {
+        SmartDashboard.putBoolean("Vision/ForceAcceptMeasurements", Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS);
         SmartDashboard.putBoolean("Vision/Healthy", visionHealthy);
         SmartDashboard.putNumber("Vision/AgeSec", getVisionAgeSec());
         SmartDashboard.putNumber("Vision/LastAcceptedTsSec", lastAcceptedVisionTimestampSec);
