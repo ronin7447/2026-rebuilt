@@ -54,7 +54,7 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-    public final VisionSubsystem m_vision = new VisionSubsystem(drivetrain);
+    public final VisionSubsystem  m_vision = new VisionSubsystem(drivetrain);
     public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
     public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
@@ -64,7 +64,7 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     public RobotContainer() {
-        // m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, m_vision, m_TurretSubsystem));
+        m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(drivetrain, m_vision, m_TurretSubsystem));
         configureBindings();
     }
 

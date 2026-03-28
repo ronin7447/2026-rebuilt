@@ -86,7 +86,8 @@ public class TurretSubsystem extends SubsystemBase {
         // turretKraken.getMotorVoltage().setUpdateFrequency(1000);
         // turretKraken.optimizeBusUtilization();
 
-        targetTurretRot = getTurretPositionRotations();
+        zeroEncoder();
+        // targetTurretRot = getTurretPositionRotations();
         stallTimer.stop();
         stallTimer.reset();
         setPositionMode(true);
