@@ -182,6 +182,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
+        public static final double ROLLER_DIRECTION_SIGN = -1.0;
         public static final double ROLLER_VELOCITY = -31.98;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s

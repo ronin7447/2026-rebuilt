@@ -16,8 +16,10 @@ public class LinearShooterCalibration implements ShooterCalibration {
     @Override
     public OptionalDouble rollerRpsForExitSpeedMps(double exitSpeedMps) {
         return OptionalDouble.of(
-            (Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE * exitSpeedMps)
-                + Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT
+            Constants.Shooter.ROLLER_DIRECTION_SIGN * (
+                (Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE * exitSpeedMps)
+                    + Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT
+            )
         );
     }
 }

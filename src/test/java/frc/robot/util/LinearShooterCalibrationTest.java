@@ -25,6 +25,6 @@ class LinearShooterCalibrationTest {
         OptionalDouble result = calibration.rollerRpsForExitSpeedMps(8.0);
 
         assertTrue(result.isPresent());
-        assertEquals((8.01922 * 8.0) + 10.82394, result.getAsDouble(), EPSILON);
+        assertEquals(-((8.01922 * 8.0) + 10.82394), result.getAsDouble(), EPSILON);
     }
 }
