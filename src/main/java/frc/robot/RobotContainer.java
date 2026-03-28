@@ -126,30 +126,33 @@ public class RobotContainer {
             m_IndexerSubsystem.setRollerTargetVelocity(0);
         })))));
 
-        joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_OuttakeSubsystem.enableRoller();
-            m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
-        })))));
+        // joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
+        //     m_OuttakeSubsystem.enableRoller();
+        //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
+        // })))));
 
-        joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_OuttakeSubsystem.disableRoller();
-            m_OuttakeSubsystem.setRollerTargetVelocity(0);
-        })))));
+        // joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
+        //     m_OuttakeSubsystem.disableRoller();
+        //     m_OuttakeSubsystem.setRollerTargetVelocity(0);
+        // })))));
 
-        joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_ShooterSubsystem.enableRoller();
-            m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
-        })))));
+        // joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
+        //     m_ShooterSubsystem.enableRoller();
+        //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
+        // })))));
 
-        joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_ShooterSubsystem.disableRoller();
-            m_ShooterSubsystem.setRollerTargetVelocity(0);
-        })))));
+        // joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
+        //     m_ShooterSubsystem.disableRoller();
+        //     m_ShooterSubsystem.setRollerTargetVelocity(0);
+        // })))));
 
         joystick.povDown().onTrue((Commands.sequence((Commands.runOnce(() -> {
             m_TurretSubsystem.setAutoAimSuppressed(false);
             DriverStation.reportError(String.valueOf(m_TurretSubsystem.getTurretPositionRotations()), false);
             DriverStation.reportError(String.valueOf(m_TurretSubsystem.getKraken().getPosition().getValueAsDouble()), false);
+        })))));
+        joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            m_TurretSubsystem.setAutoAimSuppressed(true);
         })))));
 
         /* Right Trigger (while holdiing): Starts Shooter + Outtake + Indexer */
