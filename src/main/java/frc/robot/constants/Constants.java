@@ -116,11 +116,11 @@ public final class Constants {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2);
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
-        public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.05;
+        public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, (FIELD_WIDTH_METERS / 2.0) + 0.20);
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
 

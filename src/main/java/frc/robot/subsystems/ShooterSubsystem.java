@@ -88,7 +88,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public TalonFX getRollerKraken() {
         return rollerKraken;
     }
-    
+
 
 
     public void setTargetPositionRotation(double pos) {
