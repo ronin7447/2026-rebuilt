@@ -101,7 +101,9 @@ public class RobotContainer {
 
         // Reset the field-centric heading on POV LEFT.
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
-
+        joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            m_TurretSubsystem.zeroEncoder();
+        })))));
         /* Right Bumper: Enable Intake */
         joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
 
