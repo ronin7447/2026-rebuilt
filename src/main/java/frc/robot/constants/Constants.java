@@ -41,7 +41,7 @@ public final class Constants {
         public static final double ACCELERATION = 6.0;
         public static final double JERK = 7.0;
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 6.67; // 100:15
-        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-6.5, -8.5); // TODO: set turret pivot offset in robot coordinates
+        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // TODO: set turret pivot offset in robot coordinates
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
                public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
