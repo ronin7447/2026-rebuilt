@@ -53,7 +53,8 @@ public class VisionSubsystem extends SubsystemBase {
             }
         }
 
-        visionHealthy = getVisionAgeSec() <= Constants.Vision.VISION_HEALTHY_AGE_SEC;
+        // visionHealthy = getVisionAgeSec() <= Constants.Vision.VISION_HEALTHY_AGE_SEC;
+        visionHealthy = true;
         publishTelemetry();
     }
 

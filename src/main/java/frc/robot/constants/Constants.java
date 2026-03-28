@@ -68,17 +68,17 @@ public final class Constants {
         public static final AprilTagFieldLayout FIELD_LAYOUT_OBJECT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded);
 
         /* AprilTag Camera 1 */
-        public static final String APRILTAG_CAM1 = "APRILCAM1";
+        public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
-            new Translation3d(0, 0, 0),
-            new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
+            new Translation3d(1.0, 12.0, 18.625),
+            new Rotation3d(0.0, Math.toRadians(90), 0.0) //
         );
 
         /* AprilTag Camera 2 */
-        public static final String APRILTAG_CAM2 = "APRILCAM2";
+        public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT";
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
-            new Translation3d(0, 0, 0),
-            new Rotation3d(0.0, Math.toRadians(-15), 0.0) // outward 15 deg
+            new Translation3d(1.0, -12, 17.00),
+            new Rotation3d(0.0, Math.toRadians(-90), 0.0) // 
         );
 
         /* Field layout, CA district is welded */
@@ -87,7 +87,7 @@ public final class Constants {
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20;
         public static final double MAX_POSE_Z_METERS = 0.75;
         public static final double MAX_POSE_ROLL_PITCH_DEG = 15.0;
-        public static final double MAX_CORRECTION_METERS = 1.5;
+        public static final double MAX_CORRECTION_METERS = 15.0;
         public static final double MAX_MEASUREMENT_AGE_SEC = 0.50;
         public static final double VISION_HEALTHY_AGE_SEC = 0.30;
         public static final double SINGLE_TAG_MAX_DISTANCE_METERS = 4.5;
