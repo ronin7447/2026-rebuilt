@@ -37,10 +37,10 @@ public final class Constants {
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.20; // 0.20 V output for error derivative
 
-        public static final double CRUISE_VELOCITY = 9.0;
-        public static final double ACCELERATION = 13.0;
-        public static final double JERK = 7.0;
-        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 6.67; // 100:15
+        public static final double CRUISE_VELOCITY = 60.0;
+        public static final double ACCELERATION = 200.0;
+        public static final double JERK = 400.0;
+        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:15?? 100;25
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // TODO: set turret pivot offset in robot coordinates
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
