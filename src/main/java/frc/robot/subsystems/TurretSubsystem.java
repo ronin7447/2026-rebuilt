@@ -35,6 +35,7 @@ public class TurretSubsystem extends SubsystemBase {
     private boolean autoAimActive = false;
     private boolean poseFreshForShooting = false;
     private boolean inAllianceZone = false;
+    private boolean inNeutralZone = false;
     private boolean visionHealthy = false;
     private boolean autoAimSuppressed = false;
     private boolean goalClampedBySoftwareLimit = false;
@@ -45,8 +46,9 @@ public class TurretSubsystem extends SubsystemBase {
     private Rotation2d desiredTurretAngle = Rotation2d.kZero;
     private Rotation2d desiredFieldYaw = Rotation2d.kZero;
     private Translation2d turretPivotFieldPosition = Translation2d.kZero;
-    private Translation2d selectedHubPoint = Translation2d.kZero;
+    private Translation2d selectedTargetPoint = Translation2d.kZero;
     private String allianceName = "Unknown";
+    private String targetMode = "HOLD";
     private double recommendedLaunchPitchDeg = Double.NaN;
     private double requiredExitSpeedMps = Double.NaN;
     private double flightTimeSec = Double.NaN;
@@ -297,13 +299,15 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void updateAimState(
+        String targetMode,
         String allianceName,
         boolean inAllianceZone,
+        boolean inNeutralZone,
         boolean visionHealthy,
         boolean poseFreshForShooting,
         boolean autoAimActive,
         Translation2d turretPivotFieldPosition,
-        Translation2d selectedHubPoint,
+        Translation2d selectedTargetPoint,
         Rotation2d desiredTurretAngle,
         Rotation2d desiredFieldYaw,
         boolean movingShotSolutionValid,
@@ -316,13 +320,15 @@ public class TurretSubsystem extends SubsystemBase {
         boolean mappedRollerRpsAvailable,
         double mappedRollerRps
     ) {
+        this.targetMode = targetMode;
         this.allianceName = allianceName;
         this.inAllianceZone = inAllianceZone;
+        this.inNeutralZone = inNeutralZone;
         this.visionHealthy = visionHealthy;
         this.poseFreshForShooting = poseFreshForShooting;
         this.autoAimActive = autoAimActive;
         this.turretPivotFieldPosition = turretPivotFieldPosition;
-        this.selectedHubPoint = selectedHubPoint;
+        this.selectedTargetPoint = selectedTargetPoint;
         this.desiredTurretAngle = desiredTurretAngle;
         this.desiredFieldYaw = desiredFieldYaw;
         this.movingShotSolutionValid = movingShotSolutionValid;
@@ -367,6 +373,7 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putBoolean("Turret/AutoAimActive", autoAimActive);
         SmartDashboard.putBoolean("Turret/AutoAimSuppressed", autoAimSuppressed);
         SmartDashboard.putBoolean("Turret/InAllianceZone", inAllianceZone);
+        SmartDashboard.putBoolean("Turret/InNeutralZone", inNeutralZone);
         SmartDashboard.putBoolean("Turret/VisionHealthy", visionHealthy);
         SmartDashboard.putBoolean("Turret/PoseFreshForShot", poseFreshForShooting);
         SmartDashboard.putBoolean("Turret/OnSoftwareLimit", isOnSoftwareLimit());
@@ -374,10 +381,13 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putBoolean("Turret/MappedHoodPositionAvailable", mappedHoodPositionAvailable);
         SmartDashboard.putBoolean("Turret/MappedRollerRpsAvailable", mappedRollerRpsAvailable);
         SmartDashboard.putString("Turret/Alliance", allianceName);
+        SmartDashboard.putString("Turret/TargetMode", targetMode);
         SmartDashboard.putNumber("Turret/PivotFieldX", turretPivotFieldPosition.getX());
         SmartDashboard.putNumber("Turret/PivotFieldY", turretPivotFieldPosition.getY());
-        SmartDashboard.putNumber("Turret/HubX", selectedHubPoint.getX());
-        SmartDashboard.putNumber("Turret/HubY", selectedHubPoint.getY());
+        SmartDashboard.putNumber("Turret/TargetX", selectedTargetPoint.getX());
+        SmartDashboard.putNumber("Turret/TargetY", selectedTargetPoint.getY());
+        SmartDashboard.putNumber("Turret/HubX", selectedTargetPoint.getX());
+        SmartDashboard.putNumber("Turret/HubY", selectedTargetPoint.getY());
         SmartDashboard.putNumber("Turret/RecommendedLaunchPitchDeg", recommendedLaunchPitchDeg);
         SmartDashboard.putNumber("Turret/RequiredExitSpeedMps", requiredExitSpeedMps);
         SmartDashboard.putNumber("Turret/FlightTimeSec", flightTimeSec);
