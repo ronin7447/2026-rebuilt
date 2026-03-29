@@ -83,9 +83,9 @@ public final class Constants {
         public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(1.0),
-                Units.inchesToMeters(12.0),
-                Units.inchesToMeters(18.625)
+                Units.inchesToMeters(2.0),
+                Units.inchesToMeters(13.0),
+                Units.inchesToMeters(17.0)
             ),
             new Rotation3d(0.0, 0.0, Units.degreesToRadians(90.0))
         );
@@ -94,9 +94,9 @@ public final class Constants {
         public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT";
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(1.0),
-                Units.inchesToMeters(-12.0),
-                Units.inchesToMeters(17.0)
+                Units.inchesToMeters(2.0),
+                Units.inchesToMeters(-13.0),
+                Units.inchesToMeters(15.5)
             ),
             new Rotation3d(0.0, 0.0, Units.degreesToRadians(-90.0))
         );
@@ -104,7 +104,7 @@ public final class Constants {
         /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded;
 
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.60;
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.50;
         public static final double MAX_POSE_Z_METERS = 2.05;
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0;
         public static final double MAX_MEASUREMENT_AGE_SEC = 1.00;
