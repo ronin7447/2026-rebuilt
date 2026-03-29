@@ -6,6 +6,7 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -66,6 +67,7 @@ public class RobotContainer {
     private boolean hoodForTrenchDown = false;
 
     public RobotContainer() {
+        registerNamedCommands();
         m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(
             drivetrain,
             m_vision,
@@ -73,6 +75,65 @@ public class RobotContainer {
             m_ShooterSubsystem
         ));
         configureBindings();
+    }
+
+    private void registerNamedCommands() {
+        // NamedCommands.registerCommand("RunShooter", Commands.runOnce(() -> {
+        //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
+        //     m_ShooterSubsystem.enableRoller();
+        // }, m_ShooterSubsystem));
+
+        // NamedCommands.registerCommand("StopShooter", Commands.runOnce(() -> {
+        //     m_ShooterSubsystem.setRollerTargetVelocity(0.0);
+        //     m_ShooterSubsystem.disableRoller();
+        // }, m_ShooterSubsystem));
+
+        NamedCommands.registerCommand("EnableIntake", new ManipulateIntake(true, m_IntakeSubsystem));
+        NamedCommands.registerCommand("DisableIntake", new ManipulateIntake(false, m_IntakeSubsystem));
+
+        // NamedCommands.registerCommand("RunOuttake", Commands.runOnce(() -> {
+        //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
+        //     m_OuttakeSubsystem.enableRoller();
+        // }, m_OuttakeSubsystem));
+
+        // NamedCommands.registerCommand("StopOuttake", Commands.runOnce(() -> {
+        //     m_OuttakeSubsystem.setRollerTargetVelocity(0.0);
+        //     m_OuttakeSubsystem.disableRoller();
+        // }, m_OuttakeSubsystem));
+
+        // NamedCommands.registerCommand("RunIndexer", Commands.runOnce(() -> {
+        //     m_IndexerSubsystem.setRollerTargetVelocity(Constants.Indexer.ROLLER_VELOCITY);
+        //     m_IndexerSubsystem.enableRoller();
+        // }, m_IndexerSubsystem));
+
+        // NamedCommands.registerCommand("StopIndexer", Commands.runOnce(() -> {
+        //     m_IndexerSubsystem.setRollerTargetVelocity(0.0);
+        //     m_IndexerSubsystem.disableRoller();
+        // }, m_IndexerSubsystem));
+
+        NamedCommands.registerCommand(
+            "ShootSequence",
+            new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem)
+        );
+
+        NamedCommands.registerCommand("EndShootSequence", Commands.runOnce(() -> {
+            m_ShooterSubsystem.setRollerTargetVelocity(0.0);
+            m_ShooterSubsystem.disableRoller();
+            m_OuttakeSubsystem.setRollerTargetVelocity(0.0);
+            m_OuttakeSubsystem.disableRoller();
+            m_IndexerSubsystem.setRollerTargetVelocity(0.0);
+            m_IndexerSubsystem.disableRoller();
+        }, m_ShooterSubsystem, m_OuttakeSubsystem, m_IndexerSubsystem));
+
+        NamedCommands.registerCommand("EnableAutoAim", Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(false),
+            m_TurretSubsystem
+        ));
+
+        NamedCommands.registerCommand("DisableAutoAim", Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(true),
+            m_TurretSubsystem
+        ));
     }
 
     private void configureBindings() {

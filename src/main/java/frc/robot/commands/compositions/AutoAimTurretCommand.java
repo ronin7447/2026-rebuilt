@@ -51,7 +51,9 @@ public class AutoAimTurretCommand extends Command {
         boolean visionHealthy = vision.isVisionHealthy();
         Optional<DriverStation.Alliance> allianceOpt = DriverStation.getAlliance();
 
-        if (!DriverStation.isTeleopEnabled() || turret.isAutoAimSuppressed()) {
+        boolean autoAimAllowedMode = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
+
+        if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
             turret.holdCurrentPosition();
             publishAimState(
                 AutoAimTargeting.TargetMode.HOLD.name(),
