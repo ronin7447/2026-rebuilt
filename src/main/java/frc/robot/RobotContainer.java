@@ -154,7 +154,7 @@ public class RobotContainer {
     private SendableChooser<Command> configureAutonomousChooser() {
         SendableChooser<Command> chooser = new SendableChooser<>();
         chooser.setDefaultOption("None", Commands.none());
-
+      
         try {
             RobotConfig robotConfig = RobotConfig.fromGUISettings();
             AutoBuilder.configure(
