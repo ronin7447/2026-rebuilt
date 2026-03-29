@@ -85,7 +85,7 @@ public final class Constants {
             new Translation3d(
                 Units.inchesToMeters(2.0),
                 Units.inchesToMeters(13.0),
-                Units.inchesToMeters(17.0)
+                Units.inchesToMeters(18.5)
             ),
             new Rotation3d(0.0, 0.0, Units.degreesToRadians(90.0))
         );
@@ -96,7 +96,7 @@ public final class Constants {
             new Translation3d(
                 Units.inchesToMeters(2.0),
                 Units.inchesToMeters(-13.0),
-                Units.inchesToMeters(15.5)
+                Units.inchesToMeters(17)
             ),
             new Rotation3d(0.0, 0.0, Units.degreesToRadians(-90.0))
         );
@@ -127,7 +127,7 @@ public final class Constants {
         public static final Translation2d BLUE_HUB_AIM_POINT =
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.20, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
-            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+            new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(2.26, 6.00);
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(2.26, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(14.5, 6.00);
