@@ -206,7 +206,7 @@ public final class Constants {
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
         public static final double INTAKE_COLLAPSED_POS = 0.441;
-        public static final double INTAKE_EXTENDED_POS = 2.487;
+        public static final double INTAKE_EXTENDED_POS = 2.53;
 
         public static final double ROLLER_VELOCITY = 72.0;
     }

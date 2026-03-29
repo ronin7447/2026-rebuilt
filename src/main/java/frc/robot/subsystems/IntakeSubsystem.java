@@ -1,6 +1,7 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
@@ -16,6 +17,7 @@ import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import static edu.wpi.first.units.Units.*;
 
 public class IntakeSubsystem extends SubsystemBase {
 
@@ -36,7 +38,9 @@ public class IntakeSubsystem extends SubsystemBase {
     
     public IntakeSubsystem() {
 
-        TalonFXConfiguration cfgFollower = new TalonFXConfiguration();
+        TalonFXConfiguration cfgFollower = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(80)));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -71,7 +75,10 @@ public class IntakeSubsystem extends SubsystemBase {
         extensionKrakenFollower.setNeutralMode(NeutralModeValue.Brake);
 
         // in init function
-        var rollerTalonFXConfigs = new TalonFXConfiguration();
+        var rollerTalonFXConfigs = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(80))
+                .withStatorCurrentLimitEnable(true));
 
         // set slot 0 gains
         var slot0Configs = rollerTalonFXConfigs.Slot0;

@@ -43,6 +43,11 @@ public class VisionSubsystem extends SubsystemBase {
             new VisionCamera(Constants.Vision.APRILTAG_CAM1, Constants.Vision.ROBOT_TO_CAM1, fieldLayout),
             new VisionCamera(Constants.Vision.APRILTAG_CAM2, Constants.Vision.ROBOT_TO_CAM2, fieldLayout)
         );
+
+        for (VisionCamera cam: cameras) {
+
+            cam.camera.setFPSLimit(20);
+        }
     }
 
     @Override

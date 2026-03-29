@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -10,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import static edu.wpi.first.units.Units.*;
 
 public class ShooterSubsystem extends SubsystemBase {
     private final TalonFX hoodKraken = new TalonFX(Constants.Shooter.HOOD_KRAKEN_ID, "CANivore1");
@@ -25,7 +27,10 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem() {
 
         // reset position when init subsystem
-        TalonFXConfiguration cfg = new TalonFXConfiguration();
+        TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimitEnable(true));
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -50,7 +55,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
         rollerKraken = new TalonFX(Constants.Shooter.ROLLER_KRAKEN_ID, "CANivore1");
 
-        TalonFXConfiguration rollerCfg = new TalonFXConfiguration();
+        TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(70))
+                .withStatorCurrentLimitEnable(true));
 
         var rollerSlot0Configs = rollerCfg.Slot0;
         rollerSlot0Configs.kS = Constants.Shooter.ROLLER_KS;

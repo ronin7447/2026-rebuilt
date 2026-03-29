@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.function.BooleanSupplier;
 
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -18,6 +19,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.util.TurretMath;
+import static edu.wpi.first.units.Units.*;
 
 public class TurretSubsystem extends SubsystemBase {
     private final TalonFX turretKraken = new TalonFX(Constants.Turret.TURRET_KRAKEN_ID, "CANivore1");
@@ -59,7 +61,10 @@ public class TurretSubsystem extends SubsystemBase {
     private BooleanSupplier shooterReadySupplier = () -> true;
 
     public TurretSubsystem() {
-        TalonFXConfiguration cfg = new TalonFXConfiguration();
+        TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimitEnable(true));
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         var slot0Configs = cfg.Slot0;

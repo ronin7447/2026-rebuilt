@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
@@ -8,6 +9,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import static edu.wpi.first.units.Units.*;
 
 public class OuttakeSubsystem extends SubsystemBase {
     private final TalonFX rollerKraken;
@@ -22,7 +24,10 @@ public class OuttakeSubsystem extends SubsystemBase {
 
         rollerKraken = new TalonFX(Constants.Outtake.ROLLER_KRAKEN_ID, "CANivore1");
 
-        TalonFXConfiguration rollerCfg = new TalonFXConfiguration();
+        TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimitEnable(true));
 
         var rollerSlot0Configs = rollerCfg.Slot0;
         rollerSlot0Configs.kS = Constants.Outtake.ROLLER_KS;
