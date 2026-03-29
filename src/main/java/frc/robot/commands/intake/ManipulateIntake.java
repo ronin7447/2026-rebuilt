@@ -72,7 +72,7 @@ public class ManipulateIntake extends Command {
 
         if (!extend) {
 
-            intake.disableExtension();
+            // intake.disableExtension();
         }
 
         if (extend) {

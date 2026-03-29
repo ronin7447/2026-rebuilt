@@ -195,9 +195,9 @@ public final class Constants {
         public static final int ROLLER_KRAKEN_ID = 40;
         public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
         public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
-        public static final double EXTENSION_VELOCITY = 15.0;
-        public static final double EXTENSION_ACCELERATION = 30.0;
-        public static final double EXTENSION_JERK = 60.0;
+        public static final double EXTENSION_VELOCITY = 25.0;
+        public static final double EXTENSION_ACCELERATION = 40.0;
+        public static final double EXTENSION_JERK = 100.0;
 
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;
@@ -265,7 +265,7 @@ public final class Constants {
         public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -120.0;
+        public static final double ROLLER_VELOCITY = -150.0;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 36;

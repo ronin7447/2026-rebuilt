@@ -139,7 +139,7 @@ public class RobotContainer {
             } else {
                 hoodForTrenchDown = false;
                 m_TurretSubsystem.setAutoAimSuppressed(false);
-             System.out.println("driver move up the hood for trench");
+             System.out.println("driver move down the hood for trench");
             }
             
         })))));
