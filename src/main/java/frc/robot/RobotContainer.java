@@ -6,10 +6,16 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -38,6 +44,8 @@ public class RobotContainer {
             .withDriveRequestType(DriveRequestType.OpenLoopVoltage); // Use open-loop control for drive motors
     private final SwerveRequest.SwerveDriveBrake brake = new SwerveRequest.SwerveDriveBrake();
     private final SwerveRequest.PointWheelsAt point = new SwerveRequest.PointWheelsAt();
+    private final SwerveRequest.ApplyRobotSpeeds autoRequest = new SwerveRequest.ApplyRobotSpeeds()
+        .withDriveRequestType(DriveRequestType.Velocity);
 
     // this is the closed-loop velocity control request used for tuning the drivetrain's velocity PID constants in SysId.
     private final SwerveRequest.RobotCentric tuneVel = new SwerveRequest.RobotCentric()
@@ -65,9 +73,11 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     private boolean hoodForTrenchDown = false;
+    private final SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
         registerNamedCommands();
+        autoChooser = configureAutonomousChooser();
         m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(
             drivetrain,
             m_vision,
@@ -134,6 +144,47 @@ public class RobotContainer {
             () -> m_TurretSubsystem.setAutoAimSuppressed(true),
             m_TurretSubsystem
         ));
+    }
+
+    private SendableChooser<Command> configureAutonomousChooser() {
+        SendableChooser<Command> chooser = new SendableChooser<>();
+        chooser.setDefaultOption("None", Commands.none());
+
+        try {
+            RobotConfig robotConfig = RobotConfig.fromGUISettings();
+            AutoBuilder.configure(
+                () -> drivetrain.getState().Pose,
+                drivetrain::resetPose,
+                () -> drivetrain.getState().Speeds,
+                speeds -> drivetrain.setControl(autoRequest.withSpeeds(speeds)),
+                new PPHolonomicDriveController(
+                    new PIDConstants(
+                        Constants.Drivebase.AUTO_TRANSLATION_KP,
+                        Constants.Drivebase.AUTO_TRANSLATION_KI,
+                        Constants.Drivebase.AUTO_TRANSLATION_KD
+                    ),
+                    new PIDConstants(
+                        Constants.Drivebase.AUTO_ROTATION_KP,
+                        Constants.Drivebase.AUTO_ROTATION_KI,
+                        Constants.Drivebase.AUTO_ROTATION_KD
+                    )
+                ),
+                robotConfig,
+                () -> DriverStation.getAlliance()
+                    .map(alliance -> alliance == DriverStation.Alliance.Red)
+                    .orElse(false),
+                drivetrain
+            );
+            chooser = AutoBuilder.buildAutoChooser();
+        } catch (Exception exception) {
+            DriverStation.reportError(
+                "Failed to configure PathPlanner autonomous chooser: " + exception.getMessage(),
+                exception.getStackTrace()
+            );
+        }
+
+        SmartDashboard.putData("Auto Chooser", chooser);
+        return chooser;
     }
 
     private void configureBindings() {
@@ -279,22 +330,8 @@ public class RobotContainer {
     /* Robot Functions Ends */
 
     public Command getAutonomousCommand() {
-        // Simple drive forward auton
-        final var idle = new SwerveRequest.Idle();
-        return Commands.sequence(
-            // Reset our field centric heading to match the robot
-            // facing away from our alliance station wall (0 deg).
-            // drivetrain.runOnce(() -> drivetrain.seedFieldCentric(Rotation2d.kZero)),
-            // // Then slowly drive forward (away from us) for 5 seconds.
-            // drivetrain.applyRequest(() ->
-            //     drive.withVelocityX(0.5)
-            //         .withVelocityY(0)
-            //         .withRotationalRate(0)
-            // )
-            // .withTimeout(5.0),
-            // // Finally idle for the rest of auton
-            drivetrain.applyRequest(() -> idle)
-        );
+        Command selectedAuto = autoChooser.getSelected();
+        return selectedAuto != null ? selectedAuto : Commands.none();
     }
 
     
