@@ -4,6 +4,8 @@
 
 package frc.robot;
 
+import java.util.Set;
+
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -12,6 +14,7 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.auto.NamedCommands;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -21,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.commands.autopilot.Autopilot;
 import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
 import frc.robot.commands.intake.ManipulateIntake;
@@ -74,6 +78,7 @@ public class RobotContainer {
 
     private boolean hoodForTrenchDown = false;
     private final SendableChooser<Command> autoChooser;
+    private final Autopilot autopilot = new Autopilot();
 
     public RobotContainer() {
         registerNamedCommands();
@@ -293,9 +298,11 @@ public class RobotContainer {
             m_IntakeSubsystem.zeroEncoder();
         })));
 
-        joystick.y().onTrue((Commands.runOnce(() -> {
-            DriverStation.reportError(String.valueOf(m_IntakeSubsystem.getIntakePosition()), false);
-        })));
+        joystick.y().whileTrue(Commands.defer(
+            () -> autopilot.goTo(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))),
+            Set.of(drivetrain)
+        ));
+
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

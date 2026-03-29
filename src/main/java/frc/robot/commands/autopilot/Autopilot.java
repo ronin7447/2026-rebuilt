@@ -7,9 +7,14 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.Command;
 
 public class Autopilot extends Command {
+    private static final PathConstraints DEFAULT_CONSTRAINTS = new PathConstraints(
+        3.5,                         // max linear vel m/s
+        4.5,                         // max linear accel m/s^2
+        Units.degreesToRadians(540), // max angular vel
+        Units.degreesToRadians(720)  // max angular accel
+    );
     
     public Autopilot() {}
 
@@ -22,15 +27,11 @@ public class Autopilot extends Command {
             case NEUTRAL_LEFT -> FieldDestinationConstants.NEUTRAL_LEFT;
             case NEUTRAL_RIGHT -> FieldDestinationConstants.NEUTRAL_RIGHT;
         };
-        PathConstraints constraints = new PathConstraints(
-            3.5,                         // max linear vel m/s
-            4.5,                         // max linear accel m/s^2
-            Units.degreesToRadians(540), // max angular vel
-            Units.degreesToRadians(720)  // max angular accel
-        );
-
-        return AutoBuilder.pathfindToPose(goal, constraints, 0.0);
+        return goTo(goal);
     }
 
+    public Command goTo(Pose2d goal) {
+        return AutoBuilder.pathfindToPose(goal, DEFAULT_CONSTRAINTS, 0.0);
+    }
 
 }

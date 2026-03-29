@@ -349,14 +349,14 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        if (positionMode) {
-            turretKraken.setControl(
-                mmPos.withPosition(
-                    convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
-                        + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
-                )
-            );
-        }
+        // if (positionMode) {
+        //     turretKraken.setControl(
+        //         mmPos.withPosition(
+        //             convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
+        //                 + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
+        //         )
+        //     );
+        // }
 
         publishTelemetry();
     }
