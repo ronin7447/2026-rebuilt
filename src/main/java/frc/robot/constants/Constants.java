@@ -268,7 +268,7 @@ public final class Constants {
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double ROLLER_KP = 0.11; // An error of 1 rps results in 0.11 V output
+        public static final double ROLLER_KP = 6.00; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
         public static final double ROLLER_VELOCITY = -150.0;

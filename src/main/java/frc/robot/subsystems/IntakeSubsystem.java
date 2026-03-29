@@ -38,9 +38,10 @@ public class IntakeSubsystem extends SubsystemBase {
     
     public IntakeSubsystem() {
 
-        TalonFXConfiguration cfgFollower = new TalonFXConfiguration().withCurrentLimits(
-            new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(100)));
+        TalonFXConfiguration cfgFollower = new TalonFXConfiguration();
+        // .withCurrentLimits(
+            // new CurrentLimitsConfigs()
+            //     .withStatorCurrentLimit(Amps.of(100)));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -48,7 +49,7 @@ public class IntakeSubsystem extends SubsystemBase {
         slot0ConfigsFollower.kS = 0.25; // Add 0.25 V output to overcome static friction
         slot0ConfigsFollower.kV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         slot0ConfigsFollower.kA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        slot0ConfigsFollower.kP = 35.0; // An error of 1 rps results in 0.11 V output
+        slot0ConfigsFollower.kP = 45.0; // An error of 1 rps results in 0.11 V output
         slot0ConfigsFollower.kI = 0; // no output for integrated error
         slot0ConfigsFollower.kD = 0.2; // no output for error derivative'
         

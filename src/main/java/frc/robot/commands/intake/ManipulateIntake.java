@@ -21,6 +21,8 @@ public class ManipulateIntake extends Command {
     @Override
     public void initialize() {
 
+
+        System.out.println("intake");
         if (extend) {
 
             intake.setIntakePosition(Constants.Intake.INTAKE_EXTENDED_POS);
