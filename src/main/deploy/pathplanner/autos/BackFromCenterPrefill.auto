@@ -5,15 +5,41 @@
     "data": {
       "commands": [
         {
-          "type": "path",
+          "type": "parallel",
           "data": {
-            "pathName": "BackFromCenter"
+            "commands": [
+              {
+                "type": "path",
+                "data": {
+                  "pathName": "BackFromCenter"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "EnableAutoAim"
+                }
+              }
+            ]
           }
         },
         {
-          "type": "named",
+          "type": "deadline",
           "data": {
-            "name": "ShootSequence"
+            "commands": [
+              {
+                "type": "wait",
+                "data": {
+                  "waitTime": 15.0
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
+                }
+              }
+            ]
           }
         }
       ]
