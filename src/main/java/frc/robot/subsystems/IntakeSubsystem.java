@@ -40,7 +40,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
         TalonFXConfiguration cfgFollower = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(80)));
+                .withStatorCurrentLimit(Amps.of(100)));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
