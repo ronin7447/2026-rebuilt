@@ -29,8 +29,10 @@ public class ShooterSubsystem extends SubsystemBase {
         // reset position when init subsystem
         TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(40))
-                .withStatorCurrentLimitEnable(true));
+                .withStatorCurrentLimit(Amps.of(Constants.Shooter.HOOD_STATOR_CURRENT_LIMIT_A))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(Constants.Shooter.HOOD_SUPPLY_CURRENT_LIMIT_A))
+                .withSupplyCurrentLimitEnable(true));
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -57,8 +59,10 @@ public class ShooterSubsystem extends SubsystemBase {
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(70))
-                .withStatorCurrentLimitEnable(true));
+                .withStatorCurrentLimit(Amps.of(Constants.Shooter.ROLLER_STATOR_CURRENT_LIMIT_A))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(Constants.Shooter.ROLLER_SUPPLY_CURRENT_LIMIT_A))
+                .withSupplyCurrentLimitEnable(true));
 
         var rollerSlot0Configs = rollerCfg.Slot0;
         rollerSlot0Configs.kS = Constants.Shooter.ROLLER_KS;

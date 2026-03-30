@@ -38,29 +38,31 @@ public class IntakeSubsystem extends SubsystemBase {
     
     public IntakeSubsystem() {
 
-        TalonFXConfiguration cfgFollower = new TalonFXConfiguration();
-        // .withCurrentLimits(
-            // new CurrentLimitsConfigs()
-            //     .withStatorCurrentLimit(Amps.of(100)));
+        TalonFXConfiguration cfgExtension = new TalonFXConfiguration().withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(Constants.Intake.EXTENSION_STATOR_CURRENT_LIMIT_A))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(Constants.Intake.EXTENSION_SUPPLY_CURRENT_LIMIT_A))
+                .withSupplyCurrentLimitEnable(true));
 
-        cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
+        cfgExtension.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
-        var slot0ConfigsFollower = cfgFollower.Slot0;
-        slot0ConfigsFollower.kS = 0.25; // Add 0.25 V output to overcome static friction
-        slot0ConfigsFollower.kV = 0.12; // A velocity target of 1 rps results in 0.12 V output
-        slot0ConfigsFollower.kA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        slot0ConfigsFollower.kP = 45.0; // An error of 1 rps results in 0.11 V output
-        slot0ConfigsFollower.kI = 0; // no output for integrated error
-        slot0ConfigsFollower.kD = 0.2; // no output for error derivative'
+        var slot0ConfigsExtension = cfgExtension.Slot0;
+        slot0ConfigsExtension.kS = 0.25; // Add 0.25 V output to overcome static friction
+        slot0ConfigsExtension.kV = 0.12; // A velocity target of 1 rps results in 0.12 V output
+        slot0ConfigsExtension.kA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
+        slot0ConfigsExtension.kP = 45.0; // An error of 1 rps results in 0.11 V output
+        slot0ConfigsExtension.kI = 0; // no output for integrated error
+        slot0ConfigsExtension.kD = 0.2; // no output for error derivative'
         
         // set Motion Magic Velocity settings
-        var motionMagicConfigsFollower = cfgFollower.MotionMagic;
-        motionMagicConfigsFollower.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_VELOCITY;
-        motionMagicConfigsFollower.MotionMagicAcceleration = Constants.Intake.EXTENSION_ACCELERATION; // Target acceleration of 40 rps/s 
-        motionMagicConfigsFollower.MotionMagicJerk = Constants.Intake.EXTENSION_JERK; // Target jerk of 400 rps/s/s 
+        var motionMagicConfigsExtension = cfgExtension.MotionMagic;
+        motionMagicConfigsExtension.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_VELOCITY;
+        motionMagicConfigsExtension.MotionMagicAcceleration = Constants.Intake.EXTENSION_ACCELERATION; // Target acceleration of 40 rps/s 
+        motionMagicConfigsExtension.MotionMagicJerk = Constants.Intake.EXTENSION_JERK; // Target jerk of 400 rps/s/s 
 
-        extensionKrakenMaster.getConfigurator().apply(cfgFollower);
-        extensionKrakenFollower.getConfigurator().apply(cfgFollower);
+        extensionKrakenMaster.getConfigurator().apply(cfgExtension);
+        extensionKrakenFollower.getConfigurator().apply(cfgExtension);
         
         extensionKrakenMaster.getPosition().setUpdateFrequency(100);
         extensionKrakenMaster.getVelocity().setUpdateFrequency(100);
@@ -78,8 +80,10 @@ public class IntakeSubsystem extends SubsystemBase {
         // in init function
         var rollerTalonFXConfigs = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(80))
-                .withStatorCurrentLimitEnable(true));
+                .withStatorCurrentLimit(Amps.of(Constants.Intake.ROLLER_STATOR_CURRENT_LIMIT_A))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(Constants.Intake.ROLLER_SUPPLY_CURRENT_LIMIT_A))
+                .withSupplyCurrentLimitEnable(true));
 
         // set slot 0 gains
         var slot0Configs = rollerTalonFXConfigs.Slot0;

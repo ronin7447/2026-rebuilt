@@ -34,6 +34,9 @@ public final class Constants {
     public static final class Turret {
         public static final int TURRET_KRAKEN_ID = 37; // Turret X44 Kraken ID
         public static final double STALL_CURRENT_A = 6.0;
+        // Current limits: stator protects the motor; supply limits current from the battery to prevent brownout
+        public static final double STATOR_CURRENT_LIMIT_A = 80.0;
+        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0;
         public static final double STALL_VEL_RPS = 0.25;
         public static final double STALL_TIME_S = 0.10;
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
@@ -205,6 +208,14 @@ public final class Constants {
         public static final double EXTENSION_ACCELERATION = 40.0;
         public static final double EXTENSION_JERK = 100.0;
 
+        // Current limits: stator protects the motor; supply limits current from the battery to prevent brownout.
+        // Extension uses two motors driving the same mechanism, so a lower stator limit per motor
+        // avoids excessive combined torque on the mechanism structure.
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 80.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 40.0;
+        public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 20.0;
+
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;
         public static final double STALL_TIME_S = 0.25;
@@ -220,6 +231,12 @@ public final class Constants {
     public static final class Shooter {
         public static final int HOOD_KRAKEN_ID = 21;
         public static final int ROLLER_KRAKEN_ID = 31;
+
+        // Current limits: stator protects the motor; supply limits current from the battery to prevent brownout
+        public static final double HOOD_STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double HOOD_SUPPLY_CURRENT_LIMIT_A = 20.0;
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 70.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 40.0;
 
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
@@ -253,6 +270,10 @@ public final class Constants {
     }
 
     public static final class Outtake {
+        // Current limits: stator protects the motor; supply limits current from the battery to prevent brownout
+        public static final double STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0;
+
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
@@ -265,6 +286,10 @@ public final class Constants {
         public static final int ROLLER_KRAKEN_ID = 25;
     }
     public static final class Indexer {
+        // Current limits: stator protects the motor; supply limits current from the battery to prevent brownout
+        public static final double STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0;
+
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
