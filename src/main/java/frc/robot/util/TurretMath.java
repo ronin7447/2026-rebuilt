@@ -71,4 +71,16 @@ public final class TurretMath {
             + Math.rint((currentTurretRotations - desiredTurretRotations) / FULL_TURRET_ROTATION) * FULL_TURRET_ROTATION;
         return MathUtil.clamp(nearestEquivalent, legalLowTurretRotations, legalHighTurretRotations);
     }
+
+    public static boolean shouldAcceptAutoAimGoalUpdate(
+        boolean goalInitialized,
+        boolean targetModeChanged,
+        double requestedTurretRotations,
+        double appliedTurretRotations,
+        double deadbandTurretRotations
+    ) {
+        return !goalInitialized
+            || targetModeChanged
+            || Math.abs(requestedTurretRotations - appliedTurretRotations) + EPSILON >= deadbandTurretRotations;
+    }
 }

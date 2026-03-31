@@ -1,5 +1,6 @@
 package frc.robot.subsystems;
 
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 import com.ctre.phoenix6.StatusSignal;
@@ -57,6 +58,12 @@ public class TurretSubsystem extends SubsystemBase {
     private double leadYawDeg = Double.NaN;
     private double mappedHoodPosition = Double.NaN;
     private double mappedRollerRps = Double.NaN;
+    private Rotation2d rawAutoAimGoal = Rotation2d.kZero;
+    private double appliedAutoAimGoalRot = 0.0;
+    private double autoAimGoalDeltaDeg = 0.0;
+    private boolean autoAimGoalInitialized = false;
+    private boolean autoAimGoalSuppressed = false;
+    private String autoAimGoalMode = "";
 
     private BooleanSupplier shooterReadySupplier = () -> true;
 
@@ -197,6 +204,43 @@ public class TurretSubsystem extends SubsystemBase {
         desiredTurretAngle = goal;
         goalClampedBySoftwareLimit = Math.abs(clampedGoal.minus(goal).getDegrees()) > 1e-3;
         setTargetTurretRotation(clampedGoal.getRotations());
+    }
+
+    public void setAutoAimGoal(Rotation2d goal, String targetMode) {
+        Rotation2d clampedGoal = wrapTurretAngleToLegalRange(goal);
+        double clampedGoalRot = clampedGoal.getRotations();
+        boolean targetModeChanged = !Objects.equals(autoAimGoalMode, targetMode);
+        boolean shouldAcceptGoal = TurretMath.shouldAcceptAutoAimGoalUpdate(
+            autoAimGoalInitialized,
+            targetModeChanged,
+            clampedGoalRot,
+            appliedAutoAimGoalRot,
+            Constants.Turret.AUTO_AIM_GOAL_UPDATE_DEADBAND_ROT
+        );
+
+        desiredTurretAngle = goal;
+        rawAutoAimGoal = goal;
+        autoAimGoalDeltaDeg = autoAimGoalInitialized
+            ? (clampedGoalRot - appliedAutoAimGoalRot) * 360.0
+            : 0.0;
+        autoAimGoalSuppressed = autoAimGoalInitialized && !shouldAcceptGoal;
+
+        if (shouldAcceptGoal) {
+            goalClampedBySoftwareLimit = Math.abs(clampedGoal.minus(goal).getDegrees()) > 1e-3;
+            setTargetTurretRotation(clampedGoalRot);
+            appliedAutoAimGoalRot = clampedGoalRot;
+            autoAimGoalInitialized = true;
+            autoAimGoalMode = targetMode != null ? targetMode : "";
+        }
+    }
+
+    public void clearAutoAimGoalFilter() {
+        autoAimGoalInitialized = false;
+        autoAimGoalSuppressed = false;
+        autoAimGoalMode = "";
+        autoAimGoalDeltaDeg = 0.0;
+        rawAutoAimGoal = Rotation2d.kZero;
+        appliedAutoAimGoalRot = targetTurretRot;
     }
 
     public Rotation2d wrapTurretAngleToLegalRange(Rotation2d requested) {
@@ -365,6 +409,10 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/ActualAngleDeg", getTurretAngle().getDegrees());
         SmartDashboard.putNumber("Turret/GoalAngleDeg", getTurretGoal().getDegrees());
         SmartDashboard.putNumber("Turret/DesiredAngleDeg", desiredTurretAngle.getDegrees());
+        SmartDashboard.putNumber("Turret/RawAutoAimGoalDeg", rawAutoAimGoal.getDegrees());
+        SmartDashboard.putNumber("Turret/AppliedAutoAimGoalDeg", appliedAutoAimGoalRot * 360.0);
+        SmartDashboard.putNumber("Turret/AutoAimGoalDeltaDeg", autoAimGoalDeltaDeg);
+        SmartDashboard.putBoolean("Turret/AutoAimGoalSuppressed", autoAimGoalSuppressed);
         SmartDashboard.putNumber("Turret/DesiredFieldYawDeg", desiredFieldYaw.getDegrees());
         SmartDashboard.putNumber("Turret/RawMotorRot", getRawMotorPositionRotations());
         SmartDashboard.putNumber("Turret/RelativeMotorRot", getMotorPositionRelativeToForwardRotations());

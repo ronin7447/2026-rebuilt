@@ -53,9 +53,12 @@ public final class Constants {
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 2.0;
+        public static final double AUTO_AIM_GOAL_UPDATE_DEADBAND_DEG = 0.10;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
         
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
+        public static final double AUTO_AIM_GOAL_UPDATE_DEADBAND_ROT =
+            AUTO_AIM_GOAL_UPDATE_DEADBAND_DEG / 360.0;
 
         // motor soft limits relative to the calibrated forward reference position
         public static final double TALON_SOFT_LIMIT_LOW = -1.90;

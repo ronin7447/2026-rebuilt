@@ -1,6 +1,8 @@
 package frc.robot.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -107,5 +109,67 @@ class TurretMathTest {
         assertEquals(ratio, TurretMath.convertTurretDegreesToMotorRotations(360.0, ratio), EPSILON);
         assertEquals(360.0 / ratio, TurretMath.convertMotorRotationsToTurretDegrees(1.0, ratio), EPSILON);
         assertEquals(-1.0, sign, EPSILON);
+    }
+
+    @Test
+    void suppressesTinyAutoAimGoalUpdatesButAcceptsRealChanges() {
+        double deadbandRot = Constants.Turret.AUTO_AIM_GOAL_UPDATE_DEADBAND_ROT;
+        double appliedGoalRot = 10.0 / 360.0;
+
+        assertFalse(TurretMath.shouldAcceptAutoAimGoalUpdate(
+            true,
+            false,
+            appliedGoalRot + (0.05 / 360.0),
+            appliedGoalRot,
+            deadbandRot
+        ));
+        assertTrue(TurretMath.shouldAcceptAutoAimGoalUpdate(
+            true,
+            false,
+            appliedGoalRot + (0.11 / 360.0),
+            appliedGoalRot,
+            deadbandRot
+        ));
+        assertTrue(TurretMath.shouldAcceptAutoAimGoalUpdate(
+            false,
+            false,
+            appliedGoalRot,
+            appliedGoalRot,
+            deadbandRot
+        ));
+        assertTrue(TurretMath.shouldAcceptAutoAimGoalUpdate(
+            true,
+            true,
+            appliedGoalRot,
+            appliedGoalRot,
+            deadbandRot
+        ));
+    }
+
+    @Test
+    void wrappedEquivalentGoalsNearBoundaryStayInsideDeadband() {
+        double legalLow = 0.0;
+        double legalHigh = 1.5;
+        double currentTurretRot = 359.98 / 360.0;
+        double appliedGoalRot = TurretMath.getNearestEquivalentLegalTurretRotation(
+            359.98 / 360.0,
+            currentTurretRot,
+            legalLow,
+            legalHigh
+        );
+        double wrappedEquivalentGoalRot = TurretMath.getNearestEquivalentLegalTurretRotation(
+            0.02 / 360.0,
+            currentTurretRot,
+            legalLow,
+            legalHigh
+        );
+
+        assertFalse(TurretMath.shouldAcceptAutoAimGoalUpdate(
+            true,
+            false,
+            wrappedEquivalentGoalRot,
+            appliedGoalRot,
+            Constants.Turret.AUTO_AIM_GOAL_UPDATE_DEADBAND_ROT
+        ));
     }
 }

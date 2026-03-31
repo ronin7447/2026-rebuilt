@@ -54,6 +54,7 @@ public class AutoAimTurretCommand extends Command {
         boolean autoAimAllowedMode = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
 
         if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
+            turret.clearAutoAimGoalFilter();
             turret.holdCurrentPosition();
             publishAimState(
                 AutoAimTargeting.TargetMode.HOLD.name(),
@@ -75,6 +76,7 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (allianceOpt.isEmpty()) {
+            turret.clearAutoAimGoalFilter();
             turret.park();
             publishAimState(
                 AutoAimTargeting.TargetMode.PARK.name(),
@@ -114,6 +116,7 @@ public class AutoAimTurretCommand extends Command {
         boolean inNeutralZone = targetSelection.inNeutralZone();
 
         if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HOLD) {
+            turret.clearAutoAimGoalFilter();
             turret.holdCurrentPosition();
             publishAimState(
                 targetSelection.targetMode().name(),
@@ -168,7 +171,7 @@ public class AutoAimTurretCommand extends Command {
             mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
         }
 
-        turret.setTurretGoal(commandedTurretAngle);
+        turret.setAutoAimGoal(commandedTurretAngle, targetSelection.targetMode().name());
         publishAimState(
             targetSelection.targetMode().name(),
             alliance.name(),
@@ -189,6 +192,7 @@ public class AutoAimTurretCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        turret.clearAutoAimGoalFilter();
         turret.holdCurrentPosition();
     }
 
