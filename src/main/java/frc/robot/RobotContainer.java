@@ -145,11 +145,10 @@ public class RobotContainer {
             m_TurretSubsystem.setPositionMode(true);
             m_ShooterSubsystem.setHoodEnabled(true);
             m_TurretSubsystem.setAutoAimSuppressed(false);
-        }, m_TurretSubsystem, m_ShooterSubsystem));
+        }));
 
         NamedCommands.registerCommand("DisableAutoAim", Commands.runOnce(
-            () -> m_TurretSubsystem.setAutoAimSuppressed(true),
-            m_TurretSubsystem
+            () -> m_TurretSubsystem.setAutoAimSuppressed(true)
         ));
     }
 
