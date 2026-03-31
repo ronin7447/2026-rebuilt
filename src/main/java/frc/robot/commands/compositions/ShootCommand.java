@@ -8,7 +8,7 @@ import frc.robot.subsystems.OuttakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 
 public class ShootCommand extends Command {
-    private static final double OUTTAKE_DELAY_AFTER_SHOOTER_READY_SEC = 0.1;
+    private static final double OUTTAKE_DELAY_AFTER_SHOOTER_READY_SEC = 0.25;
     private static final double INDEXER_DELAY_SEC = 0.1;
 
     private final ShooterSubsystem shooterSubsystem;

@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -98,6 +99,10 @@ public class TurretSubsystem extends SubsystemBase {
         stallTimer.stop();
         stallTimer.reset();
         setPositionMode(true);
+
+        SmartDashboard.putNumber("Turret kP", slot0Configs.kP);
+        SmartDashboard.putNumber("Turret kI", slot0Configs.kI);
+        SmartDashboard.putNumber("Turret kD", slot0Configs.kD);
     }
 
     public TalonFX getKraken() {
@@ -220,7 +225,7 @@ public class TurretSubsystem extends SubsystemBase {
     public void setPositionMode(boolean mode) {
         positionMode = mode;
         if (!positionMode) {
-            turretKraken.setControl(openLoopVolts.withOutput(0.0));
+            turretKraken.setControl(new VoltageOut(0));
         }
     }
 
@@ -242,6 +247,17 @@ public class TurretSubsystem extends SubsystemBase {
     public void zeroEncoderAtHardStop() {
         setVoltage(0.0);
         zeroEncoder();
+    }
+
+    public void togglePositionMode() {
+
+        if (positionMode) {
+
+            positionMode = false;
+        } else {
+
+            positionMode = true;
+        }
     }
 
     public boolean isStallDetected() {
@@ -347,6 +363,8 @@ public class TurretSubsystem extends SubsystemBase {
         this.mappedRollerRps = mappedRollerRps;
     }
 
+
+
     @Override
     public void periodic() {
         if (positionMode) {
@@ -356,7 +374,13 @@ public class TurretSubsystem extends SubsystemBase {
                         + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
                 )
             );
+        } else {
+
+            turretKraken.setControl(new VoltageOut(0));
         }
+
+        // for tuning pid
+
 
         publishTelemetry();
     }
@@ -399,5 +423,6 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/LeadYawDeg", leadYawDeg);
         SmartDashboard.putNumber("Turret/MappedHoodPosition", mappedHoodPosition);
         SmartDashboard.putNumber("Turret/MappedRollerRps", mappedRollerRps);
+        SmartDashboard.putBoolean("Turret/Kaden", positionMode);
     }
 }

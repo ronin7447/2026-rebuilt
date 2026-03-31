@@ -53,6 +53,7 @@ public class AutoAimTurretCommand extends Command {
 
         boolean autoAimAllowedMode = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
 
+        if (!turret.getPositionMode()) return;
         if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
             turret.holdCurrentPosition();
             publishAimState(
