@@ -141,10 +141,11 @@ public class RobotContainer {
             m_IndexerSubsystem.disableRoller();
         }, m_ShooterSubsystem, m_OuttakeSubsystem, m_IndexerSubsystem));
 
-        NamedCommands.registerCommand("EnableAutoAim", Commands.runOnce(
-            () -> m_TurretSubsystem.setAutoAimSuppressed(false),
-            m_TurretSubsystem
-        ));
+        NamedCommands.registerCommand("EnableAutoAim", Commands.runOnce(() -> {
+            m_TurretSubsystem.setPositionMode(true);
+            m_ShooterSubsystem.setHoodEnabled(true);
+            m_TurretSubsystem.setAutoAimSuppressed(false);
+        }, m_TurretSubsystem, m_ShooterSubsystem));
 
         NamedCommands.registerCommand("DisableAutoAim", Commands.runOnce(
             () -> m_TurretSubsystem.setAutoAimSuppressed(true),
