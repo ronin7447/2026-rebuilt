@@ -38,10 +38,11 @@ public class IntakeSubsystem extends SubsystemBase {
     
     public IntakeSubsystem() {
 
-        TalonFXConfiguration cfgFollower = new TalonFXConfiguration();
-        // .withCurrentLimits(
-            // new CurrentLimitsConfigs()
-            //     .withStatorCurrentLimit(Amps.of(100)));
+        TalonFXConfiguration cfgFollower = new TalonFXConfiguration()
+        .withCurrentLimits(
+            new CurrentLimitsConfigs()
+                .withSupplyCurrentLimit(Amps.of(70))
+                .withSupplyCurrentLimitEnable(true));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -147,6 +148,15 @@ public class IntakeSubsystem extends SubsystemBase {
     public double getTargetRot() {
 
         return targetPosRot;
+    }
+
+    public void commandExtensionPosition(double targetPosRot) {
+        setIntakePosition(targetPosRot);
+        enableExtension();
+    }
+
+    public boolean isExtensionAtTarget() {
+        return Math.abs(getIntakePosition() - getTargetRot()) <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE;
     }
 
     public void setIntakePosition(double targetPosRot) {

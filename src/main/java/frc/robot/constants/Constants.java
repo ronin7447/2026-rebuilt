@@ -213,6 +213,11 @@ public final class Constants {
 
         public static final double INTAKE_COLLAPSED_POS = 0.441;
         public static final double INTAKE_EXTENDED_POS = 2.53;
+        public static final double ANTI_JAM_PULSE_RETRACT_POS =
+            (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
+        public static final int ANTI_JAM_PULSE_CYCLES = 2;
+        public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25;
+        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05;
 
         public static final double ROLLER_VELOCITY = 72.0;
     }
