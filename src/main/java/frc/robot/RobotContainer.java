@@ -16,6 +16,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -303,6 +304,26 @@ public class RobotContainer {
         joystick.y().whileTrue(Commands.defer(
             () -> autopilot.goTo(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))),
             Set.of(drivetrain)
+        ));
+
+
+        // zero hood and turret
+        joystick.start().onTrue(Commands.runOnce(
+            () -> {
+                m_TurretSubsystem.zeroEncoder();
+                m_ShooterSubsystem.zeroEncoder();
+            }
+        ).andThen(()->Commands.waitSeconds(2)).andThen(()->{
+            m_TurretSubsystem.setPositionMode(true);
+            m_ShooterSubsystem.setHoodEnabled(true);
+        }));
+
+        // disable hood and turret
+        joystick.back().onTrue(Commands.runOnce(
+            () -> {
+                m_TurretSubsystem.setPositionMode(false);
+                m_ShooterSubsystem.setHoodEnabled(false);
+            }
         ));
 
 

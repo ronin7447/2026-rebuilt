@@ -36,12 +36,12 @@ public final class Constants {
         public static final double STALL_CURRENT_A = 6.0;
         public static final double STALL_VEL_RPS = 0.25;
         public static final double STALL_TIME_S = 0.10;
-        public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
+        public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 45.0; // 35 V per rotation of position error
+        public static final double KP = 24.0; // 35 V per rotation of position error
         public static final double KI = 0.00; // no output for integrated error
-        public static final double KD = 0.20; // 0.20 V output for error derivative
+        public static final double KD = 0.100; // 0.20 V output for error derivative
 
         public static final double CRUISE_VELOCITY = 90.0;
         public static final double ACCELERATION = 700.0;
@@ -128,7 +128,7 @@ public final class Constants {
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.20, (FIELD_WIDTH_METERS / 2.0) + 0.00);
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.50, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(2.26, 6.00);

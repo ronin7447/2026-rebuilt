@@ -4,6 +4,7 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -22,6 +23,8 @@ public class ShooterSubsystem extends SubsystemBase {
     private double targetPosRot = getHoodPosition(); 
     private double targetRollerVelRps = Constants.Shooter.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+
+    private boolean hoodEnabled = true;
 
 
     public ShooterSubsystem() {
@@ -73,9 +76,9 @@ public class ShooterSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Shooter.ROLLER_JERK;
 
         rollerKraken.getConfigurator().apply(rollerCfg);
-        // rollerKraken.getVelocity().setUpdateFrequency(100);
-        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
-        // rollerKraken.optimizeBusUtilization();
+        rollerKraken.getVelocity().setUpdateFrequency(100);
+        rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
+        rollerKraken.optimizeBusUtilization();
 
         // zeroE
 
@@ -87,6 +90,15 @@ public class ShooterSubsystem extends SubsystemBase {
     
      public TalonFX getHoodKraken(){
         return hoodKraken;
+    }
+
+    public void setHoodEnabled(boolean mode) {
+
+        hoodEnabled = mode;
+        if (!mode) {
+
+            hoodKraken.setControl(new VoltageOut(0));
+        }
     }
 
     public void zeroEncoder() {
@@ -144,9 +156,15 @@ public class ShooterSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        if (hoodEnabled) {
+            hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        } else {
+            hoodKraken.setControl(new VoltageOut(0)); 
+        }
+        
         SmartDashboard.putNumber("HoodPosition", targetPosRot);
         SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
+        SmartDashboard.putBoolean("Turret/Kaden2", hoodEnabled);
 
 
         if (rollerEnabled && rollerKraken != null) {
