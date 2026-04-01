@@ -84,7 +84,7 @@ public class RobotContainer {
     private boolean hoodForTrenchDown = false;
     private boolean shootDriveLimitActive = false;
     private final SendableChooser<Command> autoChooser;
-    private final Autopilot autopilot = new Autopilot();
+    private final Autopilot autopilot = new Autopilot(drivetrain);
     private final Field2d pathPlannerField = new Field2d();
 
     public RobotContainer() {
@@ -382,13 +382,6 @@ public class RobotContainer {
     }
 
     private Command createAutopilotCommand(Pose2d goal) {
-        if (!AutoBuilder.isPathfindingConfigured()) {
-            return Commands.runOnce(() -> DriverStation.reportError(
-                "Autopilot pathfinding is not configured. Check PathPlanner settings/autobuilder init.",
-                false
-            ));
-        }
-
         return autopilot.goTo(goal);
     }
 
