@@ -39,7 +39,7 @@ public final class Constants {
         public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 24.0; // 35 V per rotation of position error
+        public static final double KP = 4.0; // 35 V per rotation of position error
         public static final double KI = 0.00; // no output for integrated error
         public static final double KD = 0.100; // 0.20 V output for error derivative
 
@@ -199,8 +199,8 @@ public final class Constants {
 
     public static final class Intake {
         public static final int ROLLER_KRAKEN_ID = 40;
-        public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
-        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
+        public static final int EXTENSION_KRAKEN_MASTER_ID = 42;
+        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 41;
         public static final double EXTENSION_VELOCITY = 25.0;
         public static final double EXTENSION_ACCELERATION = 40.0;
         public static final double EXTENSION_JERK = 100.0;
@@ -211,8 +211,8 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.441;
-        public static final double INTAKE_EXTENDED_POS = 2.53;
+        public static final double INTAKE_COLLAPSED_POS = 0.00;
+        public static final double INTAKE_EXTENDED_POS = 0.820;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
         public static final int ANTI_JAM_PULSE_CYCLES = 2;

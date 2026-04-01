@@ -63,8 +63,10 @@ public class TurretSubsystem extends SubsystemBase {
     public TurretSubsystem() {
         TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(80))
-                .withStatorCurrentLimitEnable(true));
+                .withStatorCurrentLimit(Amps.of(70))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(20))
+                .withSupplyCurrentLimitEnable(true));
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         var slot0Configs = cfg.Slot0;
@@ -92,6 +94,8 @@ public class TurretSubsystem extends SubsystemBase {
         turretKraken.getStatorCurrent().setUpdateFrequency(100);
         turretKraken.getMotorVoltage().setUpdateFrequency(1000);
         turretKraken.optimizeBusUtilization();
+
+        turretKraken.setNeutralMode(NeutralModeValue.Brake);
 
         zeroEncoder();
         // targetTurretRot = getTurretPositionRotations();

@@ -33,7 +33,7 @@ import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.IndexerSubsystem;
-// import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.OuttakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
@@ -71,7 +71,7 @@ public class RobotContainer {
     public final VisionSubsystem  m_vision = new VisionSubsystem(drivetrain);
     public final TurretSubsystem m_TurretSubsystem = new TurretSubsystem();
 
-    // public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
+    public final IntakeSubsystem m_IntakeSubsystem = new IntakeSubsystem();
     public final ShooterSubsystem m_ShooterSubsystem = new ShooterSubsystem();
 
     public final IndexerSubsystem m_IndexerSubsystem = new IndexerSubsystem();
@@ -104,8 +104,8 @@ public class RobotContainer {
         //     m_ShooterSubsystem.disableRoller();
         // }, m_ShooterSubsystem));
 
-        // NamedCommands.registerCommand("EnableIntake", new ManipulateIntake(true, m_IntakeSubsystem));
-        // NamedCommands.registerCommand("DisableIntake", new ManipulateIntake(false, m_IntakeSubsystem));
+        NamedCommands.registerCommand("EnableIntake", new ManipulateIntake(true, m_IntakeSubsystem));
+        NamedCommands.registerCommand("DisableIntake", new ManipulateIntake(false, m_IntakeSubsystem));
 
         // NamedCommands.registerCommand("RunOuttake", Commands.runOnce(() -> {
         //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
@@ -232,10 +232,10 @@ public class RobotContainer {
             m_TurretSubsystem.zeroEncoder();
         })))));
         /* Right Bumper: Enable Intake */
-        // joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
+        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
 
         /* Left Bumper: Disable Intake */
-        // joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
+        joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
         joystick.rightTrigger().whileTrue(new ShootCommand(
             m_ShooterSubsystem,
@@ -297,9 +297,9 @@ public class RobotContainer {
         // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
         // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
 
-        // joystick.x().onTrue((Commands.runOnce(() -> {
-        //     m_IntakeSubsystem.zeroEncoder();
-        // })));
+        joystick.x().onTrue((Commands.runOnce(() -> {
+            m_IntakeSubsystem.zeroEncoder();
+        })));
 
         joystick.y().whileTrue(Commands.defer(
             () -> autopilot.goTo(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))),
