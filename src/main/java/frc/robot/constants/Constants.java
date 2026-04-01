@@ -21,8 +21,8 @@ public final class Constants {
     public static final class Drivebase {
         public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
-        public static final double DRIVE_DEADBAND = MAX_SPEED * 0.2; // 20% of max speed as deadband
-        public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.2; // 20% of max angular rate as deadband
+        public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
+        public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
         public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.35;
         public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.25;
         public static final double AUTO_TRANSLATION_KP = 5.0;
@@ -48,9 +48,9 @@ public final class Constants {
         public static final double CRUISE_VELOCITY = 90.0;
         public static final double ACCELERATION = 700.0;
         public static final double JERK = 4000.0;
-        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:15?? 100;25
+        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:25 ratio
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
-        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // TODO: set turret pivot offset in robot coordinates
+        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); 
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
