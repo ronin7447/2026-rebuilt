@@ -132,6 +132,8 @@ public final class Constants {
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(2.26, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(14.5, 6.00);
         public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(14.5, 2.50);
+        public static final Translation2d OPPONENT_PASS_BACK_TARGET_UPPER = new Translation2d(8.295, 7.00);
+        public static final Translation2d OPPONENT_PASS_BACK_TARGET_LOWER = new Translation2d(8.295, 1.00);
 
         public static final List<Translation2d> BLUE_ALLIANCE_ZONE = List.of(
             new Translation2d(0.0, 0.0),
@@ -189,6 +191,28 @@ public final class Constants {
             double robotPoseY
         ) {
             Translation2d backTarget = getPreferredBackTargetForAlliance(alliance, robotPoseY);
+            return new Translation3d(backTarget.getX(), backTarget.getY(), BACK_TARGET_HEIGHT_METERS);
+        }
+
+        public static Translation2d getPreferredOpponentPassBackTarget(double robotPoseY) {
+            Translation2d bestTarget = null;
+            double bestDistance = Double.POSITIVE_INFINITY;
+
+            for (Translation2d candidate : List.of(OPPONENT_PASS_BACK_TARGET_UPPER, OPPONENT_PASS_BACK_TARGET_LOWER)) {
+                double distance = Math.abs(candidate.getY() - robotPoseY);
+                if (distance < bestDistance
+                    || (Math.abs(distance - bestDistance) <= 1e-9
+                        && (bestTarget == null || candidate.getY() < bestTarget.getY()))) {
+                    bestTarget = candidate;
+                    bestDistance = distance;
+                }
+            }
+
+            return bestTarget;
+        }
+
+        public static Translation3d getPreferredOpponentPassBackTarget3d(double robotPoseY) {
+            Translation2d backTarget = getPreferredOpponentPassBackTarget(robotPoseY);
             return new Translation3d(backTarget.getX(), backTarget.getY(), BACK_TARGET_HEIGHT_METERS);
         }
 

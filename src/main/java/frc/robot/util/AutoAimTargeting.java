@@ -11,6 +11,7 @@ public final class AutoAimTargeting {
     public enum TargetMode {
         HUB,
         NEUTRAL_BACK,
+        OPPONENT_PASS_BACK,
         HOLD,
         PARK
     }
@@ -62,12 +63,13 @@ public final class AutoAimTargeting {
             );
         }
 
+        Translation2d opponentPassBackTarget = Constants.FieldTargets.getPreferredOpponentPassBackTarget(robotPoseY);
         return new TargetSelection(
-            TargetMode.HOLD,
+            TargetMode.OPPONENT_PASS_BACK,
             false,
             false,
-            Translation2d.kZero,
-            Translation3d.kZero
+            opponentPassBackTarget,
+            Constants.FieldTargets.getPreferredOpponentPassBackTarget3d(robotPoseY)
         );
     }
 }
