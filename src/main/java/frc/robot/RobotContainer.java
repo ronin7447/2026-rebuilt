@@ -79,6 +79,7 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     private boolean hoodForTrenchDown = false;
+    private boolean shootDriveLimitActive = false;
     private final SendableChooser<Command> autoChooser;
     private final Autopilot autopilot = new Autopilot();
 
@@ -199,10 +200,14 @@ public class RobotContainer {
         // and Y is defined as to the left according to WPILib convention.
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
-            drivetrain.applyRequest(() ->
-                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+            drivetrain.applyRequest(() -> {
+                double currentMaxSpeed = getTeleopLinearSpeedLimit();
+                double currentMaxAngularRate = getTeleopAngularSpeedLimit();
+
+                return drive.withVelocityX(-joystick.getLeftY() * currentMaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-joystick.getLeftX() * currentMaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-joystick.getRightX() * currentMaxAngularRate); // Drive counterclockwise with negative X (left)
+            }
             )
         );
 
@@ -339,7 +344,22 @@ public class RobotContainer {
                 new AntiJamPulse(m_IntakeSubsystem)
                     .until(() -> joystick.leftTrigger().getAsBoolean())
             ).repeatedly()
-        );
+        ).beforeStarting(() -> shootDriveLimitActive = true)
+            .finallyDo(interrupted -> shootDriveLimitActive = false);
+    }
+
+    private double getTeleopLinearSpeedLimit() {
+        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+            return MaxSpeed * Constants.Drivebase.SHOOT_LINEAR_SPEED_LIMIT_SCALE;
+        }
+        return MaxSpeed;
+    }
+
+    private double getTeleopAngularSpeedLimit() {
+        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+            return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
+        }
+        return MaxAngularRate;
     }
 
 

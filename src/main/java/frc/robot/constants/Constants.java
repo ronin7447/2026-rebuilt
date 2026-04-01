@@ -23,6 +23,8 @@ public final class Constants {
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.2; // 20% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.2; // 20% of max angular rate as deadband
+        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.35;
+        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.25;
         public static final double AUTO_TRANSLATION_KP = 5.0;
         public static final double AUTO_TRANSLATION_KI = 0.0;
         public static final double AUTO_TRANSLATION_KD = 0.0;
