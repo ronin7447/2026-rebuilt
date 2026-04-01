@@ -28,6 +28,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.autopilot.Autopilot;
 import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
+import frc.robot.commands.intake.AntiJamPulse;
 import frc.robot.commands.intake.ManipulateIntake;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
@@ -237,11 +238,7 @@ public class RobotContainer {
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
-        joystick.rightTrigger().whileTrue(new ShootCommand(
-            m_ShooterSubsystem,
-            m_IndexerSubsystem,
-            m_OuttakeSubsystem
-        ));
+        joystick.rightTrigger().whileTrue(createDriverShootCommand());
 
         joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
             // m_IndexerSubsystem.disableRoller();
@@ -328,6 +325,21 @@ public class RobotContainer {
 
 
         drivetrain.registerTelemetry(logger::telemeterize);
+    }
+
+    private Command createDriverShootCommand() {
+        return Commands.deadline(
+            new ShootCommand(
+                m_ShooterSubsystem,
+                m_IndexerSubsystem,
+                m_OuttakeSubsystem
+            ),
+            Commands.sequence(
+                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
+                new AntiJamPulse(m_IntakeSubsystem)
+                    .until(() -> joystick.leftTrigger().getAsBoolean())
+            ).repeatedly()
+        );
     }
 
 
