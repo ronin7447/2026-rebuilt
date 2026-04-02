@@ -30,11 +30,12 @@ public class ShooterSubsystem extends SubsystemBase {
     public ShooterSubsystem() {
 
         // reset position when init subsystem
-        TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
-            new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(40))
-                .withStatorCurrentLimitEnable(true));
+        // TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
+        //     new CurrentLimitsConfigs()
+        //         .withStatorCurrentLimit(Amps.of(40))
+        //         .withStatorCurrentLimitEnable(true));
 
+        TalonFXConfiguration cfg = new TalonFXConfiguration();
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
         var slot0Configs = cfg.Slot0;

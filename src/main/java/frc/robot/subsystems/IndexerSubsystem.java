@@ -23,7 +23,8 @@ public class IndexerSubsystem extends SubsystemBase {
 
         rollerKraken = new TalonFX(Constants.Indexer.ROLLER_KRAKEN_ID, "CANivore1");
 
-        TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
+        TalonFXConfiguration rollerCfg = new TalonFXConfiguration()
+        .withCurrentLimits(
             new CurrentLimitsConfigs()
                 .withSupplyCurrentLimit(Amps.of(40))
                 .withSupplyCurrentLimitEnable(true));

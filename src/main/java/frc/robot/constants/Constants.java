@@ -23,8 +23,8 @@ public final class Constants {
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
-        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.35;
-        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.25;
+        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.60;
+        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.45;
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75;
         public static final double SHORT_ALIGN_TRANSLATION_KP = 2.5;
         public static final double SHORT_ALIGN_TRANSLATION_KI = 0.0;
@@ -53,9 +53,9 @@ public final class Constants {
         public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 4.0; // 35 V per rotation of position error
-        public static final double KI = 0.00; // no output for integrated error
-        public static final double KD = 0.100; // 0.20 V output for error derivative
+        public static final double KP = 6.0; // 35 V per rotation of position error
+        public static final double KI = 1.0; // no output for integrated error
+        public static final double KD = 1.00; // 0.20 V output for error derivative
 
         public static final double CRUISE_VELOCITY = 90.0;
         public static final double ACCELERATION = 700.0;
@@ -66,7 +66,7 @@ public final class Constants {
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
-        public static final double AIM_TOLERANCE_DEG = 2.0;
+        public static final double AIM_TOLERANCE_DEG = 0.5;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
         
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
@@ -249,8 +249,8 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = -0.291;
-        public static final double INTAKE_EXTENDED_POS = 1.222;
+        public static final double INTAKE_COLLAPSED_POS = 0.622;
+        public static final double INTAKE_EXTENDED_POS = 2.169;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
         public static final int ANTI_JAM_PULSE_CYCLES = 2;
@@ -311,11 +311,11 @@ public final class Constants {
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double ROLLER_KP = 6.00; // An error of 1 rps results in 0.11 V output
+        public static final double ROLLER_KP = 100.00; // An error of 1 rps results in 0.11 V output
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -150.0;
-        public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
+        public static final double ROLLER_VELOCITY = -100.0;
+        public static final double ROLLER_ACCELERATION = 800.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
         public static final int ROLLER_KRAKEN_ID = 36;
     }

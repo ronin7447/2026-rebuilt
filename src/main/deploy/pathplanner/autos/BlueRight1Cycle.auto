@@ -34,12 +34,6 @@
           "data": {
             "pathName": "NeutralCenterToBlueRight"
           }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ShootSequence"
-          }
         }
       ]
     }

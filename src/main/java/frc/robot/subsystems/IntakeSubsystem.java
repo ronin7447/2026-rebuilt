@@ -41,7 +41,9 @@ public class IntakeSubsystem extends SubsystemBase {
         TalonFXConfiguration cfgFollower = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withSupplyCurrentLimit(Amps.of(70))
+                .withStatorCurrentLimit(Amps.of(90))
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(90))
                 .withSupplyCurrentLimitEnable(true));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
@@ -80,6 +82,8 @@ public class IntakeSubsystem extends SubsystemBase {
         var rollerTalonFXConfigs = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
                 .withStatorCurrentLimit(Amps.of(80))
+                .withSupplyCurrentLimit(40)
+                .withSupplyCurrentLimitEnable(true)
                 .withStatorCurrentLimitEnable(true));
 
         // set slot 0 gains
