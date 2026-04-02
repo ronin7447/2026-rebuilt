@@ -173,11 +173,15 @@ public class IntakeSubsystem extends SubsystemBase {
     
     public boolean isStallDetected() {
         StatusSignal<Current> statorCurrentSig = extensionKrakenMaster.getStatorCurrent();
+        StatusSignal<AngularVelocity> velocitySig = extensionKrakenMaster.getVelocity();
 
         statorCurrentSig.refresh();
+        velocitySig.refresh();
 
         double amps = statorCurrentSig.getValueAsDouble();
-        boolean stalledNow = amps >= Constants.Intake.INTAKE_STALL_CURRENT && mmPos.Position == Constants.Intake.INTAKE_EXTENDED_POS;
+        double velocityRps = Math.abs(velocitySig.getValueAsDouble());
+        boolean stalledNow = amps >= Constants.Intake.INTAKE_STALL_CURRENT
+            && velocityRps <= Constants.Intake.INTAKE_STALL_VELOCITY;
 
         if (stalledNow) {
             if (!stallTimer.isRunning()) {

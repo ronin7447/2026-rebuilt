@@ -16,11 +16,11 @@ public class AntiJamPulse extends SequentialCommandGroup {
         this.intake = intake;
 
         List<Command> pulseSequence = new ArrayList<>();
-        pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS));
+        pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS, false));
 
         for (int cycle = 0; cycle < Constants.Intake.ANTI_JAM_PULSE_CYCLES; cycle++) {
-            pulseSequence.add(moveTo(Constants.Intake.ANTI_JAM_PULSE_RETRACT_POS));
-            pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS));
+            pulseSequence.add(moveTo(Constants.Intake.ANTI_JAM_PULSE_RETRACT_POS, true));
+            pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS, false));
         }
 
         addCommands(
@@ -34,10 +34,10 @@ public class AntiJamPulse extends SequentialCommandGroup {
         addRequirements(intake);
     }
 
-    private Command moveTo(double targetRot) {
+    private Command moveTo(double targetRot, boolean stopOnStall) {
         return Commands.sequence(
             Commands.runOnce(() -> intake.commandExtensionPosition(targetRot), intake),
-            Commands.waitUntil(intake::isExtensionAtTarget)
+            Commands.waitUntil(() -> intake.isExtensionAtTarget() || (stopOnStall && intake.isStallDetected()))
                 .withTimeout(Constants.Intake.ANTI_JAM_PULSE_STEP_TIMEOUT_SEC),
             Commands.waitSeconds(Constants.Intake.ANTI_JAM_PULSE_DWELL_SEC)
         );
