@@ -46,17 +46,18 @@ class AutoAimTargetingTest {
     }
 
     @Test
-    void opponentAllianceZoneUsesHoldMode() {
+    void opponentAllianceZoneUsesOpponentPassBackMode() {
         AutoAimTargeting.TargetSelection selection = AutoAimTargeting.selectTarget(
             DriverStation.Alliance.Blue,
-            new Translation2d(15.5, 4.0),
-            4.0
+            new Translation2d(15.5, 6.7),
+            6.7
         );
 
-        assertEquals(AutoAimTargeting.TargetMode.HOLD, selection.targetMode());
+        assertEquals(AutoAimTargeting.TargetMode.OPPONENT_PASS_BACK, selection.targetMode());
         assertFalse(selection.inAllianceZone());
         assertFalse(selection.inNeutralZone());
-        assertEquals(0.0, selection.targetPoint().getX(), EPSILON);
-        assertEquals(0.0, selection.targetPoint().getY(), EPSILON);
+        assertEquals(8.295, selection.targetPoint().getX(), EPSILON);
+        assertEquals(7.0, selection.targetPoint().getY(), EPSILON);
+        assertEquals(Constants.FieldTargets.BACK_TARGET_HEIGHT_METERS, selection.targetPoint3d().getZ(), EPSILON);
     }
 }

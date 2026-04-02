@@ -13,14 +13,17 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
@@ -28,6 +31,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.commands.autopilot.Autopilot;
 import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
+import frc.robot.commands.intake.AntiJamPulse;
 import frc.robot.commands.intake.ManipulateIntake;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
@@ -78,12 +82,15 @@ public class RobotContainer {
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
     private boolean hoodForTrenchDown = false;
+    private boolean shootDriveLimitActive = false;
     private final SendableChooser<Command> autoChooser;
-    private final Autopilot autopilot = new Autopilot();
+    private final Autopilot autopilot = new Autopilot(drivetrain);
+    private final Field2d pathPlannerField = new Field2d();
 
     public RobotContainer() {
         registerNamedCommands();
         autoChooser = configureAutonomousChooser();
+        configureDashboardTelemetry();
         m_TurretSubsystem.setDefaultCommand(new AutoAimTurretCommand(
             drivetrain,
             m_vision,
@@ -155,6 +162,8 @@ public class RobotContainer {
     private SendableChooser<Command> configureAutonomousChooser() {
         SendableChooser<Command> chooser = new SendableChooser<>();
         chooser.setDefaultOption("None", Commands.none());
+        SmartDashboard.putBoolean("Autopilot/AutoBuilderConfigured", false);
+        SmartDashboard.putBoolean("Autopilot/PathfindingConfigured", false);
       
         try {
             RobotConfig robotConfig = RobotConfig.fromGUISettings();
@@ -182,6 +191,8 @@ public class RobotContainer {
                 drivetrain
             );
             chooser = AutoBuilder.buildAutoChooser();
+            SmartDashboard.putBoolean("Autopilot/AutoBuilderConfigured", AutoBuilder.isConfigured());
+            SmartDashboard.putBoolean("Autopilot/PathfindingConfigured", AutoBuilder.isPathfindingConfigured());
         } catch (Exception exception) {
             DriverStation.reportError(
                 "Failed to configure PathPlanner autonomous chooser: " + exception.getMessage(),
@@ -193,15 +204,32 @@ public class RobotContainer {
         return chooser;
     }
 
+    private void configureDashboardTelemetry() {
+        SmartDashboard.putData("CommandScheduler", CommandScheduler.getInstance());
+        SmartDashboard.putData("PathPlanner/Field", pathPlannerField);
+
+        PathPlannerLogging.setLogCurrentPoseCallback(pathPlannerField::setRobotPose);
+        PathPlannerLogging.setLogTargetPoseCallback(
+            pose -> pathPlannerField.getObject("Target Pose").setPose(pose)
+        );
+        PathPlannerLogging.setLogActivePathCallback(
+            poses -> pathPlannerField.getObject("Active Path").setPoses(poses)
+        );
+    }
+
     private void configureBindings() {
         // Note that X is defined as forward according to WPILib convention,
         // and Y is defined as to the left according to WPILib convention.
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
-            drivetrain.applyRequest(() ->
-                drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+            drivetrain.applyRequest(() -> {
+                double currentMaxSpeed = getTeleopLinearSpeedLimit();
+                double currentMaxAngularRate = getTeleopAngularSpeedLimit();
+
+                return drive.withVelocityX(-joystick.getLeftY() * currentMaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-joystick.getLeftX() * currentMaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-joystick.getRightX() * currentMaxAngularRate); // Drive counterclockwise with negative X (left)
+            }
             )
         );
 
@@ -237,11 +265,7 @@ public class RobotContainer {
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
-        joystick.rightTrigger().whileTrue(new ShootCommand(
-            m_ShooterSubsystem,
-            m_IndexerSubsystem,
-            m_OuttakeSubsystem
-        ));
+        joystick.rightTrigger().whileTrue(createDriverShootCommand());
 
         joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
             // m_IndexerSubsystem.disableRoller();
@@ -301,10 +325,7 @@ public class RobotContainer {
             m_IntakeSubsystem.zeroEncoder();
         })));
 
-        joystick.y().whileTrue(Commands.defer(
-            () -> autopilot.goTo(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))),
-            Set.of(drivetrain)
-        ));
+        joystick.y().whileTrue(createAutopilotCommand(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))));
 
 
         // zero hood and turret
@@ -328,6 +349,40 @@ public class RobotContainer {
 
 
         drivetrain.registerTelemetry(logger::telemeterize);
+    }
+
+    private Command createDriverShootCommand() {
+        return Commands.deadline(
+            new ShootCommand(
+                m_ShooterSubsystem,
+                m_IndexerSubsystem,
+                m_OuttakeSubsystem
+            ),
+            Commands.sequence(
+                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
+                new AntiJamPulse(m_IntakeSubsystem)
+                    .until(() -> joystick.leftTrigger().getAsBoolean())
+            ).repeatedly()
+        ).beforeStarting(() -> shootDriveLimitActive = true)
+            .finallyDo(interrupted -> shootDriveLimitActive = false);
+    }
+
+    private double getTeleopLinearSpeedLimit() {
+        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+            return MaxSpeed * Constants.Drivebase.SHOOT_LINEAR_SPEED_LIMIT_SCALE;
+        }
+        return MaxSpeed;
+    }
+
+    private double getTeleopAngularSpeedLimit() {
+        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+            return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
+        }
+        return MaxAngularRate;
+    }
+
+    private Command createAutopilotCommand(Pose2d goal) {
+        return autopilot.goTo(goal);
     }
 
 

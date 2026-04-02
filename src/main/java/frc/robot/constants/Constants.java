@@ -21,8 +21,22 @@ public final class Constants {
     public static final class Drivebase {
         public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
-        public static final double DRIVE_DEADBAND = MAX_SPEED * 0.2; // 20% of max speed as deadband
-        public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.2; // 20% of max angular rate as deadband
+        public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
+        public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
+        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.35;
+        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.25;
+        public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75;
+        public static final double SHORT_ALIGN_TRANSLATION_KP = 2.5;
+        public static final double SHORT_ALIGN_TRANSLATION_KI = 0.0;
+        public static final double SHORT_ALIGN_TRANSLATION_KD = 0.0;
+        public static final double SHORT_ALIGN_ROTATION_KP = 4.0;
+        public static final double SHORT_ALIGN_ROTATION_KI = 0.0;
+        public static final double SHORT_ALIGN_ROTATION_KD = 0.0;
+        public static final double SHORT_ALIGN_MAX_LINEAR_SPEED_MPS = 1.0;
+        public static final double SHORT_ALIGN_MAX_ANGULAR_SPEED_RAD_PER_SEC = Units.degreesToRadians(180.0);
+        public static final double SHORT_ALIGN_POSITION_TOLERANCE_METERS = 0.05;
+        public static final double SHORT_ALIGN_HEADING_TOLERANCE_DEG = 3.0;
+        public static final double SHORT_ALIGN_SETTLE_TIME_SEC = 0.10;
         public static final double AUTO_TRANSLATION_KP = 5.0;
         public static final double AUTO_TRANSLATION_KI = 0.0;
         public static final double AUTO_TRANSLATION_KD = 0.0;
@@ -46,9 +60,9 @@ public final class Constants {
         public static final double CRUISE_VELOCITY = 90.0;
         public static final double ACCELERATION = 700.0;
         public static final double JERK = 4000.0;
-        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:15?? 100;25
+        public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:25 ratio
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
-        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // TODO: set turret pivot offset in robot coordinates
+        public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); 
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
@@ -132,6 +146,8 @@ public final class Constants {
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(2.26, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(14.5, 6.00);
         public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(14.5, 2.50);
+        public static final Translation2d OPPONENT_PASS_BACK_TARGET_UPPER = new Translation2d(8.295, 7.00);
+        public static final Translation2d OPPONENT_PASS_BACK_TARGET_LOWER = new Translation2d(8.295, 1.00);
 
         public static final List<Translation2d> BLUE_ALLIANCE_ZONE = List.of(
             new Translation2d(0.0, 0.0),
@@ -189,6 +205,28 @@ public final class Constants {
             double robotPoseY
         ) {
             Translation2d backTarget = getPreferredBackTargetForAlliance(alliance, robotPoseY);
+            return new Translation3d(backTarget.getX(), backTarget.getY(), BACK_TARGET_HEIGHT_METERS);
+        }
+
+        public static Translation2d getPreferredOpponentPassBackTarget(double robotPoseY) {
+            Translation2d bestTarget = null;
+            double bestDistance = Double.POSITIVE_INFINITY;
+
+            for (Translation2d candidate : List.of(OPPONENT_PASS_BACK_TARGET_UPPER, OPPONENT_PASS_BACK_TARGET_LOWER)) {
+                double distance = Math.abs(candidate.getY() - robotPoseY);
+                if (distance < bestDistance
+                    || (Math.abs(distance - bestDistance) <= 1e-9
+                        && (bestTarget == null || candidate.getY() < bestTarget.getY()))) {
+                    bestTarget = candidate;
+                    bestDistance = distance;
+                }
+            }
+
+            return bestTarget;
+        }
+
+        public static Translation3d getPreferredOpponentPassBackTarget3d(double robotPoseY) {
+            Translation2d backTarget = getPreferredOpponentPassBackTarget(robotPoseY);
             return new Translation3d(backTarget.getX(), backTarget.getY(), BACK_TARGET_HEIGHT_METERS);
         }
 

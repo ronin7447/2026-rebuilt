@@ -42,4 +42,20 @@ class FieldTargetsTest {
         assertEquals(2.26, selected.getX(), EPSILON);
         assertEquals(2.50, selected.getY(), EPSILON);
     }
+
+    @Test
+    void opponentPassBackTargetPrefersUpperWhenRobotYIsCloserToUpper() {
+        Translation2d selected = Constants.FieldTargets.getPreferredOpponentPassBackTarget(6.8);
+
+        assertEquals(8.295, selected.getX(), EPSILON);
+        assertEquals(7.00, selected.getY(), EPSILON);
+    }
+
+    @Test
+    void opponentPassBackTargetTiePrefersLowerY() {
+        Translation2d selected = Constants.FieldTargets.getPreferredOpponentPassBackTarget(4.0);
+
+        assertEquals(8.295, selected.getX(), EPSILON);
+        assertEquals(1.00, selected.getY(), EPSILON);
+    }
 }

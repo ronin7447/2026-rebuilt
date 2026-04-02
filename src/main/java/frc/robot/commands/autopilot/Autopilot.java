@@ -1,12 +1,19 @@
 package frc.robot.commands.autopilot;
 
+import java.util.Set;
+
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.commands.autopilot.FieldDestination;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
+import frc.robot.constants.Constants;
+import frc.robot.subsystems.CommandSwerveDrivetrain;
 
 public class Autopilot extends Command {
     private static final PathConstraints DEFAULT_CONSTRAINTS = new PathConstraints(
@@ -15,8 +22,12 @@ public class Autopilot extends Command {
         Units.degreesToRadians(540), // max angular vel
         Units.degreesToRadians(720)  // max angular accel
     );
-    
-    public Autopilot() {}
+
+    private final CommandSwerveDrivetrain drivetrain;
+
+    public Autopilot(CommandSwerveDrivetrain drivetrain) {
+        this.drivetrain = drivetrain;
+    }
 
     public Command goTo(FieldDestination destination) {
         Pose2d goal = switch (destination) {
@@ -31,7 +42,55 @@ public class Autopilot extends Command {
     }
 
     public Command goTo(Pose2d goal) {
-        return AutoBuilder.pathfindToPose(goal, DEFAULT_CONSTRAINTS, 0.0);
+        return Commands.defer(() -> {
+            Pose2d currentPose = drivetrain.getState().Pose;
+
+            if (!AutoBuilder.isPathfindingConfigured()) {
+                SmartDashboard.putString("Autopilot/Mode", "ERROR");
+                DriverStation.reportError(
+                    "Autopilot pathfinding is not configured. Check PathPlanner settings/autobuilder init.",
+                    false
+                );
+                return Commands.none();
+            }
+
+            publishGoalTelemetry(goal, currentPose);
+            if (shouldUseShortRangeAlign(goal, currentPose)) {
+                SmartDashboard.putString("Autopilot/Mode", "SHORT_ALIGN");
+                return createShortRangeAlignCommand(goal);
+            }
+
+            SmartDashboard.putString("Autopilot/Mode", "PATHFIND");
+            SmartDashboard.putBoolean("Autopilot/AtPositionTolerance", false);
+            SmartDashboard.putBoolean("Autopilot/AtHeadingTolerance", false);
+            return createPathfindCommand(goal);
+        }, Set.of(drivetrain));
     }
 
+    static boolean shouldUseShortRangeAlign(Pose2d goal, Pose2d currentPose, double thresholdMeters) {
+        return goal.getTranslation().getDistance(currentPose.getTranslation()) <= thresholdMeters;
+    }
+
+    private boolean shouldUseShortRangeAlign(Pose2d goal, Pose2d currentPose) {
+        return shouldUseShortRangeAlign(goal, currentPose, Constants.Drivebase.SHORT_RANGE_ALIGN_DISTANCE_METERS);
+    }
+
+    private Command createPathfindCommand(Pose2d goal) {
+        return AutoBuilder.pathfindToPose(goal, DEFAULT_CONSTRAINTS, 0.0)
+            .finallyDo(interrupted -> SmartDashboard.putString("Autopilot/Mode", "IDLE"));
+    }
+
+    private Command createShortRangeAlignCommand(Pose2d goal) {
+        return new ShortRangeAutoAlignCommand(drivetrain, goal);
+    }
+
+    private void publishGoalTelemetry(Pose2d goal, Pose2d currentPose) {
+        SmartDashboard.putNumber("Autopilot/GoalX", goal.getX());
+        SmartDashboard.putNumber("Autopilot/GoalY", goal.getY());
+        SmartDashboard.putNumber("Autopilot/GoalHeadingDeg", goal.getRotation().getDegrees());
+        SmartDashboard.putNumber(
+            "Autopilot/DistanceToGoal",
+            currentPose.getTranslation().getDistance(goal.getTranslation())
+        );
+    }
 }
