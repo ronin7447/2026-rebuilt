@@ -199,8 +199,8 @@ public final class Constants {
 
     public static final class Intake {
         public static final int ROLLER_KRAKEN_ID = 40;
-        public static final int EXTENSION_KRAKEN_MASTER_ID = 42;
-        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 41;
+        public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
+        public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
         public static final double EXTENSION_VELOCITY = 25.0;
         public static final double EXTENSION_ACCELERATION = 40.0;
         public static final double EXTENSION_JERK = 100.0;
@@ -211,8 +211,8 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.00;
-        public static final double INTAKE_EXTENDED_POS = 0.820;
+        public static final double INTAKE_COLLAPSED_POS = -0.291;
+        public static final double INTAKE_EXTENDED_POS = 1.222;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
         public static final int ANTI_JAM_PULSE_CYCLES = 2;

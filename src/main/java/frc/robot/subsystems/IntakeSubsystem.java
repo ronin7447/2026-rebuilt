@@ -197,6 +197,7 @@ public class IntakeSubsystem extends SubsystemBase {
         }
 
         extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Opposed));
+        // extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Aligned));
         
         if (rollerEnabled) {
 
