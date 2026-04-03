@@ -53,9 +53,9 @@ public final class Constants {
         public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 6.0; // 35 V per rotation of position error
-        public static final double KI = 1.0; // no output for integrated error
-        public static final double KD = 1.00; // 0.20 V output for error derivative
+        public static final double KP = 5.75; // 35 V per rotation of position error
+        public static final double KI = 1.075; // no output for integrated error
+        public static final double KD = 0.50; // 0.20 V output for error derivative
 
         public static final double CRUISE_VELOCITY = 90.0;
         public static final double ACCELERATION = 700.0;
@@ -135,17 +135,20 @@ public final class Constants {
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7);
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6);
         public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30;
-        public static final double BACK_TARGET_HEIGHT_METERS = 0.2;
+        public static final double BACK_TARGET_HEIGHT_METERS = 0.5;
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.50, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
-        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(2.26, 6.00);
-        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(2.26, 2.50);
-        public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(14.5, 6.00);
-        public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(14.5, 2.50);
+        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48
+        
+        
+        , 6.00);
+        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50);
+        public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00);
+        public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(16.1, 2.50);
         public static final Translation2d OPPONENT_PASS_BACK_TARGET_UPPER = new Translation2d(8.295, 7.00);
         public static final Translation2d OPPONENT_PASS_BACK_TARGET_LOWER = new Translation2d(8.295, 1.00);
 
@@ -249,8 +252,8 @@ public final class Constants {
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
-        public static final double INTAKE_COLLAPSED_POS = 0.622;
-        public static final double INTAKE_EXTENDED_POS = 2.169;
+        public static final double INTAKE_COLLAPSED_POS = 0.0;
+        public static final double INTAKE_EXTENDED_POS = 1.547;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
         public static final int ANTI_JAM_PULSE_CYCLES = 2;

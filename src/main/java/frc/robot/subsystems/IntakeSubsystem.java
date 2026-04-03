@@ -104,6 +104,8 @@ public class IntakeSubsystem extends SubsystemBase {
         stallTimer.reset();
 
         rollerKraken.getConfigurator().apply(rollerTalonFXConfigs);
+
+        zeroEncoder();
     }
 
     public TalonFX getExtensionKrakenMaster() {
