@@ -218,4 +218,35 @@ class ShooterKinematicsTest {
         ).orElseThrow();
         assertTrue(hoodPosition >= FAR_SHOT_MIN_HOOD_POSITION_ROT - EPSILON);
     }
+
+    @Test
+    void flattestSelectionPrefersLowerLaunchAngleThanMinimumSpeed() {
+        ShooterKinematics.MovingShotRequest request = new ShooterKinematics.MovingShotRequest(
+            new Pose2d(),
+            new ChassisSpeeds(),
+            Translation2d.kZero,
+            1.0,
+            new Translation3d(4.0, 0.0, 1.0),
+            Rotation2d.kZero,
+            CALIBRATION,
+            MIN_HOOD_POSITION_ROT,
+            MAX_HOOD_POSITION_ROT,
+            FAR_SHOT_DISTANCE_METERS,
+            MIN_HOOD_POSITION_ROT,
+            20.0
+        );
+
+        ShooterKinematics.MovingShotSolution minimumSpeedSolution =
+            ShooterKinematics.solveMovingShot(request).orElseThrow();
+        ShooterKinematics.MovingShotSolution flattestSolution = ShooterKinematics.solveMovingShot(
+            request,
+            ShooterKinematics.SelectionPreference.FLATTEST_SHOT
+        ).orElseThrow();
+
+        assertTrue(
+            flattestSolution.recommendedLaunchPitch().getDegrees()
+                < minimumSpeedSolution.recommendedLaunchPitch().getDegrees()
+        );
+        assertTrue(flattestSolution.requiredExitSpeedMps() >= minimumSpeedSolution.requiredExitSpeedMps());
+    }
 }

@@ -19,6 +19,13 @@ public final class ShooterKinematics {
     private ShooterKinematics() {}
 
     public static Optional<MovingShotSolution> solveMovingShot(MovingShotRequest request) {
+        return solveMovingShot(request, SelectionPreference.MIN_EXIT_SPEED);
+    }
+
+    public static Optional<MovingShotSolution> solveMovingShot(
+        MovingShotRequest request,
+        SelectionPreference selectionPreference
+    ) {
         if (request == null
             || request.targetFieldPoint() == null
             || request.robotPose() == null
@@ -114,15 +121,44 @@ public final class ShooterKinematics {
                 desiredFieldYaw.minus(stationaryFieldYaw).getDegrees()
             );
 
-            if (bestSolution == null
-                || candidate.requiredExitSpeedMps() + EPSILON < bestSolution.requiredExitSpeedMps()
-                || (Math.abs(candidate.requiredExitSpeedMps() - bestSolution.requiredExitSpeedMps()) <= EPSILON
-                    && candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec())) {
+            if (isBetterCandidate(selectionPreference, candidate, bestSolution)) {
                 bestSolution = candidate;
             }
         }
 
         return Optional.ofNullable(bestSolution);
+    }
+
+    private static boolean isBetterCandidate(
+        SelectionPreference selectionPreference,
+        MovingShotSolution candidate,
+        MovingShotSolution bestSolution
+    ) {
+        if (bestSolution == null) {
+            return true;
+        }
+
+        if (selectionPreference == SelectionPreference.FLATTEST_SHOT) {
+            double candidatePitchDeg = candidate.recommendedLaunchPitch().getDegrees();
+            double bestPitchDeg = bestSolution.recommendedLaunchPitch().getDegrees();
+            if (candidatePitchDeg + EPSILON < bestPitchDeg) {
+                return true;
+            }
+            if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
+                && candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec()) {
+                return true;
+            }
+            if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
+                && Math.abs(candidate.flightTimeSec() - bestSolution.flightTimeSec()) <= EPSILON
+                && candidate.requiredExitSpeedMps() + EPSILON < bestSolution.requiredExitSpeedMps()) {
+                return true;
+            }
+            return false;
+        }
+
+        return candidate.requiredExitSpeedMps() + EPSILON < bestSolution.requiredExitSpeedMps()
+            || (Math.abs(candidate.requiredExitSpeedMps() - bestSolution.requiredExitSpeedMps()) <= EPSILON
+                && candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec());
     }
 
     private static ChassisSpeeds computeShooterRelativeSpeeds(
@@ -158,4 +194,9 @@ public final class ShooterKinematics {
         double flightTimeSec,
         double leadYawDeg
     ) {}
+
+    public enum SelectionPreference {
+        MIN_EXIT_SPEED,
+        FLATTEST_SHOT
+    }
 }

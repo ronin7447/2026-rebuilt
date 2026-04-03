@@ -146,10 +146,17 @@ public class AutoAimTurretCommand extends Command {
             Constants.Shooter.MIN_HOOD_POSITION_ROT,
             Constants.Shooter.MAX_HOOD_POSITION_ROT,
             Constants.Shooter.FAR_SHOT_DISTANCE_METERS,
-            Constants.Shooter.FAR_SHOT_MIN_HOOD_POSITION_ROT,
+            targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                ? Constants.Shooter.FAR_SHOT_MIN_HOOD_POSITION_ROT
+                : Constants.Shooter.PASS_BACK_FAR_SHOT_MIN_HOOD_POSITION_ROT,
             Constants.Shooter.MAX_EXIT_SPEED_MPS
         );
-        Optional<ShooterKinematics.MovingShotSolution> movingShotSolution = ShooterKinematics.solveMovingShot(request);
+        ShooterKinematics.SelectionPreference selectionPreference =
+            targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                ? ShooterKinematics.SelectionPreference.MIN_EXIT_SPEED
+                : ShooterKinematics.SelectionPreference.FLATTEST_SHOT;
+        Optional<ShooterKinematics.MovingShotSolution> movingShotSolution =
+            ShooterKinematics.solveMovingShot(request, selectionPreference);
 
         Rotation2d commandedTurretAngle = stationaryDesiredTurretAngle;
         Rotation2d desiredFieldYaw = stationaryFieldYaw;

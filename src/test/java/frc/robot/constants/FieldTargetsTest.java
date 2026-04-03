@@ -17,7 +17,7 @@ class FieldTargetsTest {
             5.8
         );
 
-        assertEquals(2.26, selected.getX(), EPSILON);
+        assertEquals(Constants.FieldTargets.BLUE_BACK_TARGET_UPPER.getX(), selected.getX(), EPSILON);
         assertEquals(6.00, selected.getY(), EPSILON);
     }
 
@@ -28,7 +28,7 @@ class FieldTargetsTest {
             2.7
         );
 
-        assertEquals(14.5, selected.getX(), EPSILON);
+        assertEquals(Constants.FieldTargets.RED_BACK_TARGET_LOWER.getX(), selected.getX(), EPSILON);
         assertEquals(2.50, selected.getY(), EPSILON);
     }
 
@@ -39,7 +39,7 @@ class FieldTargetsTest {
             4.25
         );
 
-        assertEquals(2.26, selected.getX(), EPSILON);
+        assertEquals(Constants.FieldTargets.BLUE_BACK_TARGET_LOWER.getX(), selected.getX(), EPSILON);
         assertEquals(2.50, selected.getY(), EPSILON);
     }
 

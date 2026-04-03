@@ -255,7 +255,7 @@ public final class Constants {
         public static final double INTAKE_COLLAPSED_POS = 0.0;
         public static final double INTAKE_EXTENDED_POS = 1.547;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
-            (INTAKE_COLLAPSED_POS + INTAKE_EXTENDED_POS) / 2.0;
+            INTAKE_COLLAPSED_POS;
         public static final int ANTI_JAM_PULSE_CYCLES = 2;
         public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25;
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05;
@@ -293,6 +293,7 @@ public final class Constants {
         public static final double MAX_HOOD_POSITION_ROT = -0.631116;
         public static final double FAR_SHOT_DISTANCE_METERS = 4.0;
         public static final double FAR_SHOT_MIN_HOOD_POSITION_ROT = -1.40;
+        public static final double PASS_BACK_FAR_SHOT_MIN_HOOD_POSITION_ROT = MIN_HOOD_POSITION_ROT;
         public static final double MAX_EXIT_SPEED_MPS = 12.0;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;

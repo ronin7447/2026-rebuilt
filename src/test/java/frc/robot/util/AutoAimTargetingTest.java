@@ -40,9 +40,9 @@ class AutoAimTargetingTest {
         assertEquals(AutoAimTargeting.TargetMode.NEUTRAL_BACK, selection.targetMode());
         assertFalse(selection.inAllianceZone());
         assertTrue(selection.inNeutralZone());
-        assertEquals(14.5, selection.targetPoint().getX(), EPSILON);
+        assertEquals(Constants.FieldTargets.RED_BACK_TARGET_UPPER.getX(), selection.targetPoint().getX(), EPSILON);
         assertEquals(6.00, selection.targetPoint().getY(), EPSILON);
-        assertEquals(0.2, selection.targetPoint3d().getZ(), EPSILON);
+        assertEquals(Constants.FieldTargets.BACK_TARGET_HEIGHT_METERS, selection.targetPoint3d().getZ(), EPSILON);
     }
 
     @Test
