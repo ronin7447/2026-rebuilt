@@ -15,6 +15,11 @@ public class AntiJamPulse extends SequentialCommandGroup {
     public AntiJamPulse(IntakeSubsystem intake) {
         this.intake = intake;
 
+        if (Constants.Intake.ANTI_JAM_PULSE_CYCLES <= 0) {
+            addCommands(Commands.none());
+            return;
+        }
+
         List<Command> pulseSequence = new ArrayList<>();
         pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS, false));
 
