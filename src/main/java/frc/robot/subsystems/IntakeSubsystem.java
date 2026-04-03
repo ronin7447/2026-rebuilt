@@ -41,9 +41,9 @@ public class IntakeSubsystem extends SubsystemBase {
         TalonFXConfiguration cfgFollower = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(90))
+                .withStatorCurrentLimit(Amps.of(100))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(90))
+                .withSupplyCurrentLimit(Amps.of(100))
                 .withSupplyCurrentLimitEnable(true));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
@@ -54,7 +54,7 @@ public class IntakeSubsystem extends SubsystemBase {
         slot0ConfigsFollower.kA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
         slot0ConfigsFollower.kP = 45.0; // An error of 1 rps results in 0.11 V output
         slot0ConfigsFollower.kI = 0; // no output for integrated error
-        slot0ConfigsFollower.kD = 0.2; // no output for error derivative'
+        slot0ConfigsFollower.kD = 0.3; // no output for error derivative'
         
         // set Motion Magic Velocity settings
         var motionMagicConfigsFollower = cfgFollower.MotionMagic;

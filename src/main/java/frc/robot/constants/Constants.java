@@ -242,9 +242,9 @@ public final class Constants {
         public static final int ROLLER_KRAKEN_ID = 40;
         public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
         public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
-        public static final double EXTENSION_VELOCITY = 25.0;
-        public static final double EXTENSION_ACCELERATION = 40.0;
-        public static final double EXTENSION_JERK = 100.0;
+        public static final double EXTENSION_VELOCITY = 60.0;
+        public static final double EXTENSION_ACCELERATION = 400.0;
+        public static final double EXTENSION_JERK = 4000.0;
 
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;
@@ -256,11 +256,11 @@ public final class Constants {
         public static final double INTAKE_EXTENDED_POS = 1.547;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             INTAKE_COLLAPSED_POS;
-        public static final int ANTI_JAM_PULSE_CYCLES = 2;
+        public static final int ANTI_JAM_PULSE_CYCLES = 0;
         public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25;
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05;
 
-        public static final double ROLLER_VELOCITY = 72.0;
+        public static final double ROLLER_VELOCITY = 90.0;
     }
 
     public static final class Shooter {
