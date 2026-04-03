@@ -239,9 +239,16 @@ public final class Constants {
         public static final int ROLLER_KRAKEN_ID = 40;
         public static final int EXTENSION_KRAKEN_MASTER_ID = 41;
         public static final int EXTENSION_KRAKEN_FOLLOWER_ID = 42;
-        public static final double EXTENSION_VELOCITY = 60.0;
-        public static final double EXTENSION_ACCELERATION = 400.0;
-        public static final double EXTENSION_JERK = 4000.0;
+        public static final double EXTENSION_EXTEND_VELOCITY = 18.0;
+        public static final double EXTENSION_EXTEND_ACCELERATION = 25.0;
+        public static final double EXTENSION_EXTEND_JERK = 80.0;
+        public static final double EXTENSION_COLLAPSE_VELOCITY = 45.0;
+        public static final double EXTENSION_COLLAPSE_ACCELERATION = 120.0;
+        public static final double EXTENSION_COLLAPSE_JERK = 1200.0;
+        public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 35.0;
+        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 20.0;
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 45.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 25.0;
 
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;

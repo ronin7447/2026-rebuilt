@@ -2,6 +2,7 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.Follower;
@@ -35,15 +36,16 @@ public class IntakeSubsystem extends SubsystemBase {
     private boolean mmPosEnabled = false;
     private boolean rollerEnabled = false;
     private int currentLevel = 0;
+    private ExtensionProfile activeExtensionProfile = ExtensionProfile.EXTEND;
     
     public IntakeSubsystem() {
 
         TalonFXConfiguration cfgFollower = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(100))
+                .withStatorCurrentLimit(Amps.of(Constants.Intake.EXTENSION_STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(100))
+                .withSupplyCurrentLimit(Amps.of(Constants.Intake.EXTENSION_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true));
 
         cfgFollower.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
@@ -58,9 +60,9 @@ public class IntakeSubsystem extends SubsystemBase {
         
         // set Motion Magic Velocity settings
         var motionMagicConfigsFollower = cfgFollower.MotionMagic;
-        motionMagicConfigsFollower.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_VELOCITY;
-        motionMagicConfigsFollower.MotionMagicAcceleration = Constants.Intake.EXTENSION_ACCELERATION; // Target acceleration of 40 rps/s 
-        motionMagicConfigsFollower.MotionMagicJerk = Constants.Intake.EXTENSION_JERK; // Target jerk of 400 rps/s/s 
+        motionMagicConfigsFollower.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_EXTEND_VELOCITY;
+        motionMagicConfigsFollower.MotionMagicAcceleration = Constants.Intake.EXTENSION_EXTEND_ACCELERATION;
+        motionMagicConfigsFollower.MotionMagicJerk = Constants.Intake.EXTENSION_EXTEND_JERK;
 
         extensionKrakenMaster.getConfigurator().apply(cfgFollower);
         extensionKrakenFollower.getConfigurator().apply(cfgFollower);
@@ -81,8 +83,8 @@ public class IntakeSubsystem extends SubsystemBase {
         // in init function
         var rollerTalonFXConfigs = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(80))
-                .withSupplyCurrentLimit(40)
+                .withStatorCurrentLimit(Amps.of(Constants.Intake.ROLLER_STATOR_CURRENT_LIMIT_A))
+                .withSupplyCurrentLimit(Amps.of(Constants.Intake.ROLLER_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true)
                 .withStatorCurrentLimitEnable(true));
 
@@ -97,8 +99,8 @@ public class IntakeSubsystem extends SubsystemBase {
 
         // set Motion Magic Velocity settings
         var motionMagicConfigs = rollerTalonFXConfigs.MotionMagic;
-        motionMagicConfigs.MotionMagicAcceleration = 400; // Target acceleration of 400 rps/s (0.25 seconds to max)
-        motionMagicConfigs.MotionMagicJerk = 4000; // Target jerk of 4000 rps/s/s (0.1 seconds)
+        motionMagicConfigs.MotionMagicAcceleration = 200; // Softer ramp to reduce intake current spikes
+        motionMagicConfigs.MotionMagicJerk = 2000;
 
         stallTimer.stop();
         stallTimer.reset();
@@ -166,7 +168,32 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void setIntakePosition(double targetPosRot) {
+        updateExtensionProfile(targetPosRot);
         this.targetPosRot = targetPosRot;
+    }
+
+    private void updateExtensionProfile(double newTargetPosRot) {
+        ExtensionProfile desiredProfile = newTargetPosRot < getIntakePosition()
+            ? ExtensionProfile.COLLAPSE
+            : ExtensionProfile.EXTEND;
+
+        if (desiredProfile == activeExtensionProfile) {
+            return;
+        }
+
+        MotionMagicConfigs motionMagicConfigs = new MotionMagicConfigs();
+        if (desiredProfile == ExtensionProfile.COLLAPSE) {
+            motionMagicConfigs.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_COLLAPSE_VELOCITY;
+            motionMagicConfigs.MotionMagicAcceleration = Constants.Intake.EXTENSION_COLLAPSE_ACCELERATION;
+            motionMagicConfigs.MotionMagicJerk = Constants.Intake.EXTENSION_COLLAPSE_JERK;
+        } else {
+            motionMagicConfigs.MotionMagicCruiseVelocity = Constants.Intake.EXTENSION_EXTEND_VELOCITY;
+            motionMagicConfigs.MotionMagicAcceleration = Constants.Intake.EXTENSION_EXTEND_ACCELERATION;
+            motionMagicConfigs.MotionMagicJerk = Constants.Intake.EXTENSION_EXTEND_JERK;
+        }
+
+        extensionKrakenMaster.getConfigurator().apply(motionMagicConfigs);
+        activeExtensionProfile = desiredProfile;
     }
 
     public int getCurrentLevel() {
@@ -218,5 +245,10 @@ public class IntakeSubsystem extends SubsystemBase {
         }
 
         
+    }
+
+    private enum ExtensionProfile {
+        EXTEND,
+        COLLAPSE
     }
 }
