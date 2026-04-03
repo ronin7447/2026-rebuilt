@@ -352,17 +352,21 @@ public class RobotContainer {
     }
 
     private Command createDriverShootCommand() {
+        Command antiJamCommand = Constants.Intake.ANTI_JAM_PULSE_CYCLES > 0
+            ? Commands.sequence(
+                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
+                new AntiJamPulse(m_IntakeSubsystem)
+                    .until(() -> joystick.leftTrigger().getAsBoolean())
+            ).repeatedly()
+            : Commands.none();
+
         return Commands.deadline(
             new ShootCommand(
                 m_ShooterSubsystem,
                 m_IndexerSubsystem,
                 m_OuttakeSubsystem
             ),
-            Commands.sequence(
-                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
-                new AntiJamPulse(m_IntakeSubsystem)
-                    .until(() -> joystick.leftTrigger().getAsBoolean())
-            ).repeatedly()
+            antiJamCommand
         ).beforeStarting(() -> shootDriveLimitActive = true)
             .finallyDo(interrupted -> shootDriveLimitActive = false);
     }
