@@ -29,10 +29,10 @@ public class ManipulateIntake extends Command {
             intake.enableExtension();
     
         } else {
-
+            intake.disableRoller();
             intake.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
             intake.enableExtension();
-            intake.disableRoller();
+           
         }
     }
 
@@ -48,7 +48,7 @@ public class ManipulateIntake extends Command {
     @Override
     public boolean isFinished() {
 
-            DriverStation.reportError(String.valueOf(intake.getExtensionKrakenMaster().getClosedLoopError().getValueAsDouble()), false);
+            // DriverStation.reportError(String.valueOf(intake.getExtensionKrakenMaster().getClosedLoopError().getValueAsDouble()), false);
             
             return Math.abs(intake.getIntakePosition() - intake.getTargetRot()) <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE;
     }

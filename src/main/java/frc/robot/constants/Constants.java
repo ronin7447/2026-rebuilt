@@ -142,10 +142,7 @@ public final class Constants {
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.50, (FIELD_WIDTH_METERS / 2.0) + 0.00);
         public static final Translation2d RED_HUB_AIM_POINT =
             new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
-        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48
-        
-        
-        , 6.00);
+        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 6.00);
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00);
         public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(16.1, 2.50);
@@ -253,7 +250,7 @@ public final class Constants {
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
         public static final double INTAKE_COLLAPSED_POS = 0.0;
-        public static final double INTAKE_EXTENDED_POS = 1.547;
+        public static final double INTAKE_EXTENDED_POS = 1.538;
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             INTAKE_COLLAPSED_POS;
         public static final int ANTI_JAM_PULSE_CYCLES = 0;
