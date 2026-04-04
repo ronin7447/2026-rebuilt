@@ -26,6 +26,8 @@ public class IndexerSubsystem extends SubsystemBase {
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
+                .withStatorCurrentLimit(Amps.of(50))
+                .withStatorCurrentLimitEnable(true)
                 .withSupplyCurrentLimit(Amps.of(40))
                 .withSupplyCurrentLimitEnable(true));
 

@@ -27,7 +27,10 @@ public class OuttakeSubsystem extends SubsystemBase {
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
                 .withStatorCurrentLimit(Amps.of(40))
-                .withStatorCurrentLimitEnable(true));
+                .withStatorCurrentLimitEnable(true)
+                .withSupplyCurrentLimit(Amps.of(25))
+                .withSupplyCurrentLimitEnable(true)
+                );
 
         var rollerSlot0Configs = rollerCfg.Slot0;
         rollerSlot0Configs.kS = Constants.Outtake.ROLLER_KS;

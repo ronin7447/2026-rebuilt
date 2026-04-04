@@ -267,10 +267,16 @@ public class RobotContainer {
 
         joystick.rightTrigger().whileTrue(createDriverShootCommand());
 
-        joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            // m_IndexerSubsystem.disableRoller();
-            // m_IndexerSubsystem.setRollerTargetVelocity(0);
+        joystick.leftTrigger().whileTrue((Commands.sequence((Commands.runOnce(() -> {
+            // m_IntakeSubsystem.disableRoller();
+            m_IntakeSubsystem.runRoller(Constants.Intake.ROLLER_VELOCITY * -0.5);
         })))));
+        joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
+            m_IntakeSubsystem.disableRoller();
+        })))));
+        //  joystick.leftTrigger().onFalse((Commands.sequence((Commands.runOnce(() -> {
+        //     m_IntakeSubsystem.disableRoller();
+        // })))));
 
         joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
             if (!hoodForTrenchDown) {
@@ -321,9 +327,9 @@ public class RobotContainer {
         // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
         // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
 
-        joystick.x().onTrue((Commands.runOnce(() -> {
-            m_IntakeSubsystem.zeroEncoder();
-        })));
+        // joystick.x().onTrue((Commands.runOnce(() -> {
+        //     m_IntakeSubsystem.zeroEncoder();
+        // })));
 
         joystick.y().whileTrue(createAutopilotCommand(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))));
 

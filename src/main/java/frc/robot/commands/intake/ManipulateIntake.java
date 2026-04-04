@@ -56,8 +56,6 @@ public class ManipulateIntake extends Command {
     @Override
     public void end(boolean interrupted) {
 
-        System.out.println("hfISHDFldSHFhSDHFsDHfshf");
-
         if (interrupted) {
 
             if (extend) {
@@ -79,6 +77,7 @@ public class ManipulateIntake extends Command {
 
         if (extend) {
             intake.enableRoller();
+            intake.disableExtension();
         }
     }
 }

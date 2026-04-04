@@ -57,6 +57,12 @@
                 "data": {
                   "name": "EnableIntake"
                 }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
+                }
               }
             ]
           }

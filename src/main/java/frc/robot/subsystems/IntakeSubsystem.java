@@ -54,7 +54,7 @@ public class IntakeSubsystem extends SubsystemBase {
         slot0ConfigsFollower.kS = 0.25; // Add 0.25 V output to overcome static friction
         slot0ConfigsFollower.kV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         slot0ConfigsFollower.kA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        slot0ConfigsFollower.kP = 45.0; // An error of 1 rps results in 0.11 V output
+        slot0ConfigsFollower.kP = 25.0; // An error of 1 rps results in 0.11 V output
         slot0ConfigsFollower.kI = 0; // no output for integrated error
         slot0ConfigsFollower.kD = 0.3; // no output for error derivative'
         
