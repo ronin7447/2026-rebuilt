@@ -370,17 +370,17 @@ public class TurretSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // if (positionMode) {
-        //     turretKraken.setControl(
-        //         mmPos.withPosition(
-        //             convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
-        //                 + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
-        //         )
-        //     );
-        // } else {
+        if (positionMode) {
+            turretKraken.setControl(
+                mmPos.withPosition(
+                    convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
+                        + Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
+                )
+            );
+        } else {
 
-        //     turretKraken.setControl(new VoltageOut(0));
-        // }
+            turretKraken.setControl(new VoltageOut(0));
+        }
 
         // for tuning pid
 
