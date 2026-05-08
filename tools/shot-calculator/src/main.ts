@@ -30,7 +30,17 @@ import {
   type DriveSimState,
   type KeyboardState,
 } from './math/simulator';
-import { findBestCandidate, isInsideShotMapDomain } from './math/trajectory';
+import { findBestCandidate, isInsideShotMapDomain, launchAngleDegForHood } from './math/trajectory';
+import {
+  createTurretSimState,
+  defaultTurretConstants,
+  defaultTurretControllerConfig,
+  solveTurretShot,
+  stepTurretSimulator,
+  type TurretControllerConfig,
+  type TurretSimState,
+  type TurretSolution,
+} from './math/turret';
 import type { ShotCalculatorConfig, TrajectoryCandidate } from './math/types';
 import './ui/styles.css';
 
@@ -47,6 +57,7 @@ const appState = {
   pathPlaying: false,
   pathMessage: 'Load a PathPlanner .path or Choreo JSON file to replay robot motion.',
   optimizeMessage: 'Score the current state or loaded path, then apply the highest ranked caps.',
+  turretOptimizeMessage: 'Optimize PID against current/path tracking demand. Defaults model Java current limits plus 45% effective turret speed.',
 };
 
 let robotPose: Pose2d = {
@@ -55,11 +66,13 @@ let robotPose: Pose2d = {
   headingRad: 0,
 };
 let driveSim: DriveSimState = createDriveSimState(robotPose);
+let turretSim: TurretSimState = createTurretSimState(0);
 const keyboard: KeyboardState = { keys: new Set() };
 let draggingRobot = false;
 let lastFrameTime = performance.now();
 let cachedThresholdRows: { key: string; rows: ThresholdRecommendation[] } | null = null;
 let cachedPathOverlay: { key: string; samples: PathSample[]; ready: boolean[] } | null = null;
+let cachedTurretPidOptimization: { key: string; score: TurretPidScore } | null = null;
 const candidateCache = new Map<string, TrajectoryCandidate | null>();
 
 appRoot.innerHTML = `
@@ -145,6 +158,37 @@ appRoot.innerHTML = `
         ${slider('linearFriction', 'Simulator coast friction (m/s²)', 0.5, 10, driveLimits.passiveLinearDecelMps2, 0.1)}
         ${slider('angularFriction', 'Simulator angular friction (rad/s²)', 1, 20, driveLimits.passiveAngularDecelRadPerSec2, 0.25)}
       </div>
+      <div class="threshold-card turret-card">
+        <span class="control-label">Turret tracker</span>
+        <label class="checkbox-label">
+          <input id="enableTurretSim" type="checkbox" checked />
+          <span>Gate readiness on simulated turret tracking</span>
+        </label>
+        ${slider('turretCurrentAngle', 'Reset current turret angle (deg)', -390, 180, 0, 1)}
+        <button id="resetTurretSim" type="button">Reset turret sim to angle</button>
+        ${slider('turretZeroOffset', 'Turret zero offset (deg)', -30, 30, 0, 0.25)}
+        ${slider('turretAimTolerance', 'Aim tolerance (deg)', 0.1, 5, defaultTurretControllerConfig.aimToleranceDeg, 0.1)}
+        ${slider('turretVoltageLimit', 'Voltage limit (V)', 1, 12, defaultTurretControllerConfig.voltageLimit, 0.1)}
+        ${slider('turretSupplyCurrentLimit', 'Supply current limit (A)', 5, 60, defaultTurretControllerConfig.supplyCurrentLimitA, 1)}
+        ${slider('turretStatorCurrentLimit', 'Stator current limit (A)', 5, 100, defaultTurretControllerConfig.statorCurrentLimitA, 1)}
+        ${slider('turretEffectiveMotionScale', 'Effective motion scale (%)', 10, 100, defaultTurretControllerConfig.effectiveMotionScale * 100.0, 1)}
+        ${slider('turretKp', 'kP', 0, 20, defaultTurretControllerConfig.kP, 0.05)}
+        ${slider('turretKi', 'kI', 0, 5, defaultTurretControllerConfig.kI, 0.025)}
+        ${slider('turretKd', 'kD', 0, 5, defaultTurretControllerConfig.kD, 0.025)}
+        ${slider('turretKs', 'kS', 0, 2, defaultTurretControllerConfig.kS, 0.01)}
+        ${slider('turretKv', 'kV', 0, 1, defaultTurretControllerConfig.kV, 0.005)}
+        ${slider('turretKa', 'kA', 0, 0.1, defaultTurretControllerConfig.kA, 0.001)}
+        ${slider('turretMaxVelocity', 'Max turret velocity (rps)', 0.25, 25, defaultTurretControllerConfig.maxVelocityDegPerSec / 360.0, 0.25)}
+        ${slider('turretMaxAcceleration', 'Max turret accel (rps²)', 1, 250, defaultTurretControllerConfig.maxAccelerationDegPerSec2 / 360.0, 1)}
+        ${slider('turretMaxJerk', 'Max turret jerk (rps³)', 10, 1500, defaultTurretControllerConfig.maxJerkDegPerSec3 / 360.0, 10)}
+        ${slider('turretOptimizeTurnFraction', 'Optimizer robot turn speed (%)', 10, 80, 45, 1)}
+        <label class="checkbox-label">
+          <input id="capsUseOptimizedPid" type="checkbox" checked />
+          <span>Use best PID when scoring movement caps</span>
+        </label>
+        <button id="optimizeTurretPid" type="button">Optimize turret PID</button>
+        <span id="turretOptimizeStatus" class="optimize-status">${appState.turretOptimizeMessage}</span>
+      </div>
       <div id="metrics"></div>
     </aside>
     <section class="plot-panel">
@@ -184,6 +228,11 @@ document.querySelector<HTMLButtonElement>('#hubTarget')?.addEventListener('click
 document.querySelector<HTMLButtonElement>('#neutralBackTarget')?.addEventListener('click', () => setTargetMode('neutral-back'));
 document.querySelector<HTMLButtonElement>('#opponentPassTarget')?.addEventListener('click', () => setTargetMode('opponent-passback'));
 document.querySelector<HTMLButtonElement>('#optimizeThresholds')?.addEventListener('click', () => applyOptimizedThresholds());
+document.querySelector<HTMLButtonElement>('#resetTurretSim')?.addEventListener('click', () => {
+  turretSim = createTurretSimState(value('turretCurrentAngle'));
+  render();
+});
+document.querySelector<HTMLButtonElement>('#optimizeTurretPid')?.addEventListener('click', () => applyOptimizedTurretPid());
 document.querySelector<HTMLButtonElement>('#playPath')?.addEventListener('click', () => {
   if (!appState.loadedPath) return;
   appState.pathPlaying = !appState.pathPlaying;
@@ -275,6 +324,22 @@ function animationFrame(timestamp: number): void {
     shouldRender = true;
   }
 
+  if (checked('enableTurretSim')) {
+    const evaluation = evaluateCurrentShot();
+    const previousTurretSim = turretSim;
+    turretSim = stepTurretSimulator(
+      turretSim,
+      evaluation.turretSolution.legalGoalTurretYawDeg,
+      dtSec,
+      turretControllerConfig(),
+    );
+    shouldRender = shouldRender
+      || !turretSim.atGoal
+      || Math.abs(turretSim.angleDeg - previousTurretSim.angleDeg) > 0.01
+      || Math.abs(turretSim.goalDeg - previousTurretSim.goalDeg) > 0.01
+      || turretSim.trackingRiskReason !== previousTurretSim.trackingRiskReason;
+  }
+
   if (shouldRender) render();
   requestAnimationFrame(animationFrame);
 }
@@ -293,7 +358,7 @@ function evaluateCurrentShot(): ShotEvaluation {
   return evaluateShotFromBaseMotion(currentBaseMotion());
 }
 
-function evaluateShotFromBaseMotion(base: BaseMotionState): ShotEvaluation {
+function evaluateShotFromBaseMotion(base: BaseMotionState, turretAngleOverrideDeg = currentTurretAngleDeg()): ShotEvaluation {
   const release = predictedReleaseState(base);
   const target = selectedTarget(appState.alliance, appState.targetMode, release.predictedPose);
   const distanceMeters = distance(release.shooterPoint, target.point);
@@ -323,6 +388,21 @@ function evaluateShotFromBaseMotion(base: BaseMotionState): ShotEvaluation {
     && hoodPrediction <= target.config.maxHoodRot
     && Math.abs(rollerPrediction) <= target.config.maxRollerRps
   );
+  const launchCommand = launchCommandForTurret(target.config, target.usesPolynomial, polynomialValid, candidate, hoodPrediction, rollerPrediction);
+  const turretSolution = solveTurretShot({
+    shooterPoint: release.shooterPoint,
+    targetPoint: target.point,
+    predictedRobotPose: release.predictedPose,
+    tangentialVelocityMps: radialTangential.tangentialVelocityMps,
+    launchAngleDeg: launchCommand?.launchAngleDeg ?? null,
+    exitSpeedMps: launchCommand?.exitSpeedMps ?? null,
+    pitchDeg: value('pitch'),
+    rollDeg: value('roll'),
+    turretZeroOffsetDeg: value('turretZeroOffset'),
+    currentTurretAngleDeg: turretAngleOverrideDeg,
+  });
+  const turretTracking = evaluateTurretTracking(turretSolution, turretAngleOverrideDeg);
+  const turretSideProfile = sideProfileForEvaluation(target.config, release, target.point, turretSolution);
   const threshold = evaluateThresholds(release);
   const reachable = isReachablePose(base.pose) && isReachablePose(release.predictedPose);
   const invalidReasons = [
@@ -330,6 +410,10 @@ function evaluateShotFromBaseMotion(base: BaseMotionState): ShotEvaluation {
     candidate ? null : 'no physics-valid trajectory',
     polynomialValid ? null : 'generated polynomial/cap invalid',
     threshold.ready ? null : threshold.reason,
+    turretTracking.ready ? null : turretTracking.reason,
+    turretSideProfile === null || turretSideProfile.targetOpeningValid
+      ? null
+      : 'turret-compensated trajectory misses target opening',
   ].filter((reason): reason is string => reason !== null);
 
   return {
@@ -340,6 +424,9 @@ function evaluateShotFromBaseMotion(base: BaseMotionState): ShotEvaluation {
     hoodPrediction,
     rollerPrediction,
     polynomialValid,
+    turretSolution,
+    turretTracking,
+    turretSideProfile,
     threshold,
     reachable,
     distanceMeters,
@@ -449,10 +536,224 @@ function evaluateThresholds(release: ReleaseState): ThresholdEvaluation {
   };
 }
 
+function launchCommandForTurret(
+  config: ShotCalculatorConfig,
+  usesPolynomial: boolean,
+  polynomialValid: boolean,
+  candidate: TrajectoryCandidate | null,
+  hoodPrediction: number | null,
+  rollerPrediction: number | null,
+): LaunchCommand | null {
+  if (usesPolynomial) {
+    if (!polynomialValid || hoodPrediction === null || rollerPrediction === null) return null;
+    return {
+      launchAngleDeg: launchAngleDegForHood(config, hoodPrediction),
+      exitSpeedMps: exitSpeedMpsForRollerRps(config, rollerPrediction),
+      source: 'polynomial',
+    };
+  }
+  if (!candidate) return null;
+  return {
+    launchAngleDeg: candidate.launchAngleDeg,
+    exitSpeedMps: candidate.exitSpeedMps,
+    source: 'candidate',
+  };
+}
+
+function exitSpeedMpsForRollerRps(config: ShotCalculatorConfig, rollerRps: number): number {
+  return (Math.abs(rollerRps) - config.rollerIntercept) / config.rollerSlope;
+}
+
+function currentTurretAngleDeg(): number {
+  return checked('enableTurretSim') ? turretSim.angleDeg : value('turretCurrentAngle');
+}
+
+function evaluateTurretTracking(solution: TurretSolution, turretAngleDeg = currentTurretAngleDeg()): TurretTrackingEvaluation {
+  const simEnabled = checked('enableTurretSim');
+  const aimErrorDeg = solution.legalGoalTurretYawDeg - turretAngleDeg;
+  const toleranceDeg = value('turretAimTolerance');
+  const trackingReady = !simEnabled || Math.abs(aimErrorDeg) <= toleranceDeg;
+  const ready = solution.valid && trackingReady;
+  let reason = '';
+  if (!solution.valid) {
+    reason = solution.reason;
+  } else if (!trackingReady) {
+    reason = `turret aim error ${aimErrorDeg.toFixed(1)} deg`;
+  }
+  return {
+    ready,
+    reason,
+    simEnabled,
+    currentAngleDeg: turretAngleDeg,
+    aimErrorDeg,
+    toleranceDeg,
+  };
+}
+
+function sideProfileForEvaluation(
+  config: ShotCalculatorConfig,
+  release: ReleaseState,
+  targetPoint: Point,
+  turretSolution: TurretSolution,
+): TurretSideProfile | null {
+  if (!turretSolution.valid) return null;
+  const dx = targetPoint.x - release.shooterPoint.x;
+  const dy = targetPoint.y - release.shooterPoint.y;
+  const targetDistanceMeters = Math.hypot(dx, dy);
+  if (targetDistanceMeters <= 1e-9) return null;
+
+  const unitToTarget = { x: dx / targetDistanceMeters, y: dy / targetDistanceMeters };
+  const tangentUnit = { x: -unitToTarget.y, y: unitToTarget.x };
+  const launchVector = turretSolution.launchVector;
+  const radialLaunchSpeedMps = dot2d(launchVector, unitToTarget);
+  const tangentialLaunchSpeedMps = dot2d(launchVector, tangentUnit);
+  const radialFieldSpeedMps = dot2d(release.shooterVelocity, unitToTarget) + radialLaunchSpeedMps;
+  const tangentialFieldSpeedMps = dot2d(release.shooterVelocity, tangentUnit) + tangentialLaunchSpeedMps;
+  const verticalLaunchSpeedMps = launchVector.z;
+
+  if (radialFieldSpeedMps <= 0.05 || !Number.isFinite(radialFieldSpeedMps)) {
+    return {
+      radialLaunchSpeedMps,
+      tangentialLaunchSpeedMps,
+      radialFieldSpeedMps,
+      tangentialFieldSpeedMps,
+      verticalLaunchSpeedMps,
+      targetDistanceMeters,
+      flightTimeToTargetSec: Number.NaN,
+      impactHeightMeters: Number.NaN,
+      peakHeightMeters: config.shooterExitHeightMeters,
+      crossTrackAtTargetMeters: Number.NaN,
+      targetOpeningValid: false,
+      frontLipCleared: false,
+      openingIntersectionValid: false,
+      openingSamples: [],
+    };
+  }
+
+  const flightTimeToTargetSec = targetDistanceMeters / radialFieldSpeedMps;
+  const impactHeightMeters = heightAtTime(config, verticalLaunchSpeedMps, flightTimeToTargetSec);
+  const timeToPeakSec = Math.max(0.0, verticalLaunchSpeedMps / config.gravityMps2);
+  const peakHeightMeters = heightAtTime(config, verticalLaunchSpeedMps, timeToPeakSec);
+  const crossTrackAtTargetMeters = tangentialFieldSpeedMps * flightTimeToTargetSec;
+  const openingSamples = openingSampleDistances(config, targetDistanceMeters).map((distanceMeters) => {
+    const timeSec = distanceMeters / radialFieldSpeedMps;
+    return {
+      distanceMeters,
+      heightMeters: heightAtTime(config, verticalLaunchSpeedMps, timeSec),
+      crossTrackMeters: tangentialFieldSpeedMps * timeSec,
+    };
+  });
+  const lowerY = config.targetHeightMeters - config.goalRadiusMeters;
+  const upperY = config.targetHeightMeters + config.goalRadiusMeters;
+  const openingIntersectionValid = openingSamples.some((sample) => (
+    sample.heightMeters >= lowerY
+    && sample.heightMeters <= upperY
+    && Math.abs(sample.crossTrackMeters) <= config.goalRadiusMeters
+  ));
+  const frontLipCleared = !config.requiresHubOpeningClearance || (() => {
+    const frontDistance = Math.max(0.0, targetDistanceMeters - (config.hubOpeningDepthMeters / 2.0));
+    const frontHeight = heightAtTime(config, verticalLaunchSpeedMps, frontDistance / radialFieldSpeedMps);
+    const requiredLipHeight = config.hubFrontLipHeightMeters + config.fuelRadiusMeters + config.hubLipClearanceMeters;
+    return frontHeight >= requiredLipHeight;
+  })();
+
+  return {
+    radialLaunchSpeedMps,
+    tangentialLaunchSpeedMps,
+    radialFieldSpeedMps,
+    tangentialFieldSpeedMps,
+    verticalLaunchSpeedMps,
+    targetDistanceMeters,
+    flightTimeToTargetSec,
+    impactHeightMeters,
+    peakHeightMeters,
+    crossTrackAtTargetMeters,
+    targetOpeningValid: openingIntersectionValid && frontLipCleared,
+    frontLipCleared,
+    openingIntersectionValid,
+    openingSamples,
+  };
+}
+
+function openingSampleDistances(config: ShotCalculatorConfig, targetDistanceMeters: number): number[] {
+  const front = config.requiresHubOpeningClearance
+    ? Math.max(0.0, targetDistanceMeters - (config.hubOpeningDepthMeters / 2.0))
+    : Math.max(0.0, targetDistanceMeters - 0.18);
+  const back = config.requiresHubOpeningClearance
+    ? targetDistanceMeters + (config.hubOpeningDepthMeters / 2.0)
+    : targetDistanceMeters + 0.18;
+  return Array.from({ length: 9 }, (_, index) => front + ((back - front) * index) / 8.0);
+}
+
+function heightAtTime(config: ShotCalculatorConfig, verticalLaunchSpeedMps: number, timeSec: number): number {
+  return config.shooterExitHeightMeters
+    + (verticalLaunchSpeedMps * timeSec)
+    - (0.5 * config.gravityMps2 * timeSec * timeSec);
+}
+
+function turretControllerConfig(): TurretControllerConfig {
+  return {
+    kP: value('turretKp'),
+    kI: value('turretKi'),
+    kD: value('turretKd'),
+    kS: value('turretKs'),
+    kV: value('turretKv'),
+    kA: value('turretKa'),
+    motorRotationsPerTurretRotation: defaultTurretConstants.motorRotationsPerTurretRotation,
+    maxVelocityDegPerSec: value('turretMaxVelocity') * 360.0,
+    maxAccelerationDegPerSec2: value('turretMaxAcceleration') * 360.0,
+    maxJerkDegPerSec3: value('turretMaxJerk') * 360.0,
+    effectiveMotionScale: value('turretEffectiveMotionScale') / 100.0,
+    aimToleranceDeg: value('turretAimTolerance'),
+    voltageLimit: value('turretVoltageLimit'),
+    supplyCurrentLimitA: value('turretSupplyCurrentLimit'),
+    statorCurrentLimitA: value('turretStatorCurrentLimit'),
+  };
+}
+
+function capsTurretControllerConfig(): TurretControllerConfig {
+  if (checked('capsUseOptimizedPid') && cachedTurretPidOptimization?.key === turretPidOptimizationKey()) {
+    return cachedTurretPidOptimization.score.config;
+  }
+  return turretControllerConfig();
+}
+
+function turretPidOptimizationKey(): string {
+  const pose = currentPose();
+  return [
+    appState.pageMode,
+    appState.alliance,
+    appState.targetMode,
+    appState.loadedPath?.name ?? 'no-path',
+    appState.loadedPath?.samples.length ?? 0,
+    pose.x.toFixed(2),
+    pose.y.toFixed(2),
+    pose.headingRad.toFixed(2),
+    value('shotSpeedCap').toFixed(2),
+    value('shotAccelCap').toFixed(2),
+    value('shotOmegaCap').toFixed(0),
+    value('shotAlphaCap').toFixed(0),
+    value('turretOptimizeTurnFraction').toFixed(0),
+    value('turretEffectiveMotionScale').toFixed(0),
+    value('turretSupplyCurrentLimit').toFixed(0),
+    value('turretStatorCurrentLimit').toFixed(0),
+    value('turretMaxVelocity').toFixed(2),
+    value('turretMaxAcceleration').toFixed(1),
+    value('turretMaxJerk').toFixed(0),
+    value('turretAimTolerance').toFixed(2),
+    value('turretKp').toFixed(2),
+    value('turretKi').toFixed(3),
+    value('turretKd').toFixed(3),
+    value('turretKv').toFixed(3),
+    value('turretKa').toFixed(3),
+    value('releaseLatency').toFixed(2),
+  ].join('|');
+}
+
 function renderMetrics(evaluation: ShotEvaluation): void {
   const target = evaluation.target;
   const candidate = evaluation.candidate;
-  const thresholdRows = thresholdRecommendationRows();
+  const thresholdRows = thresholdRecommendationRows(false);
   const pathMessage = appState.loadedPath
     ? `${escapeHtml(appState.loadedPath.name)} (${appState.loadedPath.source}, ${appState.loadedPath.samples.length} samples, ${appState.loadedPath.totalTimeSec.toFixed(2)} s)`
     : escapeHtml(appState.pathMessage);
@@ -481,23 +782,53 @@ function renderMetrics(evaluation: ShotEvaluation): void {
     <p><b>Polynomial roller:</b> ${evaluation.rollerPrediction === null ? 'N/A for passback' : `${evaluation.rollerPrediction.toFixed(1)} rps`}</p>
     <p><b>Flight time:</b> ${candidate ? `${candidate.flightTimeSec.toFixed(2)} s` : 'N/A'}</p>
     <p><b>Target margin:</b> ${candidate ? `${candidate.heightMarginMeters.toFixed(3)} m` : 'N/A'}</p>
+    <p><b>Turret-compensated path:</b> ${turretSideProfileSummary(evaluation.turretSideProfile)}</p>
     <p><b>Reachable pose:</b> ${evaluation.reachable ? 'yes' : 'blocked by field geometry'}</p>
     <p><b>Tilt input:</b> pitch ${value('pitch').toFixed(1)} deg, roll ${value('roll').toFixed(1)} deg</p>
+    <h3>Turret</h3>
+    <p><b>Desired field yaw:</b> ${evaluation.turretSolution.desiredFieldYawDeg.toFixed(1)} deg; stationary ${evaluation.turretSolution.stationaryFieldYawDeg.toFixed(1)} deg; lead ${evaluation.turretSolution.leadYawDeg.toFixed(1)} deg</p>
+    <p><b>Desired turret:</b> raw ${evaluation.turretSolution.desiredRawTurretYawDeg.toFixed(1)} deg; legal goal ${evaluation.turretSolution.legalGoalTurretYawDeg.toFixed(1)} deg; field goal ${evaluation.turretSolution.legalGoalFieldYawDeg.toFixed(1)} deg</p>
+    <p><b>Sim current:</b> ${evaluation.turretTracking.currentAngleDeg.toFixed(1)} deg; aim error ${evaluation.turretTracking.aimErrorDeg.toFixed(1)} deg; tolerance ${evaluation.turretTracking.toleranceDeg.toFixed(1)} deg</p>
+    <p><b>Sim velocity:</b> ${(turretSim.velocityDegPerSec / 360.0).toFixed(2)} rps; voltage ${turretSim.voltage.toFixed(1)} V; current ${turretSim.estimatedCurrentA.toFixed(0)} A; time-to-ready ${turretSim.timeToReadySec.toFixed(2)} s</p>
+    <p><b>Effective limits:</b> ${(effectiveTurretVelocityRps()).toFixed(2)} rps velocity, ${(effectiveTurretAccelerationRps2()).toFixed(1)} rps² accel after ${value('turretEffectiveMotionScale').toFixed(0)}% scale and current derate</p>
+    <p><b>Turret status:</b> <span class="${evaluation.turretTracking.ready ? 'good' : 'bad'}">${evaluation.turretTracking.ready ? (evaluation.turretTracking.simEnabled ? 'tracking ready' : 'math valid; sim not gating') : escapeHtml(evaluation.turretTracking.reason)}</span></p>
+    <p><b>Tracking risk:</b> ${turretSim.trackingRiskReason ? `<span class="bad">${escapeHtml(turretSim.trackingRiskReason)}</span>` : '<span class="good">none</span>'}</p>
+    <p><b>Tilt-corrected local pitch:</b> ${evaluation.turretSolution.localLaunchPitchDeg.toFixed(1)} deg; zero offset ${value('turretZeroOffset').toFixed(1)} deg</p>
     <h3>Envelope Score</h3>
     <p><b>Goal:</b> 100% solvable with worst-case estimated accuracy >= ${value('desiredAccuracy').toFixed(0)}%.</p>
     <table>
-      <thead><tr><th>Speed</th><th>Accel</th><th>Solve</th><th>Worst Acc</th><th>Score</th></tr></thead>
+      <thead><tr><th>Speed</th><th>Accel</th><th>Solve</th><th>Turret</th><th>Worst Acc</th><th>Score</th></tr></thead>
       <tbody>${thresholdRows.map((row) => `
         <tr class="${row.qualified ? 'qualified-row' : ''}">
           <td>${row.speedCapMps.toFixed(2)}</td>
           <td>${row.accelCapMps2.toFixed(1)}</td>
           <td>${(row.solveRate * 100).toFixed(0)}%</td>
+          <td>${(row.turretReadyRate * 100).toFixed(0)}% / ${row.turretP95ErrorDeg.toFixed(1)}°</td>
           <td>${(row.minAccuracy * 100).toFixed(0)}%</td>
           <td>${row.score.toFixed(2)}</td>
         </tr>
       `).join('')}</tbody>
     </table>
   `;
+}
+
+function turretSideProfileSummary(profile: TurretSideProfile | null): string {
+  if (!profile) return 'N/A';
+  const status = profile.targetOpeningValid
+    ? '<span class="good">intersects opening</span>'
+    : '<span class="bad">misses opening</span>';
+  return `${status}; radial field ${profile.radialFieldSpeedMps.toFixed(2)} m/s, cross-track ${profile.crossTrackAtTargetMeters.toFixed(3)} m, impact ${profile.impactHeightMeters.toFixed(2)} m, flight ${profile.flightTimeToTargetSec.toFixed(2)} s`;
+}
+
+function effectiveTurretVelocityRps(): number {
+  return value('turretMaxVelocity') * clamp(value('turretEffectiveMotionScale') / 100.0, 0.05, 1.0);
+}
+
+function effectiveTurretAccelerationRps2(): number {
+  const supplyCurrent = Math.max(0.1, value('turretSupplyCurrentLimit'));
+  const statorCurrent = Math.max(supplyCurrent, value('turretStatorCurrentLimit'));
+  const currentScale = clamp(supplyCurrent / statorCurrent, 0.12, 1.0);
+  return value('turretMaxAcceleration') * clamp(value('turretEffectiveMotionScale') / 100.0, 0.05, 1.0) * currentScale;
 }
 
 function drawField(evaluation: ShotEvaluation): void {
@@ -532,6 +863,7 @@ function drawField(evaluation: ShotEvaluation): void {
   context.strokeStyle = evaluation.shotReady ? evaluation.target.color : '#ef4444';
   context.lineWidth = 4;
   line(context, shooterCanvas.x, shooterCanvas.y, targetCanvas.x, targetCanvas.y);
+  drawTurretOverlay(context, evaluation);
   drawRobot(context, evaluation.base.pose, evaluation.release.currentShooterPoint, false);
   if (distance(evaluation.base.pose, evaluation.release.predictedPose) > 0.03
     || Math.abs(evaluation.base.pose.headingRad - evaluation.release.predictedPose.headingRad) > 0.02) {
@@ -635,6 +967,94 @@ function drawFieldElement(context: CanvasRenderingContext2D, element: FieldEleme
   context.fillText(shortElementName(element.name), topLeft.x + 5, topLeft.y + 15);
 }
 
+function drawTurretOverlay(context: CanvasRenderingContext2D, evaluation: ShotEvaluation): void {
+  const pivot = evaluation.release.shooterPoint;
+  const predictedHeadingDeg = radiansToDegrees(evaluation.release.predictedPose.headingRad);
+  const zeroOffsetDeg = value('turretZeroOffset');
+  const currentFieldYawDeg = predictedHeadingDeg + evaluation.turretTracking.currentAngleDeg + zeroOffsetDeg;
+
+  drawSoftLimitArc(context, pivot, predictedHeadingDeg + zeroOffsetDeg);
+  drawFieldRay(context, pivot, evaluation.turretSolution.stationaryFieldYawDeg, 1.45, 'rgba(219, 231, 212, 0.52)', 2, [8, 8]);
+  drawFieldRay(context, pivot, evaluation.turretSolution.desiredFieldYawDeg, 1.55, evaluation.turretSolution.valid ? '#f8c537' : '#fb7185', 4);
+  drawFieldRay(context, pivot, evaluation.turretSolution.legalGoalFieldYawDeg, 1.02, '#fb923c', 5);
+  drawFieldRay(context, pivot, currentFieldYawDeg, 0.82, evaluation.turretTracking.ready ? '#38bdf8' : '#ef4444', 4);
+
+  const pivotCanvas = fieldToCanvas(pivot);
+  context.fillStyle = '#101820';
+  context.beginPath();
+  context.arc(pivotCanvas.x, pivotCanvas.y, 6, 0, Math.PI * 2);
+  context.fill();
+  context.strokeStyle = '#f7f2e8';
+  context.lineWidth = 1.5;
+  context.stroke();
+
+  context.fillStyle = '#dbe7d4';
+  context.font = '500 11px IBM Plex Mono, monospace';
+  context.fillText(
+    `turret lead ${evaluation.turretSolution.leadYawDeg.toFixed(1)}° | error ${evaluation.turretTracking.aimErrorDeg.toFixed(1)}°`,
+    pivotCanvas.x + 12,
+    pivotCanvas.y + 18,
+  );
+}
+
+function drawSoftLimitArc(context: CanvasRenderingContext2D, pivot: Point, robotZeroFieldYawDeg: number): void {
+  const lowDeg = robotZeroFieldYawDeg + (defaultTurretConstants.softLimitLowRot * 360.0);
+  const highDeg = robotZeroFieldYawDeg + (defaultTurretConstants.softLimitHighRot * 360.0);
+  const spanDeg = highDeg - lowDeg;
+  const radiusMeters = 0.72;
+  context.save();
+  context.strokeStyle = 'rgba(34, 197, 94, 0.44)';
+  context.lineWidth = 2;
+  context.setLineDash([5, 6]);
+  if (Math.abs(spanDeg) >= 360.0) {
+    const center = fieldToCanvas(pivot);
+    const edge = fieldToCanvas({ x: pivot.x + radiusMeters, y: pivot.y });
+    context.beginPath();
+    context.arc(center.x, center.y, Math.abs(edge.x - center.x), 0, Math.PI * 2);
+    context.stroke();
+  } else {
+    context.beginPath();
+    for (let i = 0; i <= 96; i += 1) {
+      const angleDeg = lowDeg + ((spanDeg * i) / 96);
+      const point = pointFromAngle(pivot, angleDeg, radiusMeters);
+      const canvasPoint = fieldToCanvas(point);
+      if (i === 0) context.moveTo(canvasPoint.x, canvasPoint.y);
+      else context.lineTo(canvasPoint.x, canvasPoint.y);
+    }
+    context.stroke();
+  }
+  context.restore();
+  drawFieldRay(context, pivot, lowDeg, radiusMeters, 'rgba(34, 197, 94, 0.52)', 1.5, [2, 5]);
+  drawFieldRay(context, pivot, highDeg, radiusMeters, 'rgba(34, 197, 94, 0.52)', 1.5, [2, 5]);
+}
+
+function drawFieldRay(
+  context: CanvasRenderingContext2D,
+  origin: Point,
+  angleDeg: number,
+  lengthMeters: number,
+  color: string,
+  width: number,
+  dash: number[] = [],
+): void {
+  const start = fieldToCanvas(origin);
+  const end = fieldToCanvas(pointFromAngle(origin, angleDeg, lengthMeters));
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = width;
+  context.setLineDash(dash);
+  line(context, start.x, start.y, end.x, end.y);
+  context.restore();
+}
+
+function pointFromAngle(origin: Point, angleDeg: number, lengthMeters: number): Point {
+  const angleRad = degreesToRadians(angleDeg);
+  return {
+    x: origin.x + (Math.cos(angleRad) * lengthMeters),
+    y: origin.y + (Math.sin(angleRad) * lengthMeters),
+  };
+}
+
 function drawRobot(context: CanvasRenderingContext2D, pose: Pose2d, shooterPoint: Point, ghost: boolean): void {
   context.save();
   context.globalAlpha = ghost ? 0.45 : 1.0;
@@ -728,7 +1148,7 @@ function drawLegend(context: CanvasRenderingContext2D, bounds: FieldBounds): voi
   const x = bounds.x + bounds.width - 342;
   const y = 24;
   context.fillStyle = 'rgba(16, 24, 32, 0.78)';
-  context.fillRect(x - 12, y - 16, 356, 132);
+  context.fillRect(x - 12, y - 16, 356, 154);
   context.fillStyle = '#dbe7d4';
   context.font = '500 12px IBM Plex Mono, monospace';
   context.fillText('red outline = hard collision/no-reach', x, y);
@@ -737,11 +1157,13 @@ function drawLegend(context: CanvasRenderingContext2D, bounds: FieldBounds): voi
   context.fillText('crosshair = constants HUB center aim point', x, y + 60);
   context.fillText('path green/red = threshold + solver status', x, y + 80);
   context.fillText('blue ghost robot = predicted release pose', x, y + 100);
+  context.fillText('yellow/orange/cyan = desired/goal/current turret', x, y + 120);
 }
 
 function drawPlot(evaluation: ShotEvaluation): void {
   const candidate = evaluation.candidate;
   const config = evaluation.target.config;
+  const profile = evaluation.turretSideProfile;
   const context = plot.getContext('2d');
   if (!context) return;
   context.clearRect(0, 0, plot.width, plot.height);
@@ -763,6 +1185,7 @@ function drawPlot(evaluation: ShotEvaluation): void {
     3.0,
     config.targetHeightMeters + config.goalRadiusMeters + 0.9,
     (candidate?.peakHeightMeters ?? 0) + 0.4,
+    (profile?.peakHeightMeters ?? 0) + 0.4,
   );
   const xToPlot = (xMeters: number) => chart.left + (xMeters / plotEndDistance) * chartWidth;
   const yToPlot = (yMeters: number) => chart.top + chartHeight - (yMeters / maxHeightMeters) * chartHeight;
@@ -784,26 +1207,23 @@ function drawPlot(evaluation: ShotEvaluation): void {
   context.font = '500 14px IBM Plex Mono, monospace';
   context.fillText(
     config.requiresHubOpeningClearance
-      ? 'HUB side view: full opening depth + front polycarb lip clearance'
-      : 'Passback side view: flat-fast target band, HUB lip disabled',
+      ? 'HUB side view: turret-compensated 3D field trajectory + full opening depth'
+      : 'Passback side view: turret-compensated 3D field trajectory',
     chart.left,
     24,
   );
 
-  if (!candidate) return;
-  const launchAngleRad = degreesToRadians(candidate.launchAngleDeg);
-  const targetLineSpeed = (candidate.exitSpeedMps * Math.cos(launchAngleRad)) + evaluation.radialVelocityMps;
-  if (targetLineSpeed <= 0.05) return;
+  if (candidate) drawRadialOnlyReferencePath(context, evaluation, xToPlot, yToPlot, plotEndDistance);
+  if (!profile || profile.radialFieldSpeedMps <= 0.05) return;
 
-  context.strokeStyle = evaluation.shotReady ? '#f8c537' : '#fb7185';
+  drawSideTurretLauncher(context, config, profile, xToPlot, yToPlot);
+  context.strokeStyle = profile.targetOpeningValid ? '#f8c537' : '#fb7185';
   context.lineWidth = 4;
   context.beginPath();
   for (let i = 0; i <= 144; i += 1) {
     const xMeters = (plotEndDistance * i) / 144;
-    const t = xMeters / targetLineSpeed;
-    const yMeters = config.shooterExitHeightMeters
-      + (candidate.exitSpeedMps * Math.sin(launchAngleRad) * t)
-      - (0.5 * config.gravityMps2 * t * t);
+    const t = xMeters / profile.radialFieldSpeedMps;
+    const yMeters = heightAtTime(config, profile.verticalLaunchSpeedMps, t);
     const cx = xToPlot(xMeters);
     const cy = yToPlot(yMeters);
     if (i === 0) context.moveTo(cx, cy);
@@ -811,10 +1231,99 @@ function drawPlot(evaluation: ShotEvaluation): void {
   }
   context.stroke();
 
-  context.fillStyle = '#f8c537';
+  drawOpeningSampleMarkers(context, evaluation, profile, xToPlot, yToPlot);
+  context.fillStyle = profile.targetOpeningValid ? '#f8c537' : '#fb7185';
   context.beginPath();
-  context.arc(xToPlot(evaluation.distanceMeters), yToPlot(candidate.impactHeightMeters), 6, 0, Math.PI * 2);
+  context.arc(xToPlot(evaluation.distanceMeters), yToPlot(profile.impactHeightMeters), 6, 0, Math.PI * 2);
   context.fill();
+
+  context.fillStyle = '#dbe7d4';
+  context.font = '500 12px IBM Plex Mono, monospace';
+  context.fillText(
+    `solid = turret-compensated | dashed = radial-only map | cross-track @ target ${profile.crossTrackAtTargetMeters.toFixed(3)} m`,
+    chart.left,
+    chart.top + chartHeight - 10,
+  );
+}
+
+function drawRadialOnlyReferencePath(
+  context: CanvasRenderingContext2D,
+  evaluation: ShotEvaluation,
+  xToPlot: (xMeters: number) => number,
+  yToPlot: (yMeters: number) => number,
+  plotEndDistance: number,
+): void {
+  const candidate = evaluation.candidate;
+  if (!candidate) return;
+  const config = evaluation.target.config;
+  const launchAngleRad = degreesToRadians(candidate.launchAngleDeg);
+  const targetLineSpeed = (candidate.exitSpeedMps * Math.cos(launchAngleRad)) + evaluation.radialVelocityMps;
+  if (targetLineSpeed <= 0.05) return;
+  context.save();
+  context.strokeStyle = 'rgba(219, 231, 212, 0.36)';
+  context.lineWidth = 2;
+  context.setLineDash([8, 8]);
+  context.beginPath();
+  for (let i = 0; i <= 144; i += 1) {
+    const xMeters = (plotEndDistance * i) / 144;
+    const t = xMeters / targetLineSpeed;
+    const yMeters = heightAtTime(
+      config,
+      candidate.exitSpeedMps * Math.sin(launchAngleRad),
+      t,
+    );
+    const cx = xToPlot(xMeters);
+    const cy = yToPlot(yMeters);
+    if (i === 0) context.moveTo(cx, cy);
+    else context.lineTo(cx, cy);
+  }
+  context.stroke();
+  context.restore();
+}
+
+function drawSideTurretLauncher(
+  context: CanvasRenderingContext2D,
+  config: ShotCalculatorConfig,
+  profile: TurretSideProfile,
+  xToPlot: (xMeters: number) => number,
+  yToPlot: (yMeters: number) => number,
+): void {
+  const barrelLengthMeters = 0.55;
+  const sideProjectionPitchRad = Math.atan2(profile.verticalLaunchSpeedMps, profile.radialLaunchSpeedMps);
+  const startX = xToPlot(0.0);
+  const startY = yToPlot(config.shooterExitHeightMeters);
+  const endX = xToPlot(Math.cos(sideProjectionPitchRad) * barrelLengthMeters);
+  const endY = yToPlot(config.shooterExitHeightMeters + (Math.sin(sideProjectionPitchRad) * barrelLengthMeters));
+  context.save();
+  context.strokeStyle = '#fb923c';
+  context.lineWidth = 5;
+  line(context, startX, startY, endX, endY);
+  context.fillStyle = '#fb923c';
+  context.beginPath();
+  context.arc(startX, startY, 5, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawOpeningSampleMarkers(
+  context: CanvasRenderingContext2D,
+  evaluation: ShotEvaluation,
+  profile: TurretSideProfile,
+  xToPlot: (xMeters: number) => number,
+  yToPlot: (yMeters: number) => number,
+): void {
+  const config = evaluation.target.config;
+  const lowerY = config.targetHeightMeters - config.goalRadiusMeters;
+  const upperY = config.targetHeightMeters + config.goalRadiusMeters;
+  for (const sample of profile.openingSamples) {
+    const inOpening = sample.heightMeters >= lowerY
+      && sample.heightMeters <= upperY
+      && Math.abs(sample.crossTrackMeters) <= config.goalRadiusMeters;
+    context.fillStyle = inOpening ? '#22c55e' : '#ef4444';
+    context.beginPath();
+    context.arc(xToPlot(sample.distanceMeters), yToPlot(sample.heightMeters), 3.5, 0, Math.PI * 2);
+    context.fill();
+  }
 }
 
 function drawTargetOpening(
@@ -856,37 +1365,54 @@ function drawTargetOpening(
   }
 }
 
-function thresholdRecommendationRows(): ThresholdRecommendation[] {
+function thresholdRecommendationRows(forceCompute = false): ThresholdRecommendation[] {
   const cacheKey = thresholdRowsCacheKey();
   if (cachedThresholdRows?.key === cacheKey) return cachedThresholdRows.rows;
+  if (!forceCompute && cachedThresholdRows) return cachedThresholdRows.rows;
 
   const speedCaps = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, driveLimits.maxFreeSpeedMps];
   const accelCaps = [2.0, 3.0, 4.5, 6.0, 8.0];
   const requiredAccuracy = value('desiredAccuracy') / 100.0;
+  const turretConfig = capsTurretControllerConfig();
   const rows: ThresholdRecommendation[] = [];
   for (const speedCapMps of speedCaps) {
     for (const accelCapMps2 of accelCaps) {
       const samples = thresholdSamplesForCaps(speedCapMps, accelCapMps2);
-      const solvedSamples = samples.filter((sample) => sample.shotSolvable);
+      const consideredSamples = samples.filter((sample) => sample.considered);
+      const turretScore = scoreTurretForCaps(turretConfig, speedCapMps, accelCapMps2);
+      const solvedSamples = consideredSamples.filter((sample) => sample.shotSolvable);
       const solved = solvedSamples.length;
-      const solveRate = samples.length > 0 ? solved / samples.length : 0;
+      const solveRate = consideredSamples.length > 0 ? solved / consideredSamples.length : 0;
       const minAccuracy = solvedSamples.length > 0
         ? Math.min(...solvedSamples.map((sample) => sample.accuracyEstimate))
         : 0.0;
-      const accuracyPassRate = samples.length > 0
-        ? samples.filter((sample) => sample.shotSolvable && sample.accuracyEstimate >= requiredAccuracy).length / samples.length
+      const accuracyPassRate = consideredSamples.length > 0
+        ? consideredSamples.filter((sample) => sample.shotSolvable && sample.accuracyEstimate >= requiredAccuracy).length / consideredSamples.length
         : 0.0;
-      const qualified = solveRate >= 0.999 && minAccuracy >= requiredAccuracy;
+      const turretQualified = turretScore.readyRate >= 0.99
+        && turretScore.p95AbsErrorDeg <= turretConfig.aimToleranceDeg * 2.0;
+      const qualified = solveRate >= 0.999 && minAccuracy >= requiredAccuracy && turretQualified;
       const speedScore = speedCapMps / driveLimits.maxFreeSpeedMps;
       const accelScore = accelCapMps2 / 8.0;
       const freedomScore = (speedScore * 0.72) + (accelScore * 0.28);
-      const reliabilityScore = (solveRate * 0.55) + (accuracyPassRate * 0.30) + (minAccuracy * 0.15);
+      const turretReliability = clamp(
+        (turretScore.readyRate * 0.72)
+          + ((1.0 - clamp(turretScore.p95AbsErrorDeg / Math.max(turretConfig.aimToleranceDeg * 6.0, 1e-9), 0.0, 1.0)) * 0.28),
+        0.0,
+        1.0,
+      );
+      const reliabilityScore = (solveRate * 0.40)
+        + (accuracyPassRate * 0.25)
+        + (minAccuracy * 0.15)
+        + (turretReliability * 0.20);
       rows.push({
         speedCapMps,
         accelCapMps2,
         solveRate,
         minAccuracy,
         accuracyPassRate,
+        turretReadyRate: turretScore.readyRate,
+        turretP95ErrorDeg: turretScore.p95AbsErrorDeg,
         qualified,
         score: qualified
           ? 1.0 + freedomScore
@@ -904,7 +1430,7 @@ function thresholdRecommendationRows(): ThresholdRecommendation[] {
 function thresholdSamplesForCaps(speedCapMps: number, accelCapMps2: number): ThresholdSample[] {
   if (appState.pageMode === 'path' && appState.loadedPath) {
     return downsample(appState.loadedPath.samples, 24).map((sample) => thresholdSampleForBase(
-      baseMotionFromPathSample(sample, false),
+      baseMotionFromPathSampleForCaps(sample, speedCapMps, accelCapMps2),
       speedCapMps,
       accelCapMps2,
     ));
@@ -916,20 +1442,40 @@ function thresholdSamplesForCaps(speedCapMps: number, accelCapMps2: number): Thr
   ));
 }
 
+function baseMotionFromPathSampleForCaps(
+  sample: PathSample,
+  speedCapMps: number,
+  accelCapMps2: number,
+): BaseMotionState {
+  const scale = motionLimitScaleForSampleWithCaps(sample, speedCapMps, accelCapMps2);
+  const accelerationScale = scale * scale;
+  return {
+    pose: sample.pose,
+    velocity: scalePoint(sample.velocity, scale),
+    acceleration: scalePoint(sample.acceleration, accelerationScale),
+    omegaRadPerSec: sample.omegaRadPerSec * scale,
+    angularAccelRadPerSec2: sample.angularAccelRadPerSec2 * accelerationScale,
+    source: 'path',
+  };
+}
+
 function thresholdSampleForBase(base: BaseMotionState, speedCapMps: number, accelCapMps2: number): ThresholdSample {
-  const quality = fastShotQualityForBase(base);
-  const threshold = evaluateThresholds(predictedReleaseState(base));
+  const release = predictedReleaseState(base);
+  const threshold = evaluateThresholds(release);
   const underCaps = threshold.speedMps <= speedCapMps
     && threshold.accelerationMps2 <= accelCapMps2
     && threshold.omegaDegPerSec <= value('shotOmegaCap')
     && threshold.alphaDegPerSec2 <= value('shotAlphaCap');
+  const considered = isReachablePose(base.pose) && isReachablePose(release.predictedPose) && underCaps;
+  const quality = considered ? fastShotQualityForBase(base) : { solvable: false, accuracyEstimate: 0.0 };
   return {
+    considered,
     speedMps: threshold.speedMps,
     accelerationMps2: threshold.accelerationMps2,
     omegaDegPerSec: threshold.omegaDegPerSec,
     alphaDegPerSec2: threshold.alphaDegPerSec2,
-    shotSolvable: underCaps && quality.solvable,
-    accuracyEstimate: underCaps ? quality.accuracyEstimate : 0.0,
+    shotSolvable: considered && quality.solvable,
+    accuracyEstimate: considered ? quality.accuracyEstimate : 0.0,
   };
 }
 
@@ -1008,15 +1554,19 @@ function findBestCandidateCached(
   input: { distanceMeters: number; radialVelocityMps: number },
   selection: TargetSelection['candidateSelection'],
 ): TrajectoryCandidate | null {
+  const quantizedInput = {
+    distanceMeters: roundToStep(input.distanceMeters, 0.05),
+    radialVelocityMps: roundToStep(input.radialVelocityMps, 0.05),
+  };
   const key = [
     selection,
     config.targetHeightMeters.toFixed(2),
     config.requiresHubOpeningClearance ? 'hub' : 'pass',
-    input.distanceMeters.toFixed(2),
-    input.radialVelocityMps.toFixed(2),
+    quantizedInput.distanceMeters.toFixed(2),
+    quantizedInput.radialVelocityMps.toFixed(2),
   ].join('|');
   if (candidateCache.has(key)) return candidateCache.get(key) ?? null;
-  const candidate = findBestCandidate(config, input, selection);
+  const candidate = findBestCandidate(config, quantizedInput, selection);
   candidateCache.set(key, candidate);
   if (candidateCache.size > 2000) candidateCache.clear();
   return candidate;
@@ -1099,8 +1649,16 @@ function visualPathTimeScale(sample: PathSample): number {
 }
 
 function motionLimitScaleForSample(sample: PathSample): number {
-  const speedScale = limitScale(vectorMagnitude(sample.velocity), Math.min(value('shotSpeedCap'), driveLimits.maxFreeSpeedMps));
-  const accelScale = Math.sqrt(limitScale(vectorMagnitude(sample.acceleration), Math.min(value('shotAccelCap'), driveLimits.maxLinearAccelMps2)));
+  return motionLimitScaleForSampleWithCaps(sample, value('shotSpeedCap'), value('shotAccelCap'));
+}
+
+function motionLimitScaleForSampleWithCaps(
+  sample: PathSample,
+  speedCapMps: number,
+  accelCapMps2: number,
+): number {
+  const speedScale = limitScale(vectorMagnitude(sample.velocity), Math.min(speedCapMps, driveLimits.maxFreeSpeedMps));
+  const accelScale = Math.sqrt(limitScale(vectorMagnitude(sample.acceleration), Math.min(accelCapMps2, driveLimits.maxLinearAccelMps2)));
   const omegaScale = limitScale(Math.abs(sample.omegaRadPerSec), Math.min(degreesToRadians(value('shotOmegaCap')), driveLimits.maxAngularRateRadPerSec));
   const alphaScale = Math.sqrt(limitScale(
     Math.abs(sample.angularAccelRadPerSec2),
@@ -1119,7 +1677,22 @@ function scalePoint(point: Point, scale: number): Point {
 }
 
 function applyOptimizedThresholds(): void {
-  const rows = thresholdRecommendationRows();
+  if (checked('capsUseOptimizedPid')) {
+    try {
+      const bestPid = bestTurretPidScoreForCurrentContext();
+      cachedTurretPidOptimization = { key: turretPidOptimizationKey(), score: bestPid };
+      applyTurretPidScore(bestPid);
+      appState.turretOptimizeMessage = [
+        `Caps optimizer used best PID score ${bestPid.score.toFixed(1)} before ranking movement caps.`,
+        `ready ${(bestPid.readyRate * 100).toFixed(0)}%, p95 ${bestPid.p95AbsErrorDeg.toFixed(2)} deg.`,
+        `kP ${bestPid.config.kP.toFixed(2)}, kI ${bestPid.config.kI.toFixed(3)}, kD ${bestPid.config.kD.toFixed(3)}.`,
+      ].join(' ');
+    } catch (error) {
+      appState.turretOptimizeMessage = error instanceof Error ? error.message : 'Turret PID optimization failed.';
+    }
+  }
+  cachedThresholdRows = null;
+  const rows = thresholdRecommendationRows(true);
   const best = rows[0];
   if (!best) {
     appState.optimizeMessage = 'No scored samples available.';
@@ -1130,12 +1703,428 @@ function applyOptimizedThresholds(): void {
   setInputValue('shotSpeedCap', best.speedCapMps);
   setInputValue('shotAccelCap', best.accelCapMps2);
   appState.optimizeMessage = best.qualified
-    ? `Applied max qualified envelope: ${best.speedCapMps.toFixed(2)} m/s, ${best.accelCapMps2.toFixed(1)} m/s², ${(best.minAccuracy * 100).toFixed(0)}% worst-case estimated accuracy.`
-    : `No full guarantee found; applied best tradeoff: ${best.speedCapMps.toFixed(2)} m/s, ${best.accelCapMps2.toFixed(1)} m/s², ${(best.solveRate * 100).toFixed(0)}% solvable, ${(best.minAccuracy * 100).toFixed(0)}% worst-case estimated accuracy.`;
+    ? `Applied max qualified envelope: ${best.speedCapMps.toFixed(2)} m/s, ${best.accelCapMps2.toFixed(1)} m/s², ${(best.minAccuracy * 100).toFixed(0)}% worst-case estimated accuracy, ${(best.turretReadyRate * 100).toFixed(0)}% turret-ready.`
+    : `No full guarantee found; applied best tradeoff: ${best.speedCapMps.toFixed(2)} m/s, ${best.accelCapMps2.toFixed(1)} m/s², ${(best.solveRate * 100).toFixed(0)}% solvable, ${(best.minAccuracy * 100).toFixed(0)}% accuracy, ${(best.turretReadyRate * 100).toFixed(0)}% turret-ready.`;
   cachedPathOverlay = null;
   cachedThresholdRows = null;
   syncPoseToPathTime();
   render();
+}
+
+function applyOptimizedTurretPid(): void {
+  let best: TurretPidScore;
+  try {
+    best = bestTurretPidScoreForCurrentContext();
+  } catch (error) {
+    appState.turretOptimizeMessage = error instanceof Error ? error.message : 'Turret PID optimization failed.';
+    render();
+    return;
+  }
+  cachedTurretPidOptimization = { key: turretPidOptimizationKey(), score: best };
+  applyTurretPidScore(best);
+  appState.turretOptimizeMessage = [
+    `Applied PID score ${best.score.toFixed(1)} over ${best.sampleCount} samples.`,
+    `ready ${(best.readyRate * 100).toFixed(0)}%, avg error ${best.avgAbsErrorDeg.toFixed(2)} deg, p95 ${best.p95AbsErrorDeg.toFixed(2)} deg, max ${best.maxAbsErrorDeg.toFixed(2)} deg.`,
+    `kP ${best.config.kP.toFixed(2)}, kI ${best.config.kI.toFixed(3)}, kD ${best.config.kD.toFixed(3)}, kV ${best.config.kV.toFixed(3)}, kA ${best.config.kA.toFixed(3)}.`,
+  ].join(' ');
+  render();
+}
+
+function bestTurretPidScoreForCurrentContext(): TurretPidScore {
+  const cacheKey = turretPidOptimizationKey();
+  if (cachedTurretPidOptimization?.key === cacheKey) return cachedTurretPidOptimization.score;
+  const samples = turretOptimizerSamples();
+  if (samples.length < 4) {
+    throw new Error('No turret optimization samples available.');
+  }
+  const candidates = turretPidCandidates(turretPidSearchBaseConfig());
+  const best = candidates
+    .map((config) => scoreTurretCandidateForCurrentContext(config, samples))
+    .sort((a, b) => b.score - a.score)[0];
+  if (!best) {
+    throw new Error('No turret PID candidate produced a score.');
+  }
+  cachedTurretPidOptimization = { key: cacheKey, score: best };
+  return best;
+}
+
+function turretPidSearchBaseConfig(): TurretControllerConfig {
+  const current = turretControllerConfig();
+  return {
+    ...current,
+    kP: defaultTurretControllerConfig.kP,
+    kI: defaultTurretControllerConfig.kI,
+    kD: defaultTurretControllerConfig.kD,
+    kS: defaultTurretControllerConfig.kS,
+    kV: defaultTurretControllerConfig.kV,
+    kA: defaultTurretControllerConfig.kA,
+  };
+}
+
+function applyTurretPidScore(best: TurretPidScore): void {
+  setInputValue('turretKp', best.config.kP, 2);
+  setInputValue('turretKi', best.config.kI, 3);
+  setInputValue('turretKd', best.config.kD, 3);
+  setInputValue('turretKv', best.config.kV, 3);
+  setInputValue('turretKa', best.config.kA, 3);
+  turretSim = createTurretSimState(value('turretCurrentAngle'));
+}
+
+function turretPidCandidates(baseConfig: TurretControllerConfig): TurretControllerConfig[] {
+  const kPFactors = [0.85, 1.0, 1.15];
+  const kIFactors = [0.0, 0.5, 1.0];
+  const kDFactors = [0.8, 1.0, 1.2];
+  const kVFactors = [0.95, 1.0, 1.05];
+  const kAFactors = [0.9, 1.0, 1.1];
+  const candidates: TurretControllerConfig[] = [baseConfig];
+  for (const kPFactor of kPFactors) {
+    for (const kIFactor of kIFactors) {
+      for (const kDFactor of kDFactors) {
+        for (const kVFactor of kVFactors) {
+          for (const kAFactor of kAFactors) {
+            candidates.push({
+              ...baseConfig,
+              kP: clamp(baseConfig.kP * kPFactor, 0.0, 20.0),
+              kI: clamp(baseConfig.kI * kIFactor, 0.0, 5.0),
+              kD: clamp(baseConfig.kD * kDFactor, 0.0, 5.0),
+              kV: clamp(baseConfig.kV * kVFactor, 0.0, 1.0),
+              kA: clamp(baseConfig.kA * kAFactor, 0.0, 0.1),
+            });
+          }
+        }
+      }
+    }
+  }
+  return candidates;
+}
+
+function scoreTurretForCaps(
+  config: TurretControllerConfig,
+  speedCapMps: number,
+  accelCapMps2: number,
+): TurretPidScore {
+  const samples = turretOptimizerSamplesForCaps(speedCapMps, accelCapMps2, 28);
+  return appState.pageMode === 'path' && appState.loadedPath
+    ? scoreTurretPidConfig(config, samples)
+    : scoreTurretIndependentSamples(config, samples);
+}
+
+function scoreTurretCandidateForCurrentContext(
+  config: TurretControllerConfig,
+  samples: TurretOptimizerSample[],
+): TurretPidScore {
+  return appState.pageMode === 'path' && appState.loadedPath
+    ? scoreTurretPidConfig(config, samples)
+    : scoreTurretIndependentSamples(config, samples);
+}
+
+function scoreTurretPidConfig(
+  config: TurretControllerConfig,
+  samples: TurretOptimizerSample[],
+): TurretPidScore {
+  const firstGoal = firstValidTurretGoal(samples);
+  if (firstGoal === null) {
+    return emptyTurretPidScore(config);
+  }
+  let state = createTurretSimState(firstGoal);
+  const errors: number[] = [];
+  let readyCount = 0;
+  let saturatedCount = 0;
+  let currentLimitedCount = 0;
+  let directionChanges = 0;
+  let previousVelocitySign = 0;
+
+  for (const sample of samples) {
+    const evaluation = evaluateShotFromBaseMotion(sample.base, state.angleDeg);
+    if (!isTurretScoreableShot(evaluation)) continue;
+    const goalDeg = evaluation.turretSolution.legalGoalTurretYawDeg;
+    state = stepTurretSimulator(state, goalDeg, sample.dtSec, config);
+    const absError = Math.abs(state.aimErrorDeg);
+    errors.push(absError);
+    if (absError <= config.aimToleranceDeg) readyCount += 1;
+    if (Math.abs(state.voltage) >= config.voltageLimit * 0.98) saturatedCount += 1;
+    if (state.estimatedCurrentA >= config.supplyCurrentLimitA * 1.15) currentLimitedCount += 1;
+    const velocitySign = Math.sign(state.velocityDegPerSec);
+    if (previousVelocitySign !== 0 && velocitySign !== 0 && velocitySign !== previousVelocitySign) {
+      directionChanges += 1;
+    }
+    if (velocitySign !== 0) previousVelocitySign = velocitySign;
+  }
+
+  return turretPidScoreFromErrors(config, errors, readyCount, saturatedCount, currentLimitedCount, directionChanges);
+}
+
+function firstValidTurretGoal(samples: TurretOptimizerSample[]): number | null {
+  for (const sample of samples) {
+    const evaluation = evaluateShotFromBaseMotion(sample.base, value('turretCurrentAngle'));
+    if (isTurretScoreableShot(evaluation)) return evaluation.turretSolution.legalGoalTurretYawDeg;
+  }
+  return null;
+}
+
+function isTurretScoreableShot(evaluation: ShotEvaluation): boolean {
+  return evaluation.reachable
+    && evaluation.candidate !== null
+    && evaluation.polynomialValid
+    && evaluation.turretSolution.valid
+    && (evaluation.turretSideProfile?.targetOpeningValid ?? false);
+}
+
+function emptyTurretPidScore(config: TurretControllerConfig): TurretPidScore {
+  return {
+    config,
+    score: -9999,
+    sampleCount: 0,
+    readyRate: 0.0,
+    avgAbsErrorDeg: 999,
+    p95AbsErrorDeg: 999,
+    maxAbsErrorDeg: 999,
+    saturationRate: 1.0,
+    currentLimitRate: 1.0,
+  };
+}
+
+function turretOptimizerSamples(): TurretOptimizerSample[] {
+  return turretOptimizerSamplesForCaps(value('shotSpeedCap'), value('shotAccelCap'), 56);
+}
+
+function turretOptimizerSamplesForCaps(
+  speedCapMps: number,
+  accelCapMps2: number,
+  maxSamples: number,
+): TurretOptimizerSample[] {
+  if (appState.pageMode === 'path' && appState.loadedPath) {
+    const pathSamples = downsample(appState.loadedPath.samples, maxSamples);
+    return pathSamples.map((sample, index) => {
+      const previous = pathSamples[Math.max(0, index - 1)];
+      const dtSec = index === 0
+        ? 0.02
+        : clamp(sample.timeSec - previous.timeSec, 0.01, 0.08);
+      return {
+        base: baseMotionFromPathSampleForCaps(sample, speedCapMps, accelCapMps2),
+        dtSec,
+      };
+    });
+  }
+
+  return turretEnvelopeSamplesForCaps(speedCapMps, accelCapMps2, maxSamples);
+}
+
+function turretEnvelopeSamplesForCaps(
+  speedCapMps: number,
+  accelCapMps2: number,
+  maxSamples: number,
+): TurretOptimizerSample[] {
+  const pose = currentPose();
+  const turnFraction = value('turretOptimizeTurnFraction') / 100.0;
+  const omegaCap = Math.min(
+    driveLimits.maxAngularRateRadPerSec * clamp(turnFraction, 0.1, 0.8),
+    degreesToRadians(value('shotOmegaCap')),
+  );
+  const alphaCap = Math.min(degreesToRadians(value('shotAlphaCap')), driveLimits.maxAngularAccelRadPerSec2);
+  const velocityAngles = directionAngles(8);
+  const accelAngles = directionAngles(4);
+  const speedFractions = [0.0, 0.35, 0.7, 1.0];
+  const cappedSpeed = Math.min(speedCapMps, driveLimits.maxFreeSpeedMps);
+  const cappedAccel = Math.min(accelCapMps2, driveLimits.maxLinearAccelMps2);
+  const dtSec = 0.04;
+  const baseSamples: BaseMotionState[] = [{
+    pose,
+    velocity: { x: 0, y: 0 },
+    acceleration: { x: 0, y: 0 },
+    omegaRadPerSec: 0,
+    angularAccelRadPerSec2: 0,
+    source: appState.pageMode,
+  }];
+
+  for (const speedFraction of speedFractions) {
+    const speed = cappedSpeed * speedFraction;
+    for (const velocityAngle of velocityAngles) {
+      baseSamples.push({
+        pose,
+        velocity: polarPoint(speed, velocityAngle),
+        acceleration: { x: 0, y: 0 },
+        omegaRadPerSec: 0,
+        angularAccelRadPerSec2: 0,
+        source: appState.pageMode,
+      });
+    }
+  }
+
+  for (const velocityAngle of velocityAngles) {
+    for (const accelAngle of accelAngles) {
+      baseSamples.push({
+        pose,
+        velocity: polarPoint(cappedSpeed, velocityAngle),
+        acceleration: polarPoint(cappedAccel, accelAngle),
+        omegaRadPerSec: 0,
+        angularAccelRadPerSec2: 0,
+        source: appState.pageMode,
+      });
+    }
+  }
+
+  for (const omegaSign of [-1, 1]) {
+    for (const velocityAngle of velocityAngles) {
+      baseSamples.push({
+        pose,
+        velocity: polarPoint(cappedSpeed * 0.7, velocityAngle),
+        acceleration: { x: 0, y: 0 },
+        omegaRadPerSec: omegaSign * omegaCap,
+        angularAccelRadPerSec2: 0,
+        source: appState.pageMode,
+      });
+    }
+    for (const alphaSign of [-1, 1]) {
+      baseSamples.push({
+        pose,
+        velocity: { x: 0, y: 0 },
+        acceleration: { x: 0, y: 0 },
+        omegaRadPerSec: omegaSign * omegaCap,
+        angularAccelRadPerSec2: alphaSign * alphaCap,
+        source: appState.pageMode,
+      });
+    }
+  }
+
+  return downsample(baseSamples, maxSamples).map((base) => ({
+    dtSec,
+    base: {
+      ...base,
+      pose: clampPoseInsideField(base.pose),
+      velocity: clampVectorMagnitudeLocal(base.velocity, cappedSpeed),
+      acceleration: clampVectorMagnitudeLocal(base.acceleration, cappedAccel),
+    },
+  }));
+}
+
+function scoreTurretIndependentSamples(
+  config: TurretControllerConfig,
+  samples: TurretOptimizerSample[],
+): TurretPidScore {
+  const errors: number[] = [];
+  let readyCount = 0;
+  let saturatedCount = 0;
+  let currentLimitedCount = 0;
+
+  for (const sample of samples) {
+    const dt = clamp(sample.dtSec, 0.01, 0.05);
+    const evaluationNow = evaluateShotFromBaseMotion(sample.base, 0.0);
+    if (!isTurretScoreableShot(evaluationNow)) continue;
+
+    const baseNext = advanceBaseMotion(sample.base, dt);
+    const evaluationNext = evaluateShotFromBaseMotion(
+      baseNext,
+      evaluationNow.turretSolution.legalGoalTurretYawDeg,
+    );
+    if (!isTurretScoreableShot(evaluationNext)) continue;
+
+    const baseAfterNext = advanceBaseMotion(baseNext, dt);
+    const evaluationAfterNext = evaluateShotFromBaseMotion(
+      baseAfterNext,
+      evaluationNext.turretSolution.legalGoalTurretYawDeg,
+    );
+
+    const goal0 = evaluationNow.turretSolution.legalGoalTurretYawDeg;
+    const goal1 = evaluationNext.turretSolution.legalGoalTurretYawDeg;
+    const goal2 = isTurretScoreableShot(evaluationAfterNext)
+      ? evaluationAfterNext.turretSolution.legalGoalTurretYawDeg
+      : goal1;
+    const goalVelocity0 = (goal1 - goal0) / dt;
+    const goalVelocity1 = (goal2 - goal1) / dt;
+    const goalAcceleration = (goalVelocity1 - goalVelocity0) / dt;
+    let state = {
+      ...createTurretSimState(goal0),
+      velocityDegPerSec: goalVelocity0,
+      previousGoalDeg: goal0 - (goalVelocity0 * dt),
+      previousGoalVelocityDegPerSec: goalVelocity0,
+    };
+    state = stepTurretSimulator(state, goal1, dt, config);
+
+    const absError = Math.abs(state.aimErrorDeg);
+    const demandWithinLimits = Math.abs(goalVelocity0) <= effectiveTurretVelocityDegPerSecForConfig(config) * 0.92
+      && Math.abs(goalAcceleration) <= effectiveTurretAccelerationDegPerSec2ForConfig(config) * 0.92;
+
+    errors.push(absError);
+    if (absError <= config.aimToleranceDeg && demandWithinLimits && !state.trackingRiskReason) readyCount += 1;
+    if (Math.abs(state.voltage) >= config.voltageLimit * 0.98) saturatedCount += 1;
+    if (state.estimatedCurrentA >= config.supplyCurrentLimitA * 1.15) currentLimitedCount += 1;
+  }
+
+  return turretPidScoreFromErrors(config, errors, readyCount, saturatedCount, currentLimitedCount, 0);
+}
+
+function turretPidScoreFromErrors(
+  config: TurretControllerConfig,
+  errors: number[],
+  readyCount: number,
+  saturatedCount: number,
+  currentLimitedCount: number,
+  directionChanges: number,
+): TurretPidScore {
+  if (errors.length === 0) return emptyTurretPidScore(config);
+  const sortedErrors = [...errors].sort((a, b) => a - b);
+  const avgAbsErrorDeg = errors.reduce((sum, error) => sum + error, 0.0) / errors.length;
+  const p95AbsErrorDeg = sortedErrors[Math.min(sortedErrors.length - 1, Math.floor(sortedErrors.length * 0.95))] ?? 999;
+  const maxAbsErrorDeg = sortedErrors[sortedErrors.length - 1] ?? 999;
+  const readyRate = readyCount / errors.length;
+  const saturationRate = saturatedCount / errors.length;
+  const currentLimitRate = currentLimitedCount / errors.length;
+  const smoothnessPenalty = directionChanges / errors.length;
+  const score = (readyRate * 120.0)
+    + 15.0
+    - (avgAbsErrorDeg * 10.0)
+    - (p95AbsErrorDeg * 5.0)
+    - (maxAbsErrorDeg * 1.5)
+    - (saturationRate * 20.0)
+    - (currentLimitRate * 35.0)
+    - (smoothnessPenalty * 12.0);
+
+  return {
+    config,
+    score,
+    sampleCount: errors.length,
+    readyRate,
+    avgAbsErrorDeg,
+    p95AbsErrorDeg,
+    maxAbsErrorDeg,
+    saturationRate,
+    currentLimitRate,
+  };
+}
+
+function advanceBaseMotion(base: BaseMotionState, dtSec: number): BaseMotionState {
+  const dt = Math.max(0.0, dtSec);
+  return {
+    pose: clampPoseInsideField({
+      x: base.pose.x + (base.velocity.x * dt) + (0.5 * base.acceleration.x * dt * dt),
+      y: base.pose.y + (base.velocity.y * dt) + (0.5 * base.acceleration.y * dt * dt),
+      headingRad: wrapAngle(
+        base.pose.headingRad
+          + (base.omegaRadPerSec * dt)
+          + (0.5 * base.angularAccelRadPerSec2 * dt * dt),
+      ),
+    }),
+    velocity: {
+      x: base.velocity.x + (base.acceleration.x * dt),
+      y: base.velocity.y + (base.acceleration.y * dt),
+    },
+    acceleration: base.acceleration,
+    omegaRadPerSec: base.omegaRadPerSec + (base.angularAccelRadPerSec2 * dt),
+    angularAccelRadPerSec2: base.angularAccelRadPerSec2,
+    source: base.source,
+  };
+}
+
+function effectiveTurretVelocityDegPerSecForConfig(config: TurretControllerConfig): number {
+  return config.maxVelocityDegPerSec * clamp(config.effectiveMotionScale, 0.05, 1.0);
+}
+
+function effectiveTurretAccelerationDegPerSec2ForConfig(config: TurretControllerConfig): number {
+  const supplyCurrent = Math.max(0.1, config.supplyCurrentLimitA);
+  const statorCurrent = Math.max(supplyCurrent, config.statorCurrentLimitA);
+  const currentScale = clamp(supplyCurrent / statorCurrent, 0.12, 1.0);
+  return config.maxAccelerationDegPerSec2 * clamp(config.effectiveMotionScale, 0.05, 1.0) * currentScale;
 }
 
 function thresholdRowsCacheKey(): string {
@@ -1162,6 +2151,16 @@ function thresholdRowsCacheKey(): string {
     value('shotAccelCap').toFixed(2),
     value('shotOmegaCap').toFixed(0),
     value('shotAlphaCap').toFixed(0),
+    checked('capsUseOptimizedPid') ? 'best-pid' : 'current-pid',
+    cachedTurretPidOptimization?.key ?? 'no-pid-cache',
+    value('turretKp').toFixed(2),
+    value('turretKi').toFixed(3),
+    value('turretKd').toFixed(3),
+    value('turretKv').toFixed(3),
+    value('turretKa').toFixed(3),
+    value('turretEffectiveMotionScale').toFixed(0),
+    value('turretSupplyCurrentLimit').toFixed(0),
+    value('turretStatorCurrentLimit').toFixed(0),
     checked('applyVisualLimiter') ? 'limited' : 'raw',
   ].join('|');
 }
@@ -1181,6 +2180,12 @@ function pathAnalysisKey(): string {
     value('shotAccelCap').toFixed(2),
     value('shotOmegaCap').toFixed(0),
     value('shotAlphaCap').toFixed(0),
+    checked('capsUseOptimizedPid') ? 'best-pid' : 'current-pid',
+    cachedTurretPidOptimization?.key ?? 'no-pid-cache',
+    value('turretKp').toFixed(2),
+    value('turretKi').toFixed(3),
+    value('turretKd').toFixed(3),
+    value('turretEffectiveMotionScale').toFixed(0),
   ].join('|');
 }
 
@@ -1291,9 +2296,9 @@ function checked(id: string): boolean {
   return Boolean(input?.checked);
 }
 
-function setInputValue(id: string, nextValue: number): void {
+function setInputValue(id: string, nextValue: number, digits = 2): void {
   const input = document.querySelector<HTMLInputElement>(`#${id}`);
-  if (input) input.value = nextValue.toFixed(2);
+  if (input) input.value = nextValue.toFixed(digits);
 }
 
 function syncOutputs(): void {
@@ -1308,6 +2313,8 @@ function syncOutputs(): void {
   if (play) play.textContent = appState.pathPlaying ? 'Pause' : 'Play';
   const optimizeStatus = document.querySelector<HTMLSpanElement>('#optimizeStatus');
   if (optimizeStatus) optimizeStatus.textContent = appState.optimizeMessage;
+  const turretOptimizeStatus = document.querySelector<HTMLSpanElement>('#turretOptimizeStatus');
+  if (turretOptimizeStatus) turretOptimizeStatus.textContent = appState.turretOptimizeMessage;
 }
 
 function syncUiState(): void {
@@ -1393,6 +2400,17 @@ function vectorMagnitude(point: Point): number {
   return Math.hypot(point.x, point.y);
 }
 
+function clampVectorMagnitudeLocal(point: Point, maxMagnitude: number): Point {
+  const magnitude = vectorMagnitude(point);
+  if (magnitude <= maxMagnitude || magnitude <= 1e-9) return point;
+  const scale = maxMagnitude / magnitude;
+  return { x: point.x * scale, y: point.y * scale };
+}
+
+function dot2d(a: Point, b: Point): number {
+  return (a.x * b.x) + (a.y * b.y);
+}
+
 function line(context: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number): void {
   context.beginPath();
   context.moveTo(x1, y1);
@@ -1449,6 +2467,10 @@ function edgePressure(valueToScore: number, min: number, max: number): number {
 
 function clamp(valueToClamp: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, valueToClamp));
+}
+
+function roundToStep(valueToRound: number, step: number): number {
+  return Math.round(valueToRound / step) * step;
 }
 
 function degreesToRadians(degrees: number): number {
@@ -1509,6 +2531,9 @@ interface ShotEvaluation {
   hoodPrediction: number | null;
   rollerPrediction: number | null;
   polynomialValid: boolean;
+  turretSolution: TurretSolution;
+  turretTracking: TurretTrackingEvaluation;
+  turretSideProfile: TurretSideProfile | null;
   threshold: ThresholdEvaluation;
   reachable: boolean;
   distanceMeters: number;
@@ -1518,7 +2543,63 @@ interface ShotEvaluation {
   invalidReason: string;
 }
 
+interface LaunchCommand {
+  launchAngleDeg: number;
+  exitSpeedMps: number;
+  source: 'polynomial' | 'candidate';
+}
+
+interface TurretTrackingEvaluation {
+  ready: boolean;
+  reason: string;
+  simEnabled: boolean;
+  currentAngleDeg: number;
+  aimErrorDeg: number;
+  toleranceDeg: number;
+}
+
+interface TurretSideProfile {
+  radialLaunchSpeedMps: number;
+  tangentialLaunchSpeedMps: number;
+  radialFieldSpeedMps: number;
+  tangentialFieldSpeedMps: number;
+  verticalLaunchSpeedMps: number;
+  targetDistanceMeters: number;
+  flightTimeToTargetSec: number;
+  impactHeightMeters: number;
+  peakHeightMeters: number;
+  crossTrackAtTargetMeters: number;
+  targetOpeningValid: boolean;
+  frontLipCleared: boolean;
+  openingIntersectionValid: boolean;
+  openingSamples: TurretSideSample[];
+}
+
+interface TurretSideSample {
+  distanceMeters: number;
+  heightMeters: number;
+  crossTrackMeters: number;
+}
+
+interface TurretOptimizerSample {
+  base: BaseMotionState;
+  dtSec: number;
+}
+
+interface TurretPidScore {
+  config: TurretControllerConfig;
+  score: number;
+  sampleCount: number;
+  readyRate: number;
+  avgAbsErrorDeg: number;
+  p95AbsErrorDeg: number;
+  maxAbsErrorDeg: number;
+  saturationRate: number;
+  currentLimitRate: number;
+}
+
 interface ThresholdSample {
+  considered: boolean;
   speedMps: number;
   accelerationMps2: number;
   omegaDegPerSec: number;
@@ -1538,6 +2619,8 @@ interface ThresholdRecommendation {
   solveRate: number;
   minAccuracy: number;
   accuracyPassRate: number;
+  turretReadyRate: number;
+  turretP95ErrorDeg: number;
   qualified: boolean;
   score: number;
 }
