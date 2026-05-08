@@ -249,4 +249,34 @@ class ShooterKinematicsTest {
         );
         assertTrue(flattestSolution.requiredExitSpeedMps() >= minimumSpeedSolution.requiredExitSpeedMps());
     }
+
+    @Test
+    void flatFastSelectionPrefersShorterFlightTimeThanFlattestShot() {
+        ShooterKinematics.MovingShotRequest request = new ShooterKinematics.MovingShotRequest(
+            new Pose2d(),
+            new ChassisSpeeds(),
+            Translation2d.kZero,
+            1.0,
+            new Translation3d(4.0, 0.0, 1.0),
+            Rotation2d.kZero,
+            CALIBRATION,
+            MIN_HOOD_POSITION_ROT,
+            MAX_HOOD_POSITION_ROT,
+            FAR_SHOT_DISTANCE_METERS,
+            MIN_HOOD_POSITION_ROT,
+            20.0
+        );
+
+        ShooterKinematics.MovingShotSolution flattestSolution = ShooterKinematics.solveMovingShot(
+            request,
+            ShooterKinematics.SelectionPreference.FLATTEST_SHOT
+        ).orElseThrow();
+        ShooterKinematics.MovingShotSolution flatFastSolution = ShooterKinematics.solveMovingShot(
+            request,
+            ShooterKinematics.SelectionPreference.FLAT_FAST_SHOT
+        ).orElseThrow();
+
+        assertTrue(flatFastSolution.flightTimeSec() <= flattestSolution.flightTimeSec() + EPSILON);
+        assertTrue(flatFastSolution.requiredExitSpeedMps() >= flattestSolution.requiredExitSpeedMps() - EPSILON);
+    }
 }

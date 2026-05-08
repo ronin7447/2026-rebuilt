@@ -7,7 +7,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -19,6 +21,11 @@ import frc.robot.util.AutoAimTargeting;
 import frc.robot.util.LinearShooterCalibration;
 import frc.robot.util.ShooterCalibration;
 import frc.robot.util.ShooterKinematics;
+import frc.robot.util.sotm.RobustShotModel;
+import frc.robot.util.sotm.RobustShotRequest;
+import frc.robot.util.sotm.RobustShotSolution;
+import frc.robot.util.sotm.ShotMotionState;
+import frc.robot.util.sotm.ShotQuality;
 
 public class AutoAimTurretCommand extends Command {
     private final CommandSwerveDrivetrain drivetrain;
@@ -26,6 +33,11 @@ public class AutoAimTurretCommand extends Command {
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
     private final ShooterCalibration shooterCalibration = new LinearShooterCalibration();
+    private ChassisSpeeds lastFieldSpeeds = null;
+    private double lastMotionSampleTimeSec = -1.0;
+    private double filteredFieldAccelXMps2 = 0.0;
+    private double filteredFieldAccelYMps2 = 0.0;
+    private double filteredAngularAccelRadPerSec2 = 0.0;
 
     public AutoAimTurretCommand(
         CommandSwerveDrivetrain drivetrain,
@@ -42,7 +54,9 @@ public class AutoAimTurretCommand extends Command {
 
     @Override
     public void execute() {
-        Pose2d robotPose = drivetrain.getState().Pose;
+        var drivetrainState = drivetrain.getState();
+        Pose2d robotPose = drivetrainState.Pose;
+        ChassisSpeeds robotRelativeSpeeds = drivetrainState.Speeds;
         Translation2d pivotFieldPosition = AimMath.computeTurretPivotFieldPosition(
             robotPose,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT
@@ -137,7 +151,7 @@ public class AutoAimTurretCommand extends Command {
 
         ShooterKinematics.MovingShotRequest request = new ShooterKinematics.MovingShotRequest(
             robotPose,
-            drivetrain.getState().Speeds,
+            robotRelativeSpeeds,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT,
             Constants.Shooter.EXIT_HEIGHT_METERS,
             selectedTargetPoint3d,
@@ -154,28 +168,80 @@ public class AutoAimTurretCommand extends Command {
         ShooterKinematics.SelectionPreference selectionPreference =
             targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
                 ? ShooterKinematics.SelectionPreference.MIN_EXIT_SPEED
-                : ShooterKinematics.SelectionPreference.FLATTEST_SHOT;
-        Optional<ShooterKinematics.MovingShotSolution> movingShotSolution =
-            ShooterKinematics.solveMovingShot(request, selectionPreference);
+                : ShooterKinematics.SelectionPreference.FLAT_FAST_SHOT;
+        Optional<RobustShotSolution> robustShotSolution = Optional.empty();
+        Optional<ShooterKinematics.MovingShotSolution> movingShotSolution = Optional.empty();
+        String shotModelName = "Legacy";
 
         Rotation2d commandedTurretAngle = stationaryDesiredTurretAngle;
         Rotation2d desiredFieldYaw = stationaryFieldYaw;
         OptionalDouble mappedHoodPosition = OptionalDouble.empty();
         OptionalDouble mappedRollerRps = OptionalDouble.empty();
 
+        if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+            && Constants.ShotMap.USE_ROBUST_SOTM) {
+            ShotMotionState motionState = sampleShotMotionState(robotPose, robotRelativeSpeeds);
+            robustShotSolution = RobustShotModel.solve(new RobustShotRequest(
+                motionState,
+                Constants.Turret.ROBOT_TO_TURRET_PIVOT,
+                Constants.Shooter.EXIT_HEIGHT_METERS,
+                selectedTargetPoint3d,
+                Rotation2d.kZero,
+                Constants.Shooter.MIN_HOOD_POSITION_ROT,
+                Constants.Shooter.MAX_HOOD_POSITION_ROT,
+                Constants.Shooter.MAX_EXIT_SPEED_MPS,
+                Constants.ShotMap.BASE_RELEASE_LATENCY_SEC
+            ));
+
+            if (robustShotSolution.isPresent() && robustShotSolution.get().quality().insideTolerance()) {
+                RobustShotSolution solution = robustShotSolution.get();
+                commandedTurretAngle = solution.desiredTurretYaw();
+                desiredFieldYaw = solution.desiredFieldYaw();
+                mappedHoodPosition = OptionalDouble.of(solution.hoodPositionRot());
+                mappedRollerRps = OptionalDouble.of(solution.rollerRps());
+                mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
+                mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
+                shotModelName = "RobustShotMap";
+                movingShotSolution = Optional.of(new ShooterKinematics.MovingShotSolution(
+                    solution.desiredFieldYaw(),
+                    solution.desiredTurretYaw(),
+                    solution.recommendedLaunchPitch(),
+                    solution.requiredExitSpeedMps(),
+                    solution.flightTimeSec(),
+                    solution.leadYawDeg()
+                ));
+            }
+        }
+
+        if (movingShotSolution.isEmpty()
+            && (targetSelection.targetMode() != AutoAimTargeting.TargetMode.HUB
+                || !Constants.ShotMap.USE_ROBUST_SOTM
+                || Constants.ShotMap.FALLBACK_TO_LEGACY_SOLVER)) {
+            movingShotSolution = ShooterKinematics.solveMovingShot(request, selectionPreference);
+            shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                && Constants.ShotMap.USE_ROBUST_SOTM
+                    ? "LegacyFallback"
+                    : "Legacy";
+        }
+
         if (movingShotSolution.isPresent()) {
             ShooterKinematics.MovingShotSolution solution = movingShotSolution.get();
             commandedTurretAngle = solution.desiredTurretYaw();
             desiredFieldYaw = solution.desiredFieldYaw();
-            mappedHoodPosition = shooterCalibration.hoodPositionForLaunchAngleDeg(
-                solution.recommendedLaunchPitch().getDegrees()
-            );
-            mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
+            if (mappedHoodPosition.isEmpty()) {
+                mappedHoodPosition = shooterCalibration.hoodPositionForLaunchAngleDeg(
+                    solution.recommendedLaunchPitch().getDegrees()
+                );
+            }
+            if (mappedRollerRps.isEmpty()) {
+                mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
+            }
 
             mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
             mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
         }
 
+        publishRobustShotTelemetry(shotModelName, robustShotSolution);
         turret.setTurretGoal(commandedTurretAngle);
         publishAimState(
             targetSelection.targetMode().name(),
@@ -192,6 +258,88 @@ public class AutoAimTurretCommand extends Command {
             movingShotSolution,
             mappedHoodPosition,
             mappedRollerRps
+        );
+    }
+
+    private ShotMotionState sampleShotMotionState(Pose2d robotPose, ChassisSpeeds robotRelativeSpeeds) {
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
+            robotRelativeSpeeds.vxMetersPerSecond,
+            robotRelativeSpeeds.vyMetersPerSecond,
+            robotRelativeSpeeds.omegaRadiansPerSecond,
+            robotPose.getRotation()
+        );
+        double timestampSec = Timer.getFPGATimestamp();
+        if (lastFieldSpeeds != null && lastMotionSampleTimeSec >= 0.0) {
+            double dtSec = timestampSec - lastMotionSampleTimeSec;
+            if (dtSec > 1e-6 && dtSec <= Constants.ShotMap.MAX_ACCEL_SAMPLE_DT_SEC) {
+                filteredFieldAccelXMps2 = filteredAcceleration(
+                    filteredFieldAccelXMps2,
+                    (fieldSpeeds.vxMetersPerSecond - lastFieldSpeeds.vxMetersPerSecond) / dtSec,
+                    Constants.ShotMap.MAX_FIELD_ACCEL_MPS2
+                );
+                filteredFieldAccelYMps2 = filteredAcceleration(
+                    filteredFieldAccelYMps2,
+                    (fieldSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dtSec,
+                    Constants.ShotMap.MAX_FIELD_ACCEL_MPS2
+                );
+                filteredAngularAccelRadPerSec2 = filteredAcceleration(
+                    filteredAngularAccelRadPerSec2,
+                    (fieldSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dtSec,
+                    Constants.ShotMap.MAX_ANGULAR_ACCEL_RAD_PER_SEC2
+                );
+            }
+        }
+        lastFieldSpeeds = fieldSpeeds;
+        lastMotionSampleTimeSec = timestampSec;
+
+        return new ShotMotionState(
+            robotPose,
+            robotRelativeSpeeds,
+            fieldSpeeds,
+            filteredFieldAccelXMps2,
+            filteredFieldAccelYMps2,
+            filteredAngularAccelRadPerSec2,
+            drivetrain.getRobotOrientation3d()
+        );
+    }
+
+    private double filteredAcceleration(double previousValue, double rawValue, double maxMagnitude) {
+        double clampedRaw = Math.max(-maxMagnitude, Math.min(maxMagnitude, rawValue));
+        return previousValue + (Constants.ShotMap.ACCEL_FILTER_ALPHA * (clampedRaw - previousValue));
+    }
+
+    private void publishRobustShotTelemetry(
+        String shotModelName,
+        Optional<RobustShotSolution> robustShotSolution
+    ) {
+        if (robustShotSolution.isEmpty()) {
+            turret.updateRobustShotState(
+                shotModelName,
+                "not-running",
+                Double.NaN,
+                Double.NaN,
+                Double.NaN,
+                Double.NaN,
+                Double.NaN,
+                Double.NaN,
+                1.0,
+                1.0
+            );
+            return;
+        }
+
+        ShotQuality quality = robustShotSolution.get().quality();
+        turret.updateRobustShotState(
+            shotModelName,
+            quality.reason(),
+            quality.distanceMeters(),
+            quality.radialVelocityMps(),
+            quality.tangentialVelocityMps(),
+            quality.robustnessMargin(),
+            quality.polynomialFitError(),
+            quality.releaseLatencySec(),
+            quality.translationScale(),
+            quality.rotationScale()
         );
     }
 

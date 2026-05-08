@@ -138,6 +138,8 @@ $RECYCLE.BIN/
 ### Gradle ###
 .gradle
 /build/
+node_modules/
+dist/
 
 # Ignore Gradle GUI config
 gradle-app.setting

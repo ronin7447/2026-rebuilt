@@ -302,6 +302,18 @@ public final class Constants {
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;
     }
 
+    public static final class ShotMap {
+        public static final boolean USE_ROBUST_SOTM = true;
+        public static final boolean FALLBACK_TO_LEGACY_SOLVER = true;
+        public static final double BASE_RELEASE_LATENCY_SEC = 0.14;
+        public static final double ACCEL_FILTER_ALPHA = 0.25;
+        public static final double MAX_ACCEL_SAMPLE_DT_SEC = 0.10;
+        public static final double MAX_FIELD_ACCEL_MPS2 = 8.0;
+        public static final double MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(900.0);
+        public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65;
+        public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55;
+    }
+
     public static final class Outtake {
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output

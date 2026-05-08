@@ -57,6 +57,16 @@ public class TurretSubsystem extends SubsystemBase {
     private double leadYawDeg = Double.NaN;
     private double mappedHoodPosition = Double.NaN;
     private double mappedRollerRps = Double.NaN;
+    private String shotModelName = "Legacy";
+    private String robustShotReason = "not-running";
+    private double robustDistanceMeters = Double.NaN;
+    private double robustRadialVelocityMps = Double.NaN;
+    private double robustTangentialVelocityMps = Double.NaN;
+    private double robustMargin = Double.NaN;
+    private double robustFitError = Double.NaN;
+    private double robustReleaseLatencySec = Double.NaN;
+    private double robustTranslationScale = 1.0;
+    private double robustRotationScale = 1.0;
 
     private BooleanSupplier shooterReadySupplier = () -> true;
 
@@ -366,6 +376,30 @@ public class TurretSubsystem extends SubsystemBase {
         this.mappedRollerRps = mappedRollerRps;
     }
 
+    public void updateRobustShotState(
+        String shotModelName,
+        String robustShotReason,
+        double robustDistanceMeters,
+        double robustRadialVelocityMps,
+        double robustTangentialVelocityMps,
+        double robustMargin,
+        double robustFitError,
+        double robustReleaseLatencySec,
+        double robustTranslationScale,
+        double robustRotationScale
+    ) {
+        this.shotModelName = shotModelName;
+        this.robustShotReason = robustShotReason;
+        this.robustDistanceMeters = robustDistanceMeters;
+        this.robustRadialVelocityMps = robustRadialVelocityMps;
+        this.robustTangentialVelocityMps = robustTangentialVelocityMps;
+        this.robustMargin = robustMargin;
+        this.robustFitError = robustFitError;
+        this.robustReleaseLatencySec = robustReleaseLatencySec;
+        this.robustTranslationScale = robustTranslationScale;
+        this.robustRotationScale = robustRotationScale;
+    }
+
 
 
     @Override
@@ -426,6 +460,16 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/LeadYawDeg", leadYawDeg);
         SmartDashboard.putNumber("Turret/MappedHoodPosition", mappedHoodPosition);
         SmartDashboard.putNumber("Turret/MappedRollerRps", mappedRollerRps);
+        SmartDashboard.putString("Turret/ShotModel", shotModelName);
+        SmartDashboard.putString("Turret/RobustShotReason", robustShotReason);
+        SmartDashboard.putNumber("Turret/RobustDistanceMeters", robustDistanceMeters);
+        SmartDashboard.putNumber("Turret/RobustRadialVelocityMps", robustRadialVelocityMps);
+        SmartDashboard.putNumber("Turret/RobustTangentialVelocityMps", robustTangentialVelocityMps);
+        SmartDashboard.putNumber("Turret/RobustMargin", robustMargin);
+        SmartDashboard.putNumber("Turret/RobustFitError", robustFitError);
+        SmartDashboard.putNumber("Turret/RobustReleaseLatencySec", robustReleaseLatencySec);
+        SmartDashboard.putNumber("Turret/RobustTranslationScale", robustTranslationScale);
+        SmartDashboard.putNumber("Turret/RobustRotationScale", robustRotationScale);
         SmartDashboard.putBoolean("Turret/Kaden", positionMode);
     }
 }
