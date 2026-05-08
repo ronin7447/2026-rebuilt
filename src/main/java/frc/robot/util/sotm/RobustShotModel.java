@@ -78,6 +78,18 @@ public final class RobustShotModel {
             request.maxHoodPositionRot()
         );
         double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
+        if (Math.abs(rollerRps) > Constants.Shooter.MAX_ROLLER_RPS) {
+            return Optional.of(invalidSolution(
+                "roller-rps-out-of-range",
+                releaseState,
+                request,
+                shooterFieldPosition,
+                target2d,
+                distanceMeters,
+                radialVelocityMps,
+                tangentialVelocityMps
+            ));
+        }
         double exitSpeedMps = rollerRpsToExitSpeedMps(rollerRps);
         if (exitSpeedMps <= 0.0 || exitSpeedMps > request.maxExitSpeedMps()) {
             return Optional.of(invalidSolution(

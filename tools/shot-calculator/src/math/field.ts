@@ -2,7 +2,7 @@ import { defaultConfig } from './trajectory';
 import type { ShotCalculatorConfig } from './types';
 
 export type Alliance = 'blue' | 'red';
-export type PageMode = 'drag' | 'sim';
+export type PageMode = 'drag' | 'sim' | 'path';
 export type TargetMode = 'auto' | 'hub' | 'neutral-back' | 'opponent-passback';
 export type ResolvedTargetMode = Exclude<TargetMode, 'auto'>;
 export type FieldElementKind = 'blocked' | 'ramp' | 'low-clearance' | 'field-marker';
@@ -53,8 +53,8 @@ export const field = {
   centerLineX: inchesToMeters(651.2) / 2.0,
   blueHubCenter: { x: inchesToMeters(158.6), y: inchesToMeters(317.7) / 2.0 },
   redHubCenter: { x: inchesToMeters(651.2) - inchesToMeters(158.6), y: inchesToMeters(317.7) / 2.0 },
-  blueHubAim: { x: inchesToMeters(158.6) + 0.50, y: inchesToMeters(317.7) / 2.0 },
-  redHubAim: { x: inchesToMeters(651.2) - (inchesToMeters(158.6) + 0.20), y: inchesToMeters(317.7) / 2.0 },
+  blueHubAim: { x: inchesToMeters(158.6), y: inchesToMeters(317.7) / 2.0 },
+  redHubAim: { x: inchesToMeters(651.2) - inchesToMeters(158.6), y: inchesToMeters(317.7) / 2.0 },
   blueBackUpper: { x: 0.48, y: 6.00 },
   blueBackLower: { x: 0.48, y: 2.50 },
   redBackUpper: { x: 16.10, y: 6.00 },
@@ -74,6 +74,8 @@ export const driveLimits = {
   maxAngularRateRadPerSec: 0.90 * Math.PI * 2.0,
   maxLinearAccelMps2: 4.5,
   maxAngularAccelRadPerSec2: (720.0 * Math.PI) / 180.0,
+  passiveLinearDecelMps2: 3.0,
+  passiveAngularDecelRadPerSec2: 8.0,
 };
 
 export const passbackConfig: ShotCalculatorConfig = {
@@ -254,7 +256,7 @@ export function allianceLabel(alliance: Alliance): string {
 }
 
 export function isBlockingElement(element: FieldElement): boolean {
-  return element.kind === 'blocked' || element.kind === 'low-clearance';
+  return element.kind === 'blocked';
 }
 
 function preferredByRobotY(robotY: number, points: Point[]): Point {

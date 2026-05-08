@@ -13,6 +13,7 @@ describe('trajectory solver', () => {
     const candidate = findBestCandidate(defaultConfig, { distanceMeters: 5, radialVelocityMps: -0.75 });
     expect(candidate).not.toBeNull();
     expect(candidate?.robustnessMargin).toBeGreaterThan(0);
+    expect(Math.abs(candidate!.rollerRps)).toBeLessThanOrEqual(defaultConfig.maxRollerRps);
   });
 
   test('rejects shots outside the generated distance domain', () => {
@@ -21,7 +22,12 @@ describe('trajectory solver', () => {
   });
 
   test('rejects low entry shots blocked by the hub opening lip', () => {
-    const candidate = simulateCandidate(defaultConfig, { distanceMeters: 4, radialVelocityMps: 0 }, -2.2, 12.0);
+    const candidate = simulateCandidate(defaultConfig, { distanceMeters: 4, radialVelocityMps: 0 }, -2.2, 10.0);
+    expect(candidate).toBeNull();
+  });
+
+  test('rejects shots above the 100 rps roller cap', () => {
+    const candidate = simulateCandidate(defaultConfig, { distanceMeters: 4, radialVelocityMps: 0 }, -1.2, 12.0);
     expect(candidate).toBeNull();
   });
 

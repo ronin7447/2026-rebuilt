@@ -20,12 +20,13 @@ export const defaultConfig: ShotCalculatorConfig = {
   minHoodRot: -2.266942,
   maxHoodRot: -0.631116,
   minExitSpeedMps: 4.0,
-  maxExitSpeedMps: 12.0,
+  maxExitSpeedMps: 11.120291,
   hoodSlope: 0.0857913,
   hoodIntercept: -7.49442,
   rollerDirectionSign: -1.0,
   rollerSlope: 8.01922,
   rollerIntercept: 10.82394,
+  maxRollerRps: 100.0,
 };
 
 export function launchAngleDegForHood(config: ShotCalculatorConfig, hoodRot: number): number {
@@ -57,6 +58,9 @@ export function simulateCandidate(
   const impactHeightMeters = config.shooterExitHeightMeters + heightDelta;
   if (!clearsHubOpening(config, input.distanceMeters, targetLineSpeed, verticalLaunchSpeed)) return null;
 
+  const rollerRps = rollerRpsForExitSpeed(config, exitSpeedMps);
+  if (Math.abs(rollerRps) > config.maxRollerRps) return null;
+
   const heightError = Math.abs(impactHeightMeters - config.targetHeightMeters);
   const heightMarginMeters = config.goalRadiusMeters - heightError;
   if (heightMarginMeters < 0) return null;
@@ -72,7 +76,7 @@ export function simulateCandidate(
     hoodRot,
     launchAngleDeg,
     exitSpeedMps,
-    rollerRps: rollerRpsForExitSpeed(config, exitSpeedMps),
+    rollerRps,
     flightTimeSec,
     peakHeightMeters,
     impactHeightMeters,

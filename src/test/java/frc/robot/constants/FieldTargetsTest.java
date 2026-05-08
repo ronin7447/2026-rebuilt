@@ -11,6 +11,18 @@ class FieldTargetsTest {
     private static final double EPSILON = 1e-9;
 
     @Test
+    void hubAimPointsUseActualHubCenters() {
+        assertEquals(158.6 * 0.0254, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getX(), EPSILON);
+        assertEquals(317.7 * 0.0254 / 2.0, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getY(), EPSILON);
+        assertEquals(
+            (651.2 - 158.6) * 0.0254,
+            Constants.FieldTargets.RED_HUB_AIM_POINT.getX(),
+            EPSILON
+        );
+        assertEquals(317.7 * 0.0254 / 2.0, Constants.FieldTargets.RED_HUB_AIM_POINT.getY(), EPSILON);
+    }
+
+    @Test
     void blueAlliancePrefersUpperBackTargetWhenRobotYIsCloserToUpper() {
         Translation2d selected = Constants.FieldTargets.getPreferredBackTargetForAlliance(
             DriverStation.Alliance.Blue,

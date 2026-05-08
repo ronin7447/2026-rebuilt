@@ -40,6 +40,16 @@ class RobustShotModelTest {
         assertTrue(hood >= Constants.Shooter.MIN_HOOD_POSITION_ROT);
         assertTrue(hood <= Constants.Shooter.MAX_HOOD_POSITION_ROT);
         assertTrue(roller < 0.0);
+        assertTrue(Math.abs(roller) <= Constants.Shooter.MAX_ROLLER_RPS);
+    }
+
+    @Test
+    void configuredMaxExitSpeedRespectsRollerCap() {
+        double rollerMagnitude = (Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE
+            * Constants.Shooter.MAX_EXIT_SPEED_MPS)
+            + Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT;
+
+        assertTrue(rollerMagnitude <= Constants.Shooter.MAX_ROLLER_RPS + EPSILON);
     }
 
     @Test

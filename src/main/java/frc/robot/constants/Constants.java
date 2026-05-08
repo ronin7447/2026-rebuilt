@@ -139,9 +139,9 @@ public final class Constants {
 
         // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS + 0.50, (FIELD_WIDTH_METERS / 2.0) + 0.00);
+            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d RED_HUB_AIM_POINT =
-            new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
+            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 6.00);
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00);
@@ -297,7 +297,8 @@ public final class Constants {
         public static final double FAR_SHOT_DISTANCE_METERS = 4.0;
         public static final double FAR_SHOT_MIN_HOOD_POSITION_ROT = -1.40;
         public static final double PASS_BACK_FAR_SHOT_MIN_HOOD_POSITION_ROT = MIN_HOOD_POSITION_ROT;
-        public static final double MAX_EXIT_SPEED_MPS = 12.0;
+        public static final double MAX_ROLLER_RPS = 100.0;
+        public static final double MAX_EXIT_SPEED_MPS = 11.120291;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922;
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;
     }

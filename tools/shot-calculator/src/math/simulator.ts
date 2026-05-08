@@ -18,6 +18,15 @@ export interface DriveSimState {
   angularAccelRadPerSec2: number;
 }
 
+export interface SimulatorOptions {
+  passiveLinearDecelMps2: number;
+  passiveAngularDecelRadPerSec2: number;
+  maxFreeSpeedMps?: number;
+  maxLinearAccelMps2?: number;
+  maxAngularRateRadPerSec?: number;
+  maxAngularAccelRadPerSec2?: number;
+}
+
 export function createDriveSimState(pose: Pose2d): DriveSimState {
   return {
     pose,
@@ -28,19 +37,34 @@ export function createDriveSimState(pose: Pose2d): DriveSimState {
   };
 }
 
-export function stepDriveSimulator(state: DriveSimState, keyboard: KeyboardState, dtSec: number): DriveSimState {
+export function stepDriveSimulator(
+  state: DriveSimState,
+  keyboard: KeyboardState,
+  dtSec: number,
+  options: SimulatorOptions = driveLimits,
+): DriveSimState {
   const boundedDt = Math.max(0, Math.min(dtSec, 0.05));
-  const targetVelocity = targetFieldVelocity(state.pose.headingRad, keyboard);
+  const maxFreeSpeedMps = options.maxFreeSpeedMps ?? driveLimits.maxFreeSpeedMps;
+  const maxLinearAccelMps2 = options.maxLinearAccelMps2 ?? driveLimits.maxLinearAccelMps2;
+  const maxAngularRateRadPerSec = options.maxAngularRateRadPerSec ?? driveLimits.maxAngularRateRadPerSec;
+  const maxAngularAccelRadPerSec2 = options.maxAngularAccelRadPerSec2 ?? driveLimits.maxAngularAccelRadPerSec2;
+  const targetVelocity = targetFieldVelocity(state.pose.headingRad, keyboard, maxFreeSpeedMps);
+  const linearAccelLimit = Math.hypot(targetVelocity.x, targetVelocity.y) <= 1e-9
+    ? options.passiveLinearDecelMps2
+    : maxLinearAccelMps2;
   const nextVelocity = slewVector(
     state.velocity,
-    clampVectorMagnitude(targetVelocity, driveLimits.maxFreeSpeedMps),
-    driveLimits.maxLinearAccelMps2 * boundedDt,
+    clampVectorMagnitude(targetVelocity, maxFreeSpeedMps),
+    linearAccelLimit * boundedDt,
   );
-  const targetOmega = targetAngularRate(keyboard);
+  const targetOmega = targetAngularRate(keyboard, maxAngularRateRadPerSec);
+  const angularAccelLimit = Math.abs(targetOmega) <= 1e-9
+    ? options.passiveAngularDecelRadPerSec2
+    : maxAngularAccelRadPerSec2;
   const nextOmega = slewScalar(
     state.omegaRadPerSec,
     targetOmega,
-    driveLimits.maxAngularAccelRadPerSec2 * boundedDt,
+    angularAccelLimit * boundedDt,
   );
   const nextPose = clampPoseInsideField({
     x: state.pose.x + (nextVelocity.x * boundedDt),
@@ -73,7 +97,7 @@ export function stepDriveSimulator(state: DriveSimState, keyboard: KeyboardState
   };
 }
 
-function targetFieldVelocity(headingRad: number, keyboard: KeyboardState): Point {
+function targetFieldVelocity(headingRad: number, keyboard: KeyboardState, maxFreeSpeedMps: number): Point {
   const fieldCommand = {
     x: axis(keyboard, 'w', 's'),
     y: axis(keyboard, 'a', 'd'),
@@ -89,13 +113,13 @@ function targetFieldVelocity(headingRad: number, keyboard: KeyboardState): Point
     y: (robotCommand.x * sin) + (robotCommand.y * cos),
   };
   return clampVectorMagnitude({
-    x: (fieldCommand.x + robotCommandField.x) * driveLimits.maxFreeSpeedMps,
-    y: (fieldCommand.y + robotCommandField.y) * driveLimits.maxFreeSpeedMps,
-  }, driveLimits.maxFreeSpeedMps);
+    x: (fieldCommand.x + robotCommandField.x) * maxFreeSpeedMps,
+    y: (fieldCommand.y + robotCommandField.y) * maxFreeSpeedMps,
+  }, maxFreeSpeedMps);
 }
 
-function targetAngularRate(keyboard: KeyboardState): number {
-  return axis(keyboard, 'q', 'e') * driveLimits.maxAngularRateRadPerSec;
+function targetAngularRate(keyboard: KeyboardState, maxAngularRateRadPerSec: number): number {
+  return axis(keyboard, 'q', 'e') * maxAngularRateRadPerSec;
 }
 
 function axis(keyboard: KeyboardState, positiveKey: string, negativeKey: string): number {

@@ -24,6 +24,7 @@ export interface ShotCalculatorConfig {
   rollerDirectionSign: number;
   rollerSlope: number;
   rollerIntercept: number;
+  maxRollerRps: number;
 }
 
 export interface ShotInput {
