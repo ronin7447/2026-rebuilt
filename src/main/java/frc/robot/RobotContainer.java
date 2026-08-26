@@ -298,6 +298,10 @@ public class RobotContainer {
         //     m_OuttakeSubsystem.disableRoller();
         //     m_OuttakeSubsystem.setRollerTargetVelocity(0);
         // })))));
+        joystick.b().whileTrue((Commands.sequence((Commands.runOnce(() -> {
+            m_IntakeSubsystem.disableExtension();
+            m_IntakeSubsystem.disableRoller();
+        })))));
 
         // joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
         //     m_ShooterSubsystem.enableRoller();
