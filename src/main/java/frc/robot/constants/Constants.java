@@ -19,12 +19,12 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
-        public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+        public static final double MAX_SPEED = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
-        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.60;
-        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.45;
+        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.20;
+        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.15;
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75;
         public static final double SHORT_ALIGN_TRANSLATION_KP = 2.5;
         public static final double SHORT_ALIGN_TRANSLATION_KI = 0.0;
@@ -141,9 +141,9 @@ public final class Constants {
         public static final Translation2d BLUE_HUB_AIM_POINT =
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d RED_HUB_AIM_POINT =
-            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
-        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 6.00);
-        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50);
+            new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
+        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 7.4);
+        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 0.6847);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00);
         public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(16.1, 2.50);
         public static final Translation2d OPPONENT_PASS_BACK_TARGET_UPPER = new Translation2d(8.295, 7.00);
@@ -247,8 +247,8 @@ public final class Constants {
         public static final double EXTENSION_COLLAPSE_JERK = 4000.0;
         public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 100.0;
         public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 60.0;
-        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 55.0;
-        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 25.0;
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 30.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 20.0;
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;
         public static final double STALL_TIME_S = 0.25;
