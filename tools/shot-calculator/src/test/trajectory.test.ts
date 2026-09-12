@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest';
-import { defaultConfig, findBestCandidate, generateShotSamples, simulateCandidate } from '../math/trajectory';
+import {
+  closeRangeHubConfig,
+  defaultConfig,
+  findBestCandidate,
+  generateShotSamples,
+  simulateCandidate,
+} from '../math/trajectory';
 import { evaluatePolynomial, fitShotMap } from '../math/polynomial';
 
 describe('trajectory solver', () => {
@@ -19,6 +25,13 @@ describe('trajectory solver', () => {
   test('rejects shots outside the generated distance domain', () => {
     const candidate = findBestCandidate(defaultConfig, { distanceMeters: 0.9, radialVelocityMps: 0 });
     expect(candidate).toBeNull();
+  });
+
+  test('close-range HUB sweep reaches high hood angles below generated map domain', () => {
+    const candidate = findBestCandidate(closeRangeHubConfig, { distanceMeters: 0.9, radialVelocityMps: 0 });
+    expect(candidate).not.toBeNull();
+    expect(candidate!.launchAngleDeg).toBeGreaterThan(78);
+    expect(candidate!.launchAngleDeg).toBeLessThanOrEqual(80);
   });
 
   test('rejects low entry shots blocked by the hub opening lip', () => {

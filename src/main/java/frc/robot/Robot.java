@@ -5,10 +5,6 @@
 package frc.robot;
 
 import com.ctre.phoenix6.HootAutoReplay;
-import com.ctre.phoenix6.Utils;
-
-import edu.wpi.first.wpilibj.Notifier;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -18,23 +14,21 @@ public class Robot extends TimedRobot {
 
     private final RobotContainer m_robotContainer;
 
-    private static final double kSimLoopPeriod = 0.004; // 4 ms
-    private Notifier m_simNotifier = null;
-    private double m_lastSimTime;
-
     /* log and replay timestamp and joystick data */
     private final HootAutoReplay m_timeAndJoystickReplay = new HootAutoReplay()
         .withTimestampReplay()
         .withJoystickReplay();
 
     public Robot() {
+        PowerHealthRecorder.startDataLogEarly();
         m_robotContainer = new RobotContainer();
     }
 
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
-        CommandScheduler.getInstance().run(); 
+        CommandScheduler.getInstance().run();
+        m_robotContainer.periodic();
     }
 
     @Override
@@ -86,20 +80,7 @@ public class Robot extends TimedRobot {
     public void testExit() {}
 
     @Override
-    public void simulationInit() {
-        m_lastSimTime = Utils.getCurrentTimeSeconds();
-
-        /* Run simulation at a faster rate so PID gains behave more reasonably */
-        m_simNotifier = new Notifier(() -> {
-            final double currentTime = Utils.getCurrentTimeSeconds();
-            double deltaTime = currentTime - m_lastSimTime;
-            m_lastSimTime = currentTime;
-
-            /* Use the measured time delta, get battery voltage from WPILib */
-            m_robotContainer.drivetrain.updateSimState(deltaTime, RobotController.getBatteryVoltage());
-        });
-        m_simNotifier.startPeriodic(kSimLoopPeriod);
-    }
+    public void simulationInit() {}
     @Override
     public void simulationPeriodic() {}
 }

@@ -48,6 +48,8 @@ public final class Constants {
     public static final class Turret {
         public static final int TURRET_KRAKEN_ID = 37; // Turret X44 Kraken ID
         public static final double STALL_CURRENT_A = 6.0;
+        public static final double STATOR_CURRENT_LIMIT_A = 50.0;
+        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0;
         public static final double STALL_VEL_RPS = 0.25;
         public static final double STALL_TIME_S = 0.10;
         public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
@@ -68,6 +70,9 @@ public final class Constants {
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
         public static final double AIM_TOLERANCE_DEG = 0.5;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
+        public static final double TRACKING_WINDOW_SEC = 1.0;
+        public static final double STEP_ERROR_DEADBAND_DEG = 0.15;
+        public static final double STEP_SETTLE_TIME_SEC = 0.10;
         
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0;
 
@@ -141,9 +146,9 @@ public final class Constants {
         public static final Translation2d BLUE_HUB_AIM_POINT =
             new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
         public static final Translation2d RED_HUB_AIM_POINT =
-            new Translation2d(FIELD_LENGTH_METERS - (ALLIANCE_ZONE_DEPTH_METERS + 0.20), FIELD_WIDTH_METERS / 2.0);
-        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 7.4);
-        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 0.6847);
+            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+        public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 6.00);
+        public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50);
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00);
         public static final Translation2d RED_BACK_TARGET_LOWER = new Translation2d(16.1, 2.50);
         public static final Translation2d OPPONENT_PASS_BACK_TARGET_UPPER = new Translation2d(8.295, 7.00);
@@ -252,6 +257,9 @@ public final class Constants {
         public static final double INTAKE_STALL_CURRENT = 6.0;
         public static final double INTAKE_STALL_VELOCITY = 10;
         public static final double STALL_TIME_S = 0.25;
+        /** Provisional safety timeout; validate measured hard-stop travel on the bench. */
+        public static final double HOMING_TIMEOUT_SEC = 3.0;
+        public static final double HOMING_VOLTAGE = -1.0;
 
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02;
 
@@ -269,6 +277,10 @@ public final class Constants {
     public static final class Shooter {
         public static final int HOOD_KRAKEN_ID = 21;
         public static final int ROLLER_KRAKEN_ID = 31;
+        public static final double HOOD_STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double HOOD_SUPPLY_CURRENT_LIMIT_A = 25.0;
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 70.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 55.0;
 
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
@@ -289,6 +301,9 @@ public final class Constants {
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
         public static final double ROLLER_TOLERANCE = 1.0; // How much the actual velocity in rps can differ from target
+        /** Provisional until measured with the hood under load. */
+        public static final double HOOD_POSITION_TOLERANCE_ROT = 0.02;
+        public static final double MAX_MECHANISM_FEEDBACK_AGE_SEC = 0.10;
         public static final double EXIT_HEIGHT_METERS = 0.4064;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_SLOPE = 0.0857913;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT = -7.49442;
@@ -305,7 +320,8 @@ public final class Constants {
 
     public static final class ShotMap {
         public static final boolean USE_ROBUST_SOTM = true;
-        public static final boolean FALLBACK_TO_LEGACY_SOLVER = true;
+        /** Explicit rollback only. The robust evaluator never silently falls back after rejection. */
+        public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false;
         public static final double BASE_RELEASE_LATENCY_SEC = 0.14;
         public static final double ACCEL_FILTER_ALPHA = 0.25;
         public static final double MAX_ACCEL_SAMPLE_DT_SEC = 0.10;
@@ -313,9 +329,29 @@ public final class Constants {
         public static final double MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(900.0);
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65;
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55;
+        public static final boolean FEED_INTERLOCK_ENABLED = true;
+        public static final double FEED_RECOVERY_READY_TIME_SEC = 0.10;
+        public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.25;
+        public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.10;
+        public static final double MAX_SOLUTION_AGE_SEC = 0.10;
+    }
+
+    public static final class PowerLogging {
+        public static final int REV_PDH_CAN_ID = 1;
+        public static final double MOTOR_ELECTRICAL_RATE_HZ = 50.0;
+        public static final double TURRET_MOTION_RATE_HZ = 100.0;
+        public static final double SLOW_HEALTH_RATE_HZ = 10.0;
+        public static final double DASHBOARD_RATE_HZ = 5.0;
+        public static final int CONFIG_APPLY_ATTEMPTS = 3;
+        public static final String BATTERY_LABEL = "UNKNOWN";
+        public static final String CONFIGURATION_ID = "ultimate-sotm-v1";
+
+        private PowerLogging() {}
     }
 
     public static final class Outtake {
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 40.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 25.0;
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
@@ -328,6 +364,8 @@ public final class Constants {
         public static final int ROLLER_KRAKEN_ID = 25;
     }
     public static final class Indexer {
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 50.0;
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 40.0;
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output

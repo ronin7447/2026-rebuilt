@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.VisionTimestampPolicy;
 
 public class VisionSubsystem extends SubsystemBase {
     private final CommandSwerveDrivetrain drivetrain;
@@ -71,7 +72,7 @@ public class VisionSubsystem extends SubsystemBase {
         if (lastAcceptedVisionTimestampSec < 0.0) {
             return Double.POSITIVE_INFINITY;
         }
-        return Timer.getFPGATimestamp() - lastAcceptedVisionTimestampSec;
+        return Math.max(0.0, Timer.getFPGATimestamp() - lastAcceptedVisionTimestampSec);
     }
 
     public double getLastAcceptedVisionTimestampSec() {
@@ -99,11 +100,10 @@ public class VisionSubsystem extends SubsystemBase {
 
         EstimatedRobotPose estimatedRobotPose = estimateOpt.get();
         Pose2d visionPose = estimatedRobotPose.estimatedPose.toPose2d();
-        double measurementAgeSec = Timer.getFPGATimestamp() - estimatedRobotPose.timestampSeconds;
         double averageDistanceMeters = averageTargetDistanceMeters(estimatedRobotPose.targetsUsed);
         Matrix<N3, N1> stdDevs = calculateVisionStdDevs(estimatedRobotPose.targetsUsed.size(), averageDistanceMeters);
 
-        if (!isValidMeasurement(result, estimatedRobotPose, visionPose, measurementAgeSec)) {
+        if (!isValidMeasurement(result, estimatedRobotPose, visionPose)) {
             camera.rejectedCount++;
             return;
         }
@@ -111,7 +111,11 @@ public class VisionSubsystem extends SubsystemBase {
         // CommandSwerveDrivetrain already converts FPGA timestamps into CTRE's current-time epoch.
         drivetrain.addVisionMeasurement(visionPose, estimatedRobotPose.timestampSeconds, stdDevs);
 
-        lastAcceptedVisionTimestampSec = Timer.getFPGATimestamp();
+        // Preserve capture time (not processing time), and never move backward when cameras arrive out of order.
+        lastAcceptedVisionTimestampSec = VisionTimestampPolicy.monotonicAcceptedTimestamp(
+            lastAcceptedVisionTimestampSec,
+            estimatedRobotPose.timestampSeconds
+        );
         lastVisionTagCount = estimatedRobotPose.targetsUsed.size();
         lastVisionStdDevs = stdDevs;
         camera.acceptedCount++;
@@ -131,14 +135,20 @@ public class VisionSubsystem extends SubsystemBase {
     private boolean isValidMeasurement(
         PhotonPipelineResult result,
         EstimatedRobotPose estimatedRobotPose,
-        Pose2d visionPose,
-        double measurementAgeSec
+        Pose2d visionPose
     ) {
+        if (!VisionTimestampPolicy.isValid(
+            Timer.getFPGATimestamp(),
+            estimatedRobotPose.timestampSeconds,
+            0.05,
+            Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS
+                ? Double.POSITIVE_INFINITY
+                : Constants.Vision.MAX_MEASUREMENT_AGE_SEC
+        )) {
+            return false;
+        }
         if (Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS) {
             return true;
-        }
-        if (measurementAgeSec > Constants.Vision.MAX_MEASUREMENT_AGE_SEC) {
-            return false;
         }
         if (!isPoseOnField(visionPose)) {
             return false;

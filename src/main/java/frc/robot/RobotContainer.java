@@ -19,6 +19,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -42,6 +43,7 @@ import frc.robot.subsystems.OuttakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.util.sotm.ShotReadinessSnapshot;
 
 public class RobotContainer {
     private double MaxSpeed = Constants.Drivebase.MAX_SPEED; // 1.0 * kSpeedAt12Volts desired top speed
@@ -86,8 +88,10 @@ public class RobotContainer {
     private final SendableChooser<Command> autoChooser;
     private final Autopilot autopilot = new Autopilot(drivetrain);
     private final Field2d pathPlannerField = new Field2d();
+    private final PowerHealthRecorder powerHealthRecorder;
 
     public RobotContainer() {
+        powerHealthRecorder = PowerHealthRecorder.create(this);
         registerNamedCommands();
         autoChooser = configureAutonomousChooser();
         configureDashboardTelemetry();
@@ -136,7 +140,14 @@ public class RobotContainer {
 
         NamedCommands.registerCommand(
             "ShootSequence",
-            new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem)
+            new ShootCommand(
+                m_ShooterSubsystem,
+                m_IndexerSubsystem,
+                m_OuttakeSubsystem,
+                this::captureShotReadiness,
+                () -> false,
+                Timer::getFPGATimestamp
+            )
         );
 
         NamedCommands.registerCommand("EndShootSequence", Commands.runOnce(() -> {
@@ -374,7 +385,10 @@ public class RobotContainer {
             new ShootCommand(
                 m_ShooterSubsystem,
                 m_IndexerSubsystem,
-                m_OuttakeSubsystem
+                m_OuttakeSubsystem,
+                this::captureShotReadiness,
+                () -> joystick.getHID().getRightStickButton(),
+                Timer::getFPGATimestamp
             ),
             antiJamCommand
         ).beforeStarting(() -> shootDriveLimitActive = true)
@@ -393,6 +407,32 @@ public class RobotContainer {
             return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
         }
         return MaxAngularRate;
+    }
+
+    private ShotReadinessSnapshot captureShotReadiness() {
+        double nowSec = Timer.getFPGATimestamp();
+        double evaluationTimestampSec = m_TurretSubsystem.getLastAimEvaluationTimestampSec();
+        double solutionAgeSec = Double.isFinite(evaluationTimestampSec)
+            ? nowSec - evaluationTimestampSec
+            : Double.POSITIVE_INFINITY;
+        boolean boundedSetpoints = m_TurretSubsystem.hasFiniteMappedSetpoints()
+            && m_ShooterSubsystem.hasFiniteBoundedSetpoints();
+        return ShotReadinessSnapshot.evaluate(
+            nowSec,
+            DriverStation.isEnabled(),
+            m_TurretSubsystem.isShotSolutionValid(),
+            solutionAgeSec,
+            m_ShooterSubsystem.isRollerEnabled(),
+            m_ShooterSubsystem.atTargetSpeed(),
+            m_ShooterSubsystem.isHoodEnabled(),
+            m_ShooterSubsystem.isHoodAtTarget(),
+            m_TurretSubsystem.isAutoAimActive(),
+            m_TurretSubsystem.isTurretAtAimGoal(),
+            !m_TurretSubsystem.isOnSoftwareLimit(),
+            boundedSetpoints,
+            m_vision.getVisionAgeSec(),
+            Constants.ShotMap.MAX_SOLUTION_AGE_SEC
+        );
     }
 
     private Command createAutopilotCommand(Pose2d goal) {
@@ -431,6 +471,37 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         Command selectedAuto = autoChooser.getSelected();
         return selectedAuto != null ? selectedAuto : Commands.none();
+    }
+
+    public void periodic() {
+        powerHealthRecorder.periodic();
+    }
+
+    PowerHealthRecorder.Context recorderContext() {
+        String mode = DriverStation.isAutonomousEnabled()
+            ? "autonomous"
+            : (DriverStation.isTeleopEnabled() ? "teleop" : (DriverStation.isTestEnabled() ? "test" : "disabled"));
+        var speeds = drivetrain.getState().Speeds;
+        return new PowerHealthRecorder.Context(
+            DriverStation.isEnabled(),
+            mode,
+            DriverStation.getMatchTime(),
+            SmartDashboard.getBoolean("Feed/ShootRequested", false),
+            SmartDashboard.getBoolean("Feed/Permitted", false),
+            SmartDashboard.getBoolean("Feed/OverrideActive", false),
+            SmartDashboard.getNumber("Feed/TransitionTimestampSec", Double.NaN),
+            m_ShooterSubsystem.getTargetRollerVelocityRps(),
+            m_TurretSubsystem.getTargetModeName(),
+            m_TurretSubsystem.getShotModelName(),
+            m_TurretSubsystem.getShotReason(),
+            speeds.vxMetersPerSecond,
+            speeds.vyMetersPerSecond,
+            speeds.omegaRadiansPerSecond,
+            m_vision.getVisionAgeSec(),
+            m_IntakeSubsystem.isExtensionEnabled(),
+            m_IntakeSubsystem.isRollerEnabled(),
+            m_IntakeSubsystem.getHomingStatus().name()
+        );
     }
 
     

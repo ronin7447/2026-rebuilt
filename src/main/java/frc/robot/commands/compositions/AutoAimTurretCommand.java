@@ -26,6 +26,7 @@ import frc.robot.util.sotm.RobustShotRequest;
 import frc.robot.util.sotm.RobustShotSolution;
 import frc.robot.util.sotm.ShotMotionState;
 import frc.robot.util.sotm.ShotQuality;
+import frc.robot.util.sotm.ShotTargetConstraints;
 
 public class AutoAimTurretCommand extends Command {
     private final CommandSwerveDrivetrain drivetrain;
@@ -53,6 +54,11 @@ public class AutoAimTurretCommand extends Command {
     }
 
     @Override
+    public void initialize() {
+        resetMotionHistory();
+    }
+
+    @Override
     public void execute() {
         var drivetrainState = drivetrain.getState();
         Pose2d robotPose = drivetrainState.Pose;
@@ -67,8 +73,13 @@ public class AutoAimTurretCommand extends Command {
 
         boolean autoAimAllowedMode = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
 
-        if (!turret.getPositionMode()) return;
+        if (!turret.getPositionMode()) {
+            turret.invalidateAimState("turret-position-mode-disabled");
+            resetMotionHistory();
+            return;
+        }
         if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
+            resetMotionHistory();
             turret.holdCurrentPosition();
             publishAimState(
                 AutoAimTargeting.TargetMode.HOLD.name(),
@@ -90,6 +101,7 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (allianceOpt.isEmpty()) {
+            resetMotionHistory();
             turret.park();
             publishAimState(
                 AutoAimTargeting.TargetMode.PARK.name(),
@@ -129,6 +141,7 @@ public class AutoAimTurretCommand extends Command {
         boolean inNeutralZone = targetSelection.inNeutralZone();
 
         if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HOLD) {
+            resetMotionHistory();
             turret.holdCurrentPosition();
             publishAimState(
                 targetSelection.targetMode().name(),
@@ -178,9 +191,12 @@ public class AutoAimTurretCommand extends Command {
         OptionalDouble mappedHoodPosition = OptionalDouble.empty();
         OptionalDouble mappedRollerRps = OptionalDouble.empty();
 
-        if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
-            && Constants.ShotMap.USE_ROBUST_SOTM) {
+        if (Constants.ShotMap.USE_ROBUST_SOTM
+            && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK) {
             ShotMotionState motionState = sampleShotMotionState(robotPose, robotRelativeSpeeds);
+            ShotTargetConstraints targetConstraints = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                ? ShotTargetConstraints.hub(selectedTargetPoint3d.getZ())
+                : ShotTargetConstraints.passback(selectedTargetPoint3d.getZ());
             robustShotSolution = RobustShotModel.solve(new RobustShotRequest(
                 motionState,
                 Constants.Turret.ROBOT_TO_TURRET_PIVOT,
@@ -190,7 +206,8 @@ public class AutoAimTurretCommand extends Command {
                 Constants.Shooter.MIN_HOOD_POSITION_ROT,
                 Constants.Shooter.MAX_HOOD_POSITION_ROT,
                 Constants.Shooter.MAX_EXIT_SPEED_MPS,
-                Constants.ShotMap.BASE_RELEASE_LATENCY_SEC
+                Constants.ShotMap.BASE_RELEASE_LATENCY_SEC,
+                targetConstraints
             ));
 
             if (robustShotSolution.isPresent() && robustShotSolution.get().quality().insideTolerance()) {
@@ -201,7 +218,9 @@ public class AutoAimTurretCommand extends Command {
                 mappedRollerRps = OptionalDouble.of(solution.rollerRps());
                 mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
                 mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
-                shotModelName = "RobustShotMap";
+                shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                    ? "RobustShotMap"
+                    : "ReferencePassback";
                 movingShotSolution = Optional.of(new ShooterKinematics.MovingShotSolution(
                     solution.desiredFieldYaw(),
                     solution.desiredTurretYaw(),
@@ -214,14 +233,10 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (movingShotSolution.isEmpty()
-            && (targetSelection.targetMode() != AutoAimTargeting.TargetMode.HUB
-                || !Constants.ShotMap.USE_ROBUST_SOTM
-                || Constants.ShotMap.FALLBACK_TO_LEGACY_SOLVER)) {
+            && (!Constants.ShotMap.USE_ROBUST_SOTM
+                || Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK)) {
             movingShotSolution = ShooterKinematics.solveMovingShot(request, selectionPreference);
-            shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
-                && Constants.ShotMap.USE_ROBUST_SOTM
-                    ? "LegacyFallback"
-                    : "Legacy";
+            shotModelName = Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK ? "LegacyRollback" : "Legacy";
         }
 
         if (movingShotSolution.isPresent()) {
@@ -287,6 +302,10 @@ public class AutoAimTurretCommand extends Command {
                     (fieldSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dtSec,
                     Constants.ShotMap.MAX_ANGULAR_ACCEL_RAD_PER_SEC2
                 );
+            } else {
+                filteredFieldAccelXMps2 = 0.0;
+                filteredFieldAccelYMps2 = 0.0;
+                filteredAngularAccelRadPerSec2 = 0.0;
             }
         }
         lastFieldSpeeds = fieldSpeeds;
@@ -323,7 +342,8 @@ public class AutoAimTurretCommand extends Command {
                 Double.NaN,
                 Double.NaN,
                 1.0,
-                1.0
+                1.0,
+                Double.NaN
             );
             return;
         }
@@ -339,13 +359,24 @@ public class AutoAimTurretCommand extends Command {
             quality.polynomialFitError(),
             quality.releaseLatencySec(),
             quality.translationScale(),
-            quality.rotationScale()
+            quality.rotationScale(),
+            robustShotSolution.get().solverDurationSec()
         );
     }
 
     @Override
     public void end(boolean interrupted) {
         turret.holdCurrentPosition();
+        turret.invalidateAimState(interrupted ? "command-interrupted" : "command-ended");
+        resetMotionHistory();
+    }
+
+    private void resetMotionHistory() {
+        lastFieldSpeeds = null;
+        lastMotionSampleTimeSec = -1.0;
+        filteredFieldAccelXMps2 = 0.0;
+        filteredFieldAccelYMps2 = 0.0;
+        filteredAngularAccelRadPerSec2 = 0.0;
     }
 
     @Override

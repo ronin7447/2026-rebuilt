@@ -9,6 +9,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.ConfigurationHealth;
 import static edu.wpi.first.units.Units.*;
 
 public class OuttakeSubsystem extends SubsystemBase {
@@ -17,6 +18,7 @@ public class OuttakeSubsystem extends SubsystemBase {
     private final MotionMagicVelocityVoltage rollerVel = new MotionMagicVelocityVoltage(0.0);
     private double targetRollerVelRps = Constants.Outtake.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+    private final boolean configured;
 
 
     public OuttakeSubsystem() {
@@ -26,9 +28,9 @@ public class OuttakeSubsystem extends SubsystemBase {
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimit(Amps.of(Constants.Outtake.ROLLER_STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(25))
+                .withSupplyCurrentLimit(Amps.of(Constants.Outtake.ROLLER_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true)
                 );
 
@@ -44,9 +46,11 @@ public class OuttakeSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicAcceleration = Constants.Outtake.ROLLER_ACCELERATION;
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Outtake.ROLLER_JERK;
 
-        rollerKraken.getConfigurator().apply(rollerCfg);
+        configured = ConfigurationHealth.apply(
+            "final-feed-" + Constants.Outtake.ROLLER_KRAKEN_ID,
+            () -> rollerKraken.getConfigurator().apply(rollerCfg)
+        );
         // rollerKraken.getVelocity().setUpdateFrequency(100);
-        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
         // rollerKraken.optimizeBusUtilization();
     }
     
@@ -57,6 +61,7 @@ public class OuttakeSubsystem extends SubsystemBase {
 
 
     public void setRollerTargetVelocity(double velRps) {
+        if (!Double.isFinite(velRps)) return;
         targetRollerVelRps = velRps;
     }
 
@@ -66,7 +71,7 @@ public class OuttakeSubsystem extends SubsystemBase {
     }
 
     public void enableRoller() {
-        rollerEnabled = rollerKraken != null;
+        rollerEnabled = configured && rollerKraken != null;
     }
 
     public void disableRoller() {
@@ -88,8 +93,10 @@ public class OuttakeSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
 
-        if (rollerEnabled && rollerKraken != null) {
+        if (rollerEnabled && configured && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
+        } else if (!configured) {
+            rollerKraken.stopMotor();
         }
     }
 }

@@ -25,7 +25,7 @@ public record ShotQuality(
             distanceMeters,
             radialVelocityMps,
             tangentialVelocityMps,
-            0.0,
+            Double.NaN,
             Double.NaN,
             releaseLatencySec,
             0.0,

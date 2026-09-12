@@ -22,6 +22,7 @@ import {
   type TargetSelection,
 } from './math/field';
 import { generatedCoefficients } from './math/generatedCoefficients';
+import { evaluateFinalTrajectory } from './math/evaluator';
 import { parsePathFile, sampleLoadedPath, type LoadedPath, type PathSample } from './math/pathPlayback';
 import { evaluatePolynomial } from './math/polynomial';
 import {
@@ -30,7 +31,12 @@ import {
   type DriveSimState,
   type KeyboardState,
 } from './math/simulator';
-import { findBestCandidate, isInsideShotMapDomain, launchAngleDegForHood } from './math/trajectory';
+import {
+  closeRangeHubConfig,
+  findBestCandidate,
+  isInsideShotMapDomain,
+  launchAngleDegForHood,
+} from './math/trajectory';
 import {
   createTurretSimState,
   defaultTurretConstants,
@@ -367,6 +373,7 @@ function evaluateShotFromBaseMotion(base: BaseMotionState, turretAngleOverrideDe
     target.config,
     { distanceMeters, radialVelocityMps: radialTangential.radialVelocityMps },
     target.candidateSelection,
+    target.usesPolynomial,
   );
   const hoodPrediction = target.usesPolynomial
     ? evaluatePolynomial(generatedCoefficients.hood, {
@@ -388,6 +395,11 @@ function evaluateShotFromBaseMotion(base: BaseMotionState, turretAngleOverrideDe
     && hoodPrediction <= target.config.maxHoodRot
     && Math.abs(rollerPrediction) <= target.config.maxRollerRps
   );
+  const closeRangeCandidateValid = target.usesPolynomial
+    && !polynomialValid
+    && isCloseRangeHubInput(target.config, { distanceMeters, radialVelocityMps: radialTangential.radialVelocityMps })
+    && candidate !== null;
+  const shotCommandValid = polynomialValid || closeRangeCandidateValid;
   const launchCommand = launchCommandForTurret(target.config, target.usesPolynomial, polynomialValid, candidate, hoodPrediction, rollerPrediction);
   const turretSolution = solveTurretShot({
     shooterPoint: release.shooterPoint,
@@ -408,12 +420,12 @@ function evaluateShotFromBaseMotion(base: BaseMotionState, turretAngleOverrideDe
   const invalidReasons = [
     reachable ? null : 'robot pose blocked',
     candidate ? null : 'no physics-valid trajectory',
-    polynomialValid ? null : 'generated polynomial/cap invalid',
+    shotCommandValid ? null : 'generated polynomial/cap invalid',
     threshold.ready ? null : threshold.reason,
     turretTracking.ready ? null : turretTracking.reason,
-    turretSideProfile === null || turretSideProfile.targetOpeningValid
+    turretSideProfile?.targetOpeningValid
       ? null
-      : 'turret-compensated trajectory misses target opening',
+      : 'missing or invalid turret-compensated trajectory',
   ].filter((reason): reason is string => reason !== null);
 
   return {
@@ -424,6 +436,7 @@ function evaluateShotFromBaseMotion(base: BaseMotionState, turretAngleOverrideDe
     hoodPrediction,
     rollerPrediction,
     polynomialValid,
+    shotCommandValid,
     turretSolution,
     turretTracking,
     turretSideProfile,
@@ -545,7 +558,14 @@ function launchCommandForTurret(
   rollerPrediction: number | null,
 ): LaunchCommand | null {
   if (usesPolynomial) {
-    if (!polynomialValid || hoodPrediction === null || rollerPrediction === null) return null;
+    if (!polynomialValid || hoodPrediction === null || rollerPrediction === null) {
+      if (!candidate) return null;
+      return {
+        launchAngleDeg: candidate.launchAngleDeg,
+        exitSpeedMps: candidate.exitSpeedMps,
+        source: 'candidate',
+      };
+    }
     return {
       launchAngleDeg: launchAngleDegForHood(config, hoodPrediction),
       exitSpeedMps: exitSpeedMpsForRollerRps(config, rollerPrediction),
@@ -626,36 +646,19 @@ function sideProfileForEvaluation(
       targetOpeningValid: false,
       frontLipCleared: false,
       openingIntersectionValid: false,
+      entryAngleDeg: Number.NaN,
+      entryAngleValid: false,
       openingSamples: [],
     };
   }
 
-  const flightTimeToTargetSec = targetDistanceMeters / radialFieldSpeedMps;
-  const impactHeightMeters = heightAtTime(config, verticalLaunchSpeedMps, flightTimeToTargetSec);
-  const timeToPeakSec = Math.max(0.0, verticalLaunchSpeedMps / config.gravityMps2);
-  const peakHeightMeters = heightAtTime(config, verticalLaunchSpeedMps, timeToPeakSec);
-  const crossTrackAtTargetMeters = tangentialFieldSpeedMps * flightTimeToTargetSec;
-  const openingSamples = openingSampleDistances(config, targetDistanceMeters).map((distanceMeters) => {
-    const timeSec = distanceMeters / radialFieldSpeedMps;
-    return {
-      distanceMeters,
-      heightMeters: heightAtTime(config, verticalLaunchSpeedMps, timeSec),
-      crossTrackMeters: tangentialFieldSpeedMps * timeSec,
-    };
-  });
-  const lowerY = config.targetHeightMeters - config.goalRadiusMeters;
-  const upperY = config.targetHeightMeters + config.goalRadiusMeters;
-  const openingIntersectionValid = openingSamples.some((sample) => (
-    sample.heightMeters >= lowerY
-    && sample.heightMeters <= upperY
-    && Math.abs(sample.crossTrackMeters) <= config.goalRadiusMeters
-  ));
-  const frontLipCleared = !config.requiresHubOpeningClearance || (() => {
-    const frontDistance = Math.max(0.0, targetDistanceMeters - (config.hubOpeningDepthMeters / 2.0));
-    const frontHeight = heightAtTime(config, verticalLaunchSpeedMps, frontDistance / radialFieldSpeedMps);
-    const requiredLipHeight = config.hubFrontLipHeightMeters + config.fuelRadiusMeters + config.hubLipClearanceMeters;
-    return frontHeight >= requiredLipHeight;
-  })();
+  const finalTrajectory = evaluateFinalTrajectory(
+    config,
+    targetDistanceMeters,
+    radialFieldSpeedMps,
+    tangentialFieldSpeedMps,
+    verticalLaunchSpeedMps,
+  );
 
   return {
     radialLaunchSpeedMps,
@@ -664,14 +667,17 @@ function sideProfileForEvaluation(
     tangentialFieldSpeedMps,
     verticalLaunchSpeedMps,
     targetDistanceMeters,
-    flightTimeToTargetSec,
-    impactHeightMeters,
-    peakHeightMeters,
-    crossTrackAtTargetMeters,
-    targetOpeningValid: openingIntersectionValid && frontLipCleared,
-    frontLipCleared,
-    openingIntersectionValid,
-    openingSamples,
+    flightTimeToTargetSec: finalTrajectory.targetPlaneCrossingTimeSec ?? Number.NaN,
+    impactHeightMeters: finalTrajectory.impactHeightMeters ?? Number.NaN,
+    peakHeightMeters: finalTrajectory.peakHeightMeters ?? Number.NaN,
+    crossTrackAtTargetMeters: finalTrajectory.crossTrackAtTargetMeters ?? Number.NaN,
+    targetOpeningValid: finalTrajectory.feasible,
+    frontLipCleared: finalTrajectory.frontLipCleared,
+    openingIntersectionValid: finalTrajectory.openingIntersectionValid,
+    entryAngleDeg: finalTrajectory.entryAngleDeg ?? Number.NaN,
+    entryAngleValid: !config.requiresHubOpeningClearance
+      || (finalTrajectory.entryAngleDeg ?? Number.NEGATIVE_INFINITY) >= config.minEntryAngleDeg,
+    openingSamples: finalTrajectory.openingSamples,
   };
 }
 
@@ -1529,6 +1535,12 @@ function fastShotQualityForBase(base: BaseMotionState): ShotQualityEstimate {
   const distanceMeters = distance(release.shooterPoint, target.point);
   if (target.usesPolynomial) {
     const input = { distanceMeters, radialVelocityMps: radialTangential.radialVelocityMps };
+    if (!isInsideShotMapDomain(target.config, input) && isCloseRangeHubInput(target.config, input)) {
+      const candidate = findBestCandidateCached(target.config, input, target.candidateSelection, true);
+      return candidate
+        ? { solvable: true, accuracyEstimate: estimateCandidateAccuracy(target.config, candidate) }
+        : { solvable: false, accuracyEstimate: 0.0 };
+    }
     if (!isInsideShotMapDomain(target.config, input)) return { solvable: false, accuracyEstimate: 0.0 };
     const hood = evaluatePolynomial(generatedCoefficients.hood, input);
     const roller = evaluatePolynomial(generatedCoefficients.roller, input);
@@ -1549,27 +1561,64 @@ function fastShotQualityForBase(base: BaseMotionState): ShotQualityEstimate {
   };
 }
 
+function estimateCandidateAccuracy(config: ShotCalculatorConfig, candidate: TrajectoryCandidate): number {
+  const marginScore = clamp(candidate.heightMarginMeters / Math.max(config.goalRadiusMeters, 1e-9), 0.0, 1.0);
+  const robustnessScore = clamp(candidate.robustnessMargin / 0.30, 0.0, 1.0);
+  const hoodEdgePenalty = edgePressure(candidate.hoodRot, config.minHoodRot, config.maxHoodRot);
+  const rollerUse = clamp(Math.abs(candidate.rollerRps) / config.maxRollerRps, 0.0, 1.0);
+  return clamp(
+    0.84
+    + (0.08 * marginScore)
+    + (0.04 * robustnessScore)
+    - (0.035 * hoodEdgePenalty)
+    - (0.025 * rollerUse),
+    0.0,
+    0.98,
+  );
+}
+
 function findBestCandidateCached(
   config: ShotCalculatorConfig,
   input: { distanceMeters: number; radialVelocityMps: number },
   selection: TargetSelection['candidateSelection'],
+  allowCloseRangeHubFallback = false,
 ): TrajectoryCandidate | null {
   const quantizedInput = {
     distanceMeters: roundToStep(input.distanceMeters, 0.05),
     radialVelocityMps: roundToStep(input.radialVelocityMps, 0.05),
   };
+  const solverConfig = allowCloseRangeHubFallback && isCloseRangeHubInput(config, quantizedInput)
+    ? {
+      ...config,
+      minDistanceMeters: closeRangeHubConfig.minDistanceMeters,
+      maxDistanceMeters: config.minDistanceMeters,
+    }
+    : config;
   const key = [
     selection,
-    config.targetHeightMeters.toFixed(2),
-    config.requiresHubOpeningClearance ? 'hub' : 'pass',
+    solverConfig.targetHeightMeters.toFixed(2),
+    solverConfig.requiresHubOpeningClearance ? 'hub' : 'pass',
+    solverConfig.minDistanceMeters.toFixed(2),
+    solverConfig.maxDistanceMeters.toFixed(2),
     quantizedInput.distanceMeters.toFixed(2),
     quantizedInput.radialVelocityMps.toFixed(2),
   ].join('|');
   if (candidateCache.has(key)) return candidateCache.get(key) ?? null;
-  const candidate = findBestCandidate(config, quantizedInput, selection);
+  const candidate = findBestCandidate(solverConfig, quantizedInput, selection);
   candidateCache.set(key, candidate);
   if (candidateCache.size > 2000) candidateCache.clear();
   return candidate;
+}
+
+function isCloseRangeHubInput(
+  config: ShotCalculatorConfig,
+  input: { distanceMeters: number; radialVelocityMps: number },
+): boolean {
+  return config.requiresHubOpeningClearance
+    && input.distanceMeters >= closeRangeHubConfig.minDistanceMeters
+    && input.distanceMeters < config.minDistanceMeters
+    && input.radialVelocityMps >= config.minRadialVelocityMps
+    && input.radialVelocityMps <= config.maxRadialVelocityMps;
 }
 
 function estimatePassbackAccuracy(
@@ -1865,7 +1914,7 @@ function firstValidTurretGoal(samples: TurretOptimizerSample[]): number | null {
 function isTurretScoreableShot(evaluation: ShotEvaluation): boolean {
   return evaluation.reachable
     && evaluation.candidate !== null
-    && evaluation.polynomialValid
+    && evaluation.shotCommandValid
     && evaluation.turretSolution.valid
     && (evaluation.turretSideProfile?.targetOpeningValid ?? false);
 }
@@ -2531,6 +2580,7 @@ interface ShotEvaluation {
   hoodPrediction: number | null;
   rollerPrediction: number | null;
   polynomialValid: boolean;
+  shotCommandValid: boolean;
   turretSolution: TurretSolution;
   turretTracking: TurretTrackingEvaluation;
   turretSideProfile: TurretSideProfile | null;
@@ -2572,6 +2622,8 @@ interface TurretSideProfile {
   targetOpeningValid: boolean;
   frontLipCleared: boolean;
   openingIntersectionValid: boolean;
+  entryAngleDeg: number;
+  entryAngleValid: boolean;
   openingSamples: TurretSideSample[];
 }
 

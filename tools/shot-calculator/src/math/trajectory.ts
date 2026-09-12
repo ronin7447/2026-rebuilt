@@ -29,6 +29,12 @@ export const defaultConfig: ShotCalculatorConfig = {
   maxRollerRps: 100.0,
 };
 
+export const closeRangeHubConfig: ShotCalculatorConfig = {
+  ...defaultConfig,
+  minDistanceMeters: 0.85,
+  maxDistanceMeters: defaultConfig.minDistanceMeters,
+};
+
 export function launchAngleDegForHood(config: ShotCalculatorConfig, hoodRot: number): number {
   return (hoodRot - config.hoodIntercept) / config.hoodSlope;
 }

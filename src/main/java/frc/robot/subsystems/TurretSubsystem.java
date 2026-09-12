@@ -1,9 +1,12 @@
 package frc.robot.subsystems;
 import java.util.function.BooleanSupplier;
+import java.util.stream.DoubleStream;
 
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -15,10 +18,15 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.constants.Constants;
 import frc.robot.util.TurretMath;
+import frc.robot.util.ConfigurationHealth;
+import frc.robot.util.TurretDiagnostics;
 import static edu.wpi.first.units.Units.*;
 
 public class TurretSubsystem extends SubsystemBase {
@@ -35,7 +43,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     private boolean positionMode = true;
     private boolean autoAimActive = false;
-    private boolean poseFreshForShooting = false;
+    private boolean visionRecentWarningState = false;
     private boolean inAllianceZone = false;
     private boolean inNeutralZone = false;
     private boolean visionHealthy = false;
@@ -67,15 +75,25 @@ public class TurretSubsystem extends SubsystemBase {
     private double robustReleaseLatencySec = Double.NaN;
     private double robustTranslationScale = 1.0;
     private double robustRotationScale = 1.0;
+    private double robustSolverDurationSec = Double.NaN;
+    private final boolean configured;
+    private double lastAimEvaluationTimestampSec = Double.NaN;
+    private final TurretDiagnostics diagnostics = new TurretDiagnostics(
+        Constants.Turret.AIM_TOLERANCE_DEG,
+        Constants.Turret.STEP_SETTLE_TIME_SEC,
+        Constants.Turret.STEP_ERROR_DEADBAND_DEG,
+        Constants.Turret.TRACKING_WINDOW_SEC
+    );
+    private TurretDiagnostics.Snapshot diagnosticSnapshot;
 
     private BooleanSupplier shooterReadySupplier = () -> true;
 
     public TurretSubsystem() {
         TalonFXConfiguration cfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(50))
+                .withStatorCurrentLimit(Amps.of(Constants.Turret.STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(20))
+                .withSupplyCurrentLimit(Amps.of(Constants.Turret.SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true));
 
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -98,14 +116,14 @@ public class TurretSubsystem extends SubsystemBase {
         softLimitConfigs.ForwardSoftLimitEnable = true;
         softLimitConfigs.ForwardSoftLimitThreshold = Constants.Turret.ABSOLUTE_TALON_SOFT_LIMIT_HIGH;
 
-        turretKraken.getConfigurator().apply(cfg);
+        configured = ConfigurationHealth.apply(
+            "turret-" + Constants.Turret.TURRET_KRAKEN_ID,
+            () -> turretKraken.getConfigurator().apply(cfg)
+        );
         turretKraken.getPosition().setUpdateFrequency(100);
         turretKraken.getVelocity().setUpdateFrequency(100);
         turretKraken.getStatorCurrent().setUpdateFrequency(100);
-        turretKraken.getMotorVoltage().setUpdateFrequency(1000);
-        turretKraken.optimizeBusUtilization();
-
-        turretKraken.setNeutralMode(NeutralModeValue.Brake);
+        turretKraken.getMotorVoltage().setUpdateFrequency(Constants.PowerLogging.MOTOR_ELECTRICAL_RATE_HZ);
 
         zeroEncoder();
         // targetTurretRot = getTurretPositionRotations();
@@ -116,6 +134,12 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret kP", slot0Configs.kP);
         SmartDashboard.putNumber("Turret kI", slot0Configs.kI);
         SmartDashboard.putNumber("Turret kD", slot0Configs.kD);
+        SmartDashboard.putNumber("Turret Cruise Velocity", motionMagicConfigs.MotionMagicCruiseVelocity);
+        SmartDashboard.putNumber("Turret Acceleration", motionMagicConfigs.MotionMagicAcceleration);
+        SmartDashboard.putNumber("Turret Jerk", motionMagicConfigs.MotionMagicJerk);
+        SmartDashboard.putData("Turret/TestStepPositive15Deg", createStepTrialCommand(15.0));
+        SmartDashboard.putData("Turret/TestStepNegative15Deg", createStepTrialCommand(-15.0));
+        SmartDashboard.putData("Turret/ApplyTestTuning", Commands.runOnce(this::applyTestTuningFromDashboard, this));
     }
 
     public TalonFX getKraken() {
@@ -194,7 +218,11 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public boolean atGoal() {
-        return Math.abs(getTurretAimErrorDeg()) <= Constants.Turret.AIM_TOLERANCE_DEG;
+        var positionSignal = turretKraken.getPosition();
+        return positionSignal.getStatus().isOK()
+            && positionSignal.getTimestamp().isValid()
+            && positionSignal.getTimestamp().getLatency() <= Constants.Shooter.MAX_MECHANISM_FEEDBACK_AGE_SEC
+            && Math.abs(getTurretAimErrorDeg()) <= Constants.Turret.AIM_TOLERANCE_DEG;
     }
 
     public boolean isTurretAtAimGoal() {
@@ -202,6 +230,11 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setTargetTurretRotation(double posRot) {
+        if (!Double.isFinite(posRot)) {
+            movingShotSolutionValid = false;
+            robustShotReason = "nonfinite-turret-goal";
+            return;
+        }
         positionMode = true;
         targetTurretRot = Math.max(Constants.Turret.SOFT_LIMIT_LOW, Math.min(posRot, Constants.Turret.SOFT_LIMIT_HIGH));
     }
@@ -211,6 +244,11 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setTurretGoal(Rotation2d goal) {
+        if (goal == null || !Double.isFinite(goal.getRotations())) {
+            movingShotSolutionValid = false;
+            robustShotReason = "nonfinite-turret-goal";
+            return;
+        }
         Rotation2d clampedGoal = wrapTurretAngleToLegalRange(goal);
         desiredTurretAngle = goal;
         goalClampedBySoftwareLimit = Math.abs(clampedGoal.minus(goal).getDegrees()) > 1e-3;
@@ -247,7 +285,7 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setVoltage(double output) {
-        if (!positionMode) {
+        if (!positionMode && configured && Double.isFinite(output)) {
             turretKraken.setControl(openLoopVolts.withOutput(output));
         }
     }
@@ -264,7 +302,7 @@ public class TurretSubsystem extends SubsystemBase {
 
     public void togglePositionMode() {
 
-        if (positionMode) {
+        if (positionMode && configured) {
 
             positionMode = false;
         } else {
@@ -313,8 +351,8 @@ public class TurretSubsystem extends SubsystemBase {
         return autoAimActive;
     }
 
-    public boolean isPoseFreshForShooting() {
-        return poseFreshForShooting;
+    public boolean isVisionRecent() {
+        return visionRecentWarningState;
     }
 
     public boolean isOnSoftwareLimit() {
@@ -324,12 +362,96 @@ public class TurretSubsystem extends SubsystemBase {
     public boolean isShotReady() {
         return autoAimActive
             && movingShotSolutionValid
-            && poseFreshForShooting
             && isTurretAtAimGoal()
             && !isOnSoftwareLimit()
             && mappedHoodPositionAvailable
             && mappedRollerRpsAvailable
             && shooterReadySupplier.getAsBoolean();
+    }
+
+    public boolean isShotSolutionValid() {
+        return movingShotSolutionValid;
+    }
+
+    public double getLastAimEvaluationTimestampSec() {
+        return lastAimEvaluationTimestampSec;
+    }
+
+    public boolean hasFiniteMappedSetpoints() {
+        return mappedHoodPositionAvailable
+            && mappedRollerRpsAvailable
+            && Double.isFinite(mappedHoodPosition)
+            && Double.isFinite(mappedRollerRps);
+    }
+
+    public String getShotReason() {
+        return robustShotReason;
+    }
+
+    public String getShotModelName() { return shotModelName; }
+    public String getTargetModeName() { return targetMode; }
+
+    public void invalidateAimState(String reason) {
+        autoAimActive = false;
+        movingShotSolutionValid = false;
+        mappedHoodPositionAvailable = false;
+        mappedRollerRpsAvailable = false;
+        robustShotReason = reason;
+        lastAimEvaluationTimestampSec = Timer.getFPGATimestamp();
+    }
+
+    public Command createStepTrialCommand(double deltaDeg) {
+        return Commands.startEnd(
+            () -> {
+                if (!DriverStation.isTestEnabled()) return;
+                autoAimSuppressed = true;
+                double startDeg = getTurretAngle().getDegrees();
+                Rotation2d requested = Rotation2d.fromDegrees(startDeg + deltaDeg);
+                Rotation2d legal = wrapTurretAngleToLegalRange(requested);
+                diagnostics.beginStep(Timer.getFPGATimestamp(), startDeg, legal.getDegrees());
+                setTurretGoal(legal);
+            },
+            () -> {
+                diagnostics.endStep();
+                holdCurrentPosition();
+                autoAimSuppressed = false;
+            },
+            this
+        ).onlyWhile(DriverStation::isTestEnabled);
+    }
+
+    private void applyTestTuningFromDashboard() {
+        if (!DriverStation.isTestEnabled()) {
+            SmartDashboard.putString("Turret/TuningApplyStatus", "rejected-outside-test-mode");
+            return;
+        }
+        double kP = SmartDashboard.getNumber("Turret kP", Constants.Turret.KP);
+        double kI = SmartDashboard.getNumber("Turret kI", Constants.Turret.KI);
+        double kD = SmartDashboard.getNumber("Turret kD", Constants.Turret.KD);
+        double cruise = SmartDashboard.getNumber("Turret Cruise Velocity", Constants.Turret.CRUISE_VELOCITY);
+        double acceleration = SmartDashboard.getNumber("Turret Acceleration", Constants.Turret.ACCELERATION);
+        double jerk = SmartDashboard.getNumber("Turret Jerk", Constants.Turret.JERK);
+        if (!DoubleStream.of(kP, kI, kD, cruise, acceleration, jerk).allMatch(Double::isFinite)
+            || kP < 0 || kI < 0 || kD < 0 || cruise <= 0 || acceleration <= 0 || jerk <= 0) {
+            SmartDashboard.putString("Turret/TuningApplyStatus", "rejected-invalid-values");
+            return;
+        }
+        Slot0Configs gains = new Slot0Configs()
+            .withKS(Constants.Turret.KS).withKV(Constants.Turret.KV).withKA(Constants.Turret.KA)
+            .withKP(kP).withKI(kI).withKD(kD);
+        MotionMagicConfigs motion = new MotionMagicConfigs()
+            .withMotionMagicCruiseVelocity(cruise)
+            .withMotionMagicAcceleration(acceleration)
+            .withMotionMagicJerk(jerk);
+        boolean gainsApplied = ConfigurationHealth.apply(
+            "turret-test-gains-" + Constants.Turret.TURRET_KRAKEN_ID,
+            () -> turretKraken.getConfigurator().apply(gains)
+        );
+        boolean motionApplied = ConfigurationHealth.apply(
+            "turret-test-motion-" + Constants.Turret.TURRET_KRAKEN_ID,
+            () -> turretKraken.getConfigurator().apply(motion)
+        );
+        SmartDashboard.putString("Turret/TuningApplyStatus", gainsApplied && motionApplied ? "applied" : "failed");
     }
 
     public void updateAimState(
@@ -338,7 +460,7 @@ public class TurretSubsystem extends SubsystemBase {
         boolean inAllianceZone,
         boolean inNeutralZone,
         boolean visionHealthy,
-        boolean poseFreshForShooting,
+        boolean visionRecent,
         boolean autoAimActive,
         Translation2d turretPivotFieldPosition,
         Translation2d selectedTargetPoint,
@@ -359,7 +481,7 @@ public class TurretSubsystem extends SubsystemBase {
         this.inAllianceZone = inAllianceZone;
         this.inNeutralZone = inNeutralZone;
         this.visionHealthy = visionHealthy;
-        this.poseFreshForShooting = poseFreshForShooting;
+        this.visionRecentWarningState = visionRecent;
         this.autoAimActive = autoAimActive;
         this.turretPivotFieldPosition = turretPivotFieldPosition;
         this.selectedTargetPoint = selectedTargetPoint;
@@ -374,6 +496,7 @@ public class TurretSubsystem extends SubsystemBase {
         this.mappedHoodPosition = mappedHoodPosition;
         this.mappedRollerRpsAvailable = mappedRollerRpsAvailable;
         this.mappedRollerRps = mappedRollerRps;
+        this.lastAimEvaluationTimestampSec = Timer.getFPGATimestamp();
     }
 
     public void updateRobustShotState(
@@ -386,7 +509,8 @@ public class TurretSubsystem extends SubsystemBase {
         double robustFitError,
         double robustReleaseLatencySec,
         double robustTranslationScale,
-        double robustRotationScale
+        double robustRotationScale,
+        double robustSolverDurationSec
     ) {
         this.shotModelName = shotModelName;
         this.robustShotReason = robustShotReason;
@@ -398,13 +522,14 @@ public class TurretSubsystem extends SubsystemBase {
         this.robustReleaseLatencySec = robustReleaseLatencySec;
         this.robustTranslationScale = robustTranslationScale;
         this.robustRotationScale = robustRotationScale;
+        this.robustSolverDurationSec = robustSolverDurationSec;
     }
 
 
 
     @Override
     public void periodic() {
-        if (positionMode) {
+        if (positionMode && configured) {
             turretKraken.setControl(
                 mmPos.withPosition(
                     convertLogicalTurretRotationsToMotorRotations(targetTurretRot)
@@ -415,6 +540,17 @@ public class TurretSubsystem extends SubsystemBase {
 
             turretKraken.setControl(new VoltageOut(0));
         }
+
+        double profilePositionDeg = convertMotorRotationsToLogicalTurretRotations(
+            turretKraken.getClosedLoopReference().getValueAsDouble()
+                - Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
+        ) * 360.0;
+        diagnosticSnapshot = diagnostics.update(
+            Timer.getFPGATimestamp(),
+            getTurretGoal().getDegrees(),
+            profilePositionDeg,
+            getTurretAngle().getDegrees()
+        );
 
         // for tuning pid
 
@@ -441,7 +577,8 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putBoolean("Turret/InAllianceZone", inAllianceZone);
         SmartDashboard.putBoolean("Turret/InNeutralZone", inNeutralZone);
         SmartDashboard.putBoolean("Turret/VisionHealthy", visionHealthy);
-        SmartDashboard.putBoolean("Turret/PoseFreshForShot", poseFreshForShooting);
+        SmartDashboard.putBoolean("Turret/VisionRecentWarningState", visionRecentWarningState);
+        SmartDashboard.putBoolean("Turret/VisionAgeGatesFeed", false);
         SmartDashboard.putBoolean("Turret/OnSoftwareLimit", isOnSoftwareLimit());
         SmartDashboard.putBoolean("Turret/MovingShotSolutionValid", movingShotSolutionValid);
         SmartDashboard.putBoolean("Turret/MappedHoodPositionAvailable", mappedHoodPositionAvailable);
@@ -470,6 +607,39 @@ public class TurretSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Turret/RobustReleaseLatencySec", robustReleaseLatencySec);
         SmartDashboard.putNumber("Turret/RobustTranslationScale", robustTranslationScale);
         SmartDashboard.putNumber("Turret/RobustRotationScale", robustRotationScale);
+        SmartDashboard.putNumber("Turret/RobustSolverDurationMs", robustSolverDurationSec * 1000.0);
         SmartDashboard.putBoolean("Turret/Kaden", positionMode);
+        if (diagnosticSnapshot != null) {
+            SmartDashboard.putNumber("Turret/Diagnostics/ProfilePositionDeg",
+                convertMotorRotationsToLogicalTurretRotations(
+                    turretKraken.getClosedLoopReference().getValueAsDouble()
+                        - Constants.Turret.FORWARD_REFERENCE_MOTOR_ROTATIONS
+                ) * 360.0);
+            SmartDashboard.putNumber("Turret/Diagnostics/ProfileVelocityDegPerSec",
+                convertMotorRotationsToLogicalTurretRotations(
+                    turretKraken.getClosedLoopReferenceSlope().getValueAsDouble()
+                ) * 360.0);
+            SmartDashboard.putNumber("Turret/Diagnostics/MeasuredVelocityDegPerSec", getVelocityRps() * 360.0);
+            SmartDashboard.putNumber("Turret/Diagnostics/GoalErrorDeg", diagnosticSnapshot.goalErrorDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/ProfileTrackingErrorDeg", diagnosticSnapshot.profileTrackingErrorDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/OutputVoltageV", turretKraken.getMotorVoltage().getValueAsDouble());
+            SmartDashboard.putNumber("Turret/Diagnostics/SupplyCurrentA", turretKraken.getSupplyCurrent().getValueAsDouble());
+            SmartDashboard.putNumber("Turret/Diagnostics/StatorCurrentA", turretKraken.getStatorCurrent().getValueAsDouble());
+            boolean supplyLimit = Boolean.TRUE.equals(turretKraken.getFault_SupplyCurrLimit().getValue());
+            boolean statorLimit = Boolean.TRUE.equals(turretKraken.getFault_StatorCurrLimit().getValue());
+            boolean suspectedLimit = !supplyLimit && !statorLimit
+                && Math.abs(turretKraken.getMotorVoltage().getValueAsDouble()) >= 11.5
+                && Math.abs(diagnosticSnapshot.profileTrackingErrorDeg()) > Constants.Turret.AIM_TOLERANCE_DEG;
+            SmartDashboard.putString("Turret/Diagnostics/CurrentLimitStatus",
+                supplyLimit || statorLimit ? "active-reported" : (suspectedLimit ? "suspected" : "not-observed"));
+            SmartDashboard.putNumber("Turret/Diagnostics/StepSettlingTimeSec", diagnosticSnapshot.settlingTimeSec());
+            SmartDashboard.putNumber("Turret/Diagnostics/StepOvershootDeg", diagnosticSnapshot.overshootDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/StepFinalBiasDeg", diagnosticSnapshot.finalBiasDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/StepErrorSignChanges", diagnosticSnapshot.errorSignChanges());
+            SmartDashboard.putNumber("Turret/Diagnostics/RollingGoalRmsDeg", diagnosticSnapshot.rollingGoalErrorRmsDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/RollingGoalPeakDeg", diagnosticSnapshot.rollingGoalErrorPeakDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/RollingProfileRmsDeg", diagnosticSnapshot.rollingProfileErrorRmsDeg());
+            SmartDashboard.putNumber("Turret/Diagnostics/RollingProfilePeakDeg", diagnosticSnapshot.rollingProfileErrorPeakDeg());
+        }
     }
 }

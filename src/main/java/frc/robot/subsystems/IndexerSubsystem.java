@@ -7,6 +7,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.ConfigurationHealth;
 
 import static edu.wpi.first.units.Units.*;
 
@@ -16,6 +17,7 @@ public class IndexerSubsystem extends SubsystemBase {
     private final MotionMagicVelocityVoltage rollerVel = new MotionMagicVelocityVoltage(0.0);
     private double targetRollerVelRps = Constants.Outtake.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+    private final boolean configured;
 
 
     public IndexerSubsystem() {
@@ -26,9 +28,9 @@ public class IndexerSubsystem extends SubsystemBase {
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(50))
+                .withStatorCurrentLimit(Amps.of(Constants.Indexer.ROLLER_STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(40))
+                .withSupplyCurrentLimit(Amps.of(Constants.Indexer.ROLLER_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true));
 
         var rollerSlot0Configs = rollerCfg.Slot0;
@@ -43,9 +45,11 @@ public class IndexerSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicAcceleration = Constants.Indexer.ROLLER_ACCELERATION;
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Indexer.ROLLER_JERK;
 
-        rollerKraken.getConfigurator().apply(rollerCfg);
+        configured = ConfigurationHealth.apply(
+            "spindexer-" + Constants.Indexer.ROLLER_KRAKEN_ID,
+            () -> rollerKraken.getConfigurator().apply(rollerCfg)
+        );
         // rollerKraken.getVelocity().setUpdateFrequency(100);
-        // rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
         // rollerKraken.optimizeBusUtilization();
     }
     
@@ -56,6 +60,7 @@ public class IndexerSubsystem extends SubsystemBase {
 
 
     public void setRollerTargetVelocity(double velRps) {
+        if (!Double.isFinite(velRps)) return;
         targetRollerVelRps = velRps;
     }
 
@@ -65,7 +70,7 @@ public class IndexerSubsystem extends SubsystemBase {
     }
 
     public void enableRoller() {
-        rollerEnabled = rollerKraken != null;
+        rollerEnabled = configured && rollerKraken != null;
     }
 
     public void disableRoller() {
@@ -85,8 +90,10 @@ public class IndexerSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
 
-        if (rollerEnabled && rollerKraken != null) {
+        if (rollerEnabled && configured && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
+        } else if (!configured) {
+            rollerKraken.stopMotor();
         }
     }
 }

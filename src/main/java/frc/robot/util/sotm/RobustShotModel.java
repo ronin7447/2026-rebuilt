@@ -12,16 +12,28 @@ import frc.robot.util.AimMath;
 
 public final class RobustShotModel {
     private static final double GRAVITY_MPS2 = 9.81;
+    private static final double DIRECT_MIN_EXIT_SPEED_MPS = 4.0;
+    private static final double DIRECT_HOOD_STEP_ROT = 0.025;
+    private static final double DIRECT_EXIT_SPEED_STEP_MPS = 0.05;
     private static final double EPSILON = 1e-9;
 
     private RobustShotModel() {}
 
     public static Optional<RobustShotSolution> solve(RobustShotRequest request) {
+        long startNanos = System.nanoTime();
         if (request == null
             || request.motionState() == null
             || request.robotToTurretPivot() == null
             || request.targetFieldPoint() == null
             || request.turretZeroOffset() == null
+            || request.targetConstraints() == null
+            || request.motionState().robotPose() == null
+            || request.motionState().robotRelativeSpeeds() == null
+            || request.motionState().fieldRelativeSpeeds() == null
+            || request.motionState().robotOrientation() == null
+            || request.targetConstraints().targetType() == null
+            || request.targetConstraints().selectionMode() == null
+            || !isFiniteRequest(request)
             || request.maxExitSpeedMps() <= 0.0
             || request.maxHoodPositionRot() < request.minHoodPositionRot()) {
             return Optional.empty();
@@ -59,9 +71,13 @@ public final class RobustShotModel {
 
         double radialVelocityMps = velocityComponents.radialVelocityMps();
         double tangentialVelocityMps = velocityComponents.tangentialVelocityMps();
-        if (!GeneratedShotMapCoefficients.isInsideDomain(distanceMeters, radialVelocityMps)) {
+        Optional<ShotCommand> shotCommand = shotCommandForInput(request, distanceMeters, radialVelocityMps);
+        if (shotCommand.isEmpty()) {
+            String reason = distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
+                ? "outside-shot-map-domain-close-range-no-direct-shot"
+                : "outside-shot-map-domain";
             return Optional.of(invalidSolution(
-                "outside-shot-map-domain",
+                reason,
                 releaseState,
                 request,
                 shooterFieldPosition,
@@ -72,12 +88,8 @@ public final class RobustShotModel {
             ));
         }
 
-        double baseHoodPositionRot = clamp(
-            GeneratedShotMapCoefficients.evaluateHoodPositionRot(distanceMeters, radialVelocityMps),
-            request.minHoodPositionRot(),
-            request.maxHoodPositionRot()
-        );
-        double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
+        double baseHoodPositionRot = shotCommand.get().hoodPositionRot();
+        double rollerRps = shotCommand.get().rollerRps();
         if (Math.abs(rollerRps) > Constants.Shooter.MAX_ROLLER_RPS) {
             return Optional.of(invalidSolution(
                 "roller-rps-out-of-range",
@@ -90,7 +102,7 @@ public final class RobustShotModel {
                 tangentialVelocityMps
             ));
         }
-        double exitSpeedMps = rollerRpsToExitSpeedMps(rollerRps);
+        double exitSpeedMps = shotCommand.get().exitSpeedMps();
         if (exitSpeedMps <= 0.0 || exitSpeedMps > request.maxExitSpeedMps()) {
             return Optional.of(invalidSolution(
                 "exit-speed-out-of-range",
@@ -177,24 +189,33 @@ public final class RobustShotModel {
             releaseState.robotOrientation(),
             request.turretZeroOffset()
         );
-        double flightTimeSec = estimateFlightTime(
+        double flightTimeSec = distanceMeters / targetLineFieldSpeed;
+        TrajectoryEvaluation trajectory = evaluateFinalTrajectory(
+            request,
             distanceMeters,
             targetLineFieldSpeed,
-            request.targetFieldPoint().getZ() - request.shooterExitHeightMeters(),
             verticalLaunchSpeed
         );
         double robustnessMargin = GeneratedShotMapCoefficients.estimateRobustnessMargin(
             distanceMeters,
             radialVelocityMps
         );
+        if (shotCommand.get().directRobustnessMargin() >= 0.0) {
+            robustnessMargin = shotCommand.get().directRobustnessMargin();
+        }
         double fitError = Math.max(
             GeneratedShotMapCoefficients.HOOD_FIT_MAX_ERROR_ROT,
             GeneratedShotMapCoefficients.ROLLER_FIT_MAX_ERROR_RPS / 100.0
         );
-        boolean insideTolerance = robustnessMargin >= GeneratedShotMapCoefficients.MIN_ROBUSTNESS_MARGIN;
+        boolean heuristicAccepted = request.targetConstraints().selectionMode() != ShotTargetConstraints.SelectionMode.ROBUST
+            || robustnessMargin >= GeneratedShotMapCoefficients.MIN_ROBUSTNESS_MARGIN;
+        boolean insideTolerance = trajectory.feasible() && heuristicAccepted;
+        String resultReason = !trajectory.feasible()
+            ? trajectory.reason()
+            : (heuristicAccepted ? "ready" : "low-robustness-margin");
         ShotQuality quality = new ShotQuality(
             insideTolerance,
-            insideTolerance ? "ready" : "low-robustness-margin",
+            resultReason,
             distanceMeters,
             radialVelocityMps,
             tangentialVelocityMps,
@@ -215,7 +236,13 @@ public final class RobustShotModel {
             flightTimeSec,
             desiredFieldYaw.minus(stationaryFieldYaw).getDegrees(),
             launchVectorField,
-            quality
+            quality,
+            request.targetConstraints().selectionMode(),
+            shotCommand.get().source(),
+            trajectory.feasible(),
+            trajectory.reason(),
+            flightTimeSec,
+            (System.nanoTime() - startNanos) / 1.0e9
         ));
     }
 
@@ -248,6 +275,247 @@ public final class RobustShotModel {
     public static double rollerRpsToExitSpeedMps(double rollerRps) {
         return (Math.abs(rollerRps) - Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT)
             / Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE;
+    }
+
+    private static Optional<ShotCommand> shotCommandForInput(
+        RobustShotRequest request,
+        double distanceMeters,
+        double radialVelocityMps
+    ) {
+        ShotTargetConstraints constraints = request.targetConstraints();
+        if (constraints.targetType() == ShotTargetConstraints.TargetType.HUB
+            && GeneratedShotMapCoefficients.isInsideDomain(distanceMeters, radialVelocityMps)) {
+            double hoodPositionRot = GeneratedShotMapCoefficients.evaluateHoodPositionRot(
+                distanceMeters,
+                radialVelocityMps
+            );
+            double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
+            if (!Double.isFinite(hoodPositionRot)
+                || hoodPositionRot < request.minHoodPositionRot()
+                || hoodPositionRot > request.maxHoodPositionRot()
+                || !Double.isFinite(rollerRps)) {
+                return Optional.empty();
+            }
+            return Optional.of(new ShotCommand(
+                hoodPositionRot,
+                rollerRps,
+                rollerRpsToExitSpeedMps(rollerRps),
+                GeneratedShotMapCoefficients.estimateRobustnessMargin(distanceMeters, radialVelocityMps),
+                CommandSource.GENERATED_POLYNOMIAL
+            ));
+        }
+
+        boolean insideTargetDomain = distanceMeters >= constraints.minDistanceMeters()
+            && distanceMeters <= constraints.maxDistanceMeters()
+            && radialVelocityMps >= constraints.minRadialVelocityMps()
+            && radialVelocityMps <= constraints.maxRadialVelocityMps();
+        if (insideTargetDomain
+            && (constraints.targetType() == ShotTargetConstraints.TargetType.PASSBACK
+                || distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS)) {
+            return solveDirectShot(
+                request,
+                roundToStep(distanceMeters, 0.05),
+                roundToStep(radialVelocityMps, 0.05)
+            );
+        }
+
+        return Optional.empty();
+    }
+
+    private static Optional<ShotCommand> solveDirectShot(
+        RobustShotRequest request,
+        double distanceMeters,
+        double radialVelocityMps
+    ) {
+        ShotCommand best = null;
+        for (double hoodPositionRot = request.minHoodPositionRot();
+            hoodPositionRot <= request.maxHoodPositionRot() + EPSILON;
+            hoodPositionRot += DIRECT_HOOD_STEP_ROT) {
+            for (double exitSpeedMps = DIRECT_MIN_EXIT_SPEED_MPS;
+                exitSpeedMps <= request.maxExitSpeedMps() + EPSILON;
+                exitSpeedMps += DIRECT_EXIT_SPEED_STEP_MPS) {
+                ShotCommand candidate = simulateDirectCandidate(
+                    request,
+                    distanceMeters,
+                    radialVelocityMps,
+                    hoodPositionRot,
+                    exitSpeedMps
+                );
+                if (candidate != null && isBetterCandidate(request.targetConstraints().selectionMode(), candidate, best)) {
+                    best = candidate;
+                }
+            }
+        }
+        return Optional.ofNullable(best);
+    }
+
+    private static ShotCommand simulateDirectCandidate(
+        RobustShotRequest request,
+        double distanceMeters,
+        double radialVelocityMps,
+        double hoodPositionRot,
+        double exitSpeedMps
+    ) {
+        double launchAngleDeg = launchAngleDegForHoodPosition(hoodPositionRot);
+        double launchAngleRad = Math.toRadians(launchAngleDeg);
+        double horizontalLaunchSpeed = exitSpeedMps * Math.cos(launchAngleRad);
+        double verticalLaunchSpeed = exitSpeedMps * Math.sin(launchAngleRad);
+        double targetLineFieldSpeed = horizontalLaunchSpeed + radialVelocityMps;
+        if (targetLineFieldSpeed <= 0.05) {
+            return null;
+        }
+
+        double flightTimeSec = distanceMeters / targetLineFieldSpeed;
+        if (!Double.isFinite(flightTimeSec) || flightTimeSec <= 0.0 || flightTimeSec > 3.0) {
+            return null;
+        }
+
+        TrajectoryEvaluation trajectory = evaluateFinalTrajectory(
+            request,
+            distanceMeters,
+            targetLineFieldSpeed,
+            verticalLaunchSpeed
+        );
+        if (!trajectory.feasible()) {
+            return null;
+        }
+
+        double rollerRps = exitSpeedMpsToRollerRps(exitSpeedMps);
+        if (Math.abs(rollerRps) > Constants.Shooter.MAX_ROLLER_RPS) {
+            return null;
+        }
+
+        double impactHeightMeters = request.shooterExitHeightMeters()
+            + (verticalLaunchSpeed * flightTimeSec)
+            - (0.5 * GRAVITY_MPS2 * flightTimeSec * flightTimeSec);
+        double heightErrorMeters = Math.abs(impactHeightMeters - request.targetConstraints().targetHeightMeters());
+        double heightMarginMeters = request.targetConstraints().goalRadiusMeters() - heightErrorMeters;
+        if (heightMarginMeters < 0.0) {
+            return null;
+        }
+
+        double robustnessMargin = scoreDirectRobustness(
+            request,
+            distanceMeters,
+            hoodPositionRot,
+            exitSpeedMps,
+            heightMarginMeters,
+            flightTimeSec
+        );
+        return new ShotCommand(
+            hoodPositionRot,
+            rollerRps,
+            exitSpeedMps,
+            robustnessMargin,
+            CommandSource.DIRECT_CANDIDATE
+        );
+    }
+
+    private static TrajectoryEvaluation evaluateFinalTrajectory(
+        RobustShotRequest request,
+        double distanceMeters,
+        double targetLineFieldSpeed,
+        double verticalLaunchSpeed
+    ) {
+        ShotTargetConstraints constraints = request.targetConstraints();
+        if (!Double.isFinite(targetLineFieldSpeed) || targetLineFieldSpeed <= 0.05) {
+            return new TrajectoryEvaluation(false, "target-plane-crossing-unavailable");
+        }
+        double halfOpeningDepth = constraints.requiresHubOpeningClearance()
+            ? constraints.hubOpeningDepthMeters() / 2.0
+            : 0.18;
+        double frontDistance = Math.max(0.0, distanceMeters - halfOpeningDepth);
+        double backDistance = distanceMeters + halfOpeningDepth;
+        boolean openingIntersectionValid = false;
+        for (int index = 0; index < 9; index++) {
+            double sampleDistance = frontDistance + ((backDistance - frontDistance) * index / 8.0);
+            double sampleTime = sampleDistance / targetLineFieldSpeed;
+            double sampleHeight = request.shooterExitHeightMeters()
+                + (verticalLaunchSpeed * sampleTime)
+                - (0.5 * GRAVITY_MPS2 * sampleTime * sampleTime);
+            if (sampleHeight >= constraints.targetHeightMeters() - constraints.goalRadiusMeters()
+                && sampleHeight <= constraints.targetHeightMeters() + constraints.goalRadiusMeters()) {
+                openingIntersectionValid = true;
+                break;
+            }
+        }
+        if (!openingIntersectionValid) {
+            return new TrajectoryEvaluation(false, "target-opening-miss");
+        }
+        if (!constraints.requiresHubOpeningClearance()) {
+            return new TrajectoryEvaluation(true, "ready");
+        }
+
+        double lipDistanceMeters = Math.max(0.0, distanceMeters - halfOpeningDepth);
+        double lipTimeSec = lipDistanceMeters / targetLineFieldSpeed;
+        double lipHeightMeters = request.shooterExitHeightMeters()
+            + (verticalLaunchSpeed * lipTimeSec)
+            - (0.5 * GRAVITY_MPS2 * lipTimeSec * lipTimeSec);
+        double minimumBallCenterHeight = constraints.hubFrontLipHeightMeters()
+            + constraints.fuelRadiusMeters()
+            + constraints.hubLipClearanceMeters();
+        if (lipHeightMeters < minimumBallCenterHeight) {
+            return new TrajectoryEvaluation(false, "hub-front-lip-clearance");
+        }
+        double targetTimeSec = distanceMeters / targetLineFieldSpeed;
+        double verticalVelocityAtTarget = verticalLaunchSpeed - (GRAVITY_MPS2 * targetTimeSec);
+        double entryAngleDeg = Math.toDegrees(Math.atan2(-verticalVelocityAtTarget, targetLineFieldSpeed));
+        if (entryAngleDeg < constraints.minEntryAngleDeg()) {
+            return new TrajectoryEvaluation(false, "hub-entry-angle");
+        }
+        return new TrajectoryEvaluation(true, "ready");
+    }
+
+    private static boolean isBetterCandidate(
+        ShotTargetConstraints.SelectionMode selectionMode,
+        ShotCommand candidate,
+        ShotCommand best
+    ) {
+        if (best == null) return true;
+        if (selectionMode == ShotTargetConstraints.SelectionMode.FLAT_FAST) {
+            double candidateAngle = launchAngleDegForHoodPosition(candidate.hoodPositionRot());
+            double bestAngle = launchAngleDegForHoodPosition(best.hoodPositionRot());
+            double candidateHorizontal = candidate.exitSpeedMps() * Math.cos(Math.toRadians(candidateAngle));
+            double bestHorizontal = best.exitSpeedMps() * Math.cos(Math.toRadians(bestAngle));
+            if (candidateHorizontal > bestHorizontal + EPSILON) return true;
+            if (Math.abs(candidateHorizontal - bestHorizontal) <= EPSILON
+                && candidateAngle < bestAngle - EPSILON) return true;
+            return Math.abs(candidateHorizontal - bestHorizontal) <= EPSILON
+                && Math.abs(candidateAngle - bestAngle) <= EPSILON
+                && candidate.exitSpeedMps() > best.exitSpeedMps() + EPSILON;
+        }
+        return candidate.directRobustnessMargin() > best.directRobustnessMargin();
+    }
+
+    private static double scoreDirectRobustness(
+        RobustShotRequest request,
+        double distanceMeters,
+        double hoodPositionRot,
+        double exitSpeedMps,
+        double heightMarginMeters,
+        double flightTimeSec
+    ) {
+        double hoodCenter = (request.minHoodPositionRot() + request.maxHoodPositionRot()) / 2.0;
+        double hoodSpan = Math.max((request.maxHoodPositionRot() - request.minHoodPositionRot()) / 2.0, EPSILON);
+        double hoodEdgePenalty = Math.abs(hoodPositionRot - hoodCenter) / hoodSpan;
+        double speedHeadroom = (request.maxExitSpeedMps() - exitSpeedMps)
+            / Math.max(request.maxExitSpeedMps() - DIRECT_MIN_EXIT_SPEED_MPS, EPSILON);
+        double scoreMaxDistance = request.targetConstraints().targetType() == ShotTargetConstraints.TargetType.HUB
+            ? GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
+            : request.targetConstraints().maxDistanceMeters();
+        double distancePenalty = (distanceMeters - request.targetConstraints().minDistanceMeters())
+            / Math.max(scoreMaxDistance - request.targetConstraints().minDistanceMeters(), EPSILON);
+        return heightMarginMeters
+            + (0.08 * speedHeadroom)
+            - (0.08 * flightTimeSec)
+            - (0.05 * hoodEdgePenalty)
+            - (0.04 * distancePenalty);
+    }
+
+    private static double exitSpeedMpsToRollerRps(double exitSpeedMps) {
+        return Constants.Shooter.ROLLER_DIRECTION_SIGN
+            * ((Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE * exitSpeedMps)
+                + Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT);
     }
 
     private static RobustShotSolution invalidSolution(
@@ -283,7 +551,13 @@ public final class RobustShotModel {
             Double.NaN,
             0.0,
             new Translation3d(),
-            quality
+            quality,
+            request.targetConstraints().selectionMode(),
+            CommandSource.NONE,
+            false,
+            reason,
+            Double.NaN,
+            0.0
         );
     }
 
@@ -297,38 +571,60 @@ public final class RobustShotModel {
         return new ChassisSpeeds(pivotVx, pivotVy, omega);
     }
 
-    private static double estimateFlightTime(
-        double distanceMeters,
-        double targetLineFieldSpeed,
-        double targetHeightDeltaMeters,
-        double verticalLaunchSpeed
-    ) {
-        double horizontalTimeSec = distanceMeters / targetLineFieldSpeed;
-        double verticalTimeSec = solveVerticalFlightTime(targetHeightDeltaMeters, verticalLaunchSpeed);
-        if (Double.isFinite(verticalTimeSec)) {
-            return 0.5 * (horizontalTimeSec + verticalTimeSec);
-        }
-        return horizontalTimeSec;
+    private static boolean isFiniteRequest(RobustShotRequest request) {
+        ShotMotionState motion = request.motionState();
+        return Double.isFinite(request.shooterExitHeightMeters())
+            && Double.isFinite(request.robotToTurretPivot().getX())
+            && Double.isFinite(request.robotToTurretPivot().getY())
+            && Double.isFinite(request.targetFieldPoint().getX())
+            && Double.isFinite(request.targetFieldPoint().getY())
+            && Double.isFinite(request.targetFieldPoint().getZ())
+            && Double.isFinite(request.minHoodPositionRot())
+            && Double.isFinite(request.maxHoodPositionRot())
+            && Double.isFinite(request.maxExitSpeedMps())
+            && Double.isFinite(request.releaseLatencySec())
+            && Double.isFinite(request.turretZeroOffset().getRadians())
+            && Double.isFinite(motion.robotPose().getX())
+            && Double.isFinite(motion.robotPose().getY())
+            && Double.isFinite(motion.robotPose().getRotation().getRadians())
+            && Double.isFinite(motion.robotRelativeSpeeds().vxMetersPerSecond)
+            && Double.isFinite(motion.robotRelativeSpeeds().vyMetersPerSecond)
+            && Double.isFinite(motion.robotRelativeSpeeds().omegaRadiansPerSecond)
+            && Double.isFinite(motion.fieldRelativeSpeeds().vxMetersPerSecond)
+            && Double.isFinite(motion.fieldRelativeSpeeds().vyMetersPerSecond)
+            && Double.isFinite(motion.fieldRelativeSpeeds().omegaRadiansPerSecond)
+            && Double.isFinite(motion.fieldAccelXMps2())
+            && Double.isFinite(motion.fieldAccelYMps2())
+            && Double.isFinite(motion.angularAccelRadPerSec2())
+            && Double.isFinite(motion.robotOrientation().getX())
+            && Double.isFinite(motion.robotOrientation().getY())
+            && Double.isFinite(motion.robotOrientation().getZ())
+            && Double.isFinite(request.targetConstraints().targetHeightMeters())
+            && Double.isFinite(request.targetConstraints().goalRadiusMeters())
+            && Double.isFinite(request.targetConstraints().minDistanceMeters())
+            && Double.isFinite(request.targetConstraints().maxDistanceMeters())
+            && Double.isFinite(request.targetConstraints().minRadialVelocityMps())
+            && Double.isFinite(request.targetConstraints().maxRadialVelocityMps())
+            && Double.isFinite(request.targetConstraints().hubOpeningDepthMeters())
+            && Double.isFinite(request.targetConstraints().hubFrontLipHeightMeters())
+            && Double.isFinite(request.targetConstraints().fuelRadiusMeters())
+            && Double.isFinite(request.targetConstraints().hubLipClearanceMeters())
+            && Double.isFinite(request.targetConstraints().minEntryAngleDeg());
     }
 
-    private static double solveVerticalFlightTime(double heightDeltaMeters, double verticalLaunchSpeed) {
-        double discriminant = (verticalLaunchSpeed * verticalLaunchSpeed)
-            - (2.0 * GRAVITY_MPS2 * heightDeltaMeters);
-        if (discriminant < 0.0) {
-            return Double.NaN;
-        }
-        double root = Math.sqrt(discriminant);
-        double ascendingTime = (verticalLaunchSpeed - root) / GRAVITY_MPS2;
-        double descendingTime = (verticalLaunchSpeed + root) / GRAVITY_MPS2;
-        if (descendingTime > EPSILON) {
-            return descendingTime;
-        }
-        return ascendingTime > EPSILON ? ascendingTime : Double.NaN;
-    }
-
-    private static double clamp(double value, double min, double max) {
-        return Math.max(min, Math.min(max, value));
+    private static double roundToStep(double value, double step) {
+        return Math.round(value / step) * step;
     }
 
     public record VelocityComponents(double radialVelocityMps, double tangentialVelocityMps) {}
+
+    private record ShotCommand(
+        double hoodPositionRot,
+        double rollerRps,
+        double exitSpeedMps,
+        double directRobustnessMargin,
+        CommandSource source
+    ) {}
+
+    private record TrajectoryEvaluation(boolean feasible, String reason) {}
 }

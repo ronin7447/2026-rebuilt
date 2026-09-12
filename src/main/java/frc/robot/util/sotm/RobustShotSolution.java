@@ -13,5 +13,11 @@ public record RobustShotSolution(
     double flightTimeSec,
     double leadYawDeg,
     Translation3d launchVectorField,
-    ShotQuality quality
+    ShotQuality quality,
+    ShotTargetConstraints.SelectionMode selectionMode,
+    CommandSource commandSource,
+    boolean trajectoryFeasible,
+    String trajectoryReason,
+    double targetPlaneCrossingTimeSec,
+    double solverDurationSec
 ) {}

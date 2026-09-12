@@ -101,6 +101,61 @@ class RobustShotModelTest {
         assertTrue(far.flightTimeSec() < 3.0);
     }
 
+    @Test
+    void closeRangeHubShotUsesDirectSweepAbovePolynomialDomain() {
+        RobustShotSolution close = RobustShotModel.solve(requestFor(
+            new Pose2d(3.1, 0.0, Rotation2d.kZero),
+            new ChassisSpeeds(),
+            new Rotation3d()
+        )).orElseThrow();
+
+        assertTrue(close.quality().insideTolerance());
+        assertTrue(close.recommendedLaunchPitch().getDegrees() > 75.0);
+        assertTrue(close.recommendedLaunchPitch().getDegrees() <= 80.0);
+    }
+
+    @Test
+    void passbackUsesFlatFastDirectCandidateAndFinalCrossingTime() {
+        Pose2d pose = new Pose2d(6.0, 4.0, Rotation2d.kZero);
+        ChassisSpeeds fieldSpeeds = new ChassisSpeeds(0.5, -0.4, 0.0);
+        ShotMotionState motion = new ShotMotionState(
+            pose,
+            ChassisSpeeds.fromFieldRelativeSpeeds(fieldSpeeds, pose.getRotation()),
+            fieldSpeeds,
+            0.0,
+            0.0,
+            0.0,
+            new Rotation3d()
+        );
+        RobustShotSolution solution = RobustShotModel.solve(new RobustShotRequest(
+            motion,
+            Constants.Turret.ROBOT_TO_TURRET_PIVOT,
+            Constants.Shooter.EXIT_HEIGHT_METERS,
+            new Translation3d(0.48, 6.0, Constants.FieldTargets.BACK_TARGET_HEIGHT_METERS),
+            Rotation2d.kZero,
+            Constants.Shooter.MIN_HOOD_POSITION_ROT,
+            Constants.Shooter.MAX_HOOD_POSITION_ROT,
+            Constants.Shooter.MAX_EXIT_SPEED_MPS,
+            0.14,
+            ShotTargetConstraints.passback(Constants.FieldTargets.BACK_TARGET_HEIGHT_METERS)
+        )).orElseThrow();
+
+        assertEquals(CommandSource.DIRECT_CANDIDATE, solution.commandSource());
+        assertEquals(ShotTargetConstraints.SelectionMode.FLAT_FAST, solution.selectionMode());
+        assertEquals(solution.flightTimeSec(), solution.targetPlaneCrossingTimeSec(), EPSILON);
+        assertEquals(solution.trajectoryFeasible(), solution.quality().insideTolerance());
+    }
+
+    @Test
+    void nonfiniteCriticalInputIsRejectedAtBoundary() {
+        RobustShotRequest request = requestFor(
+            new Pose2d(Double.NaN, 0.0, Rotation2d.kZero),
+            new ChassisSpeeds(),
+            new Rotation3d()
+        );
+        assertTrue(RobustShotModel.solve(request).isEmpty());
+    }
+
     private RobustShotRequest requestFor(
         Pose2d robotPose,
         ChassisSpeeds robotRelativeSpeeds,

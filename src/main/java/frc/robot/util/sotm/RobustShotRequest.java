@@ -13,5 +13,31 @@ public record RobustShotRequest(
     double minHoodPositionRot,
     double maxHoodPositionRot,
     double maxExitSpeedMps,
-    double releaseLatencySec
-) {}
+    double releaseLatencySec,
+    ShotTargetConstraints targetConstraints
+) {
+    public RobustShotRequest(
+        ShotMotionState motionState,
+        Translation2d robotToTurretPivot,
+        double shooterExitHeightMeters,
+        Translation3d targetFieldPoint,
+        Rotation2d turretZeroOffset,
+        double minHoodPositionRot,
+        double maxHoodPositionRot,
+        double maxExitSpeedMps,
+        double releaseLatencySec
+    ) {
+        this(
+            motionState,
+            robotToTurretPivot,
+            shooterExitHeightMeters,
+            targetFieldPoint,
+            turretZeroOffset,
+            minHoodPositionRot,
+            maxHoodPositionRot,
+            maxExitSpeedMps,
+            releaseLatencySec,
+            ShotTargetConstraints.hub(targetFieldPoint != null ? targetFieldPoint.getZ() : Double.NaN)
+        );
+    }
+}
