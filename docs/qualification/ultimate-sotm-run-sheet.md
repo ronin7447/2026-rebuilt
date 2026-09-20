@@ -2,6 +2,8 @@
 
 Status: hardware pending. Never replace unknowns with assumptions.
 
+Use the [human field-readiness guide](../field-readiness/HUMAN-GUIDE.md) for the complete sequence and the more detailed [record templates](../field-readiness/templates/01-setup-and-preflight.md) for new tests. This original run sheet remains a compact qualification reference.
+
 ## Configuration identity
 
 - Date/operator:
