@@ -34,6 +34,7 @@ import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
 import frc.robot.commands.intake.AntiJamPulse;
 import frc.robot.commands.intake.ManipulateIntake;
+import frc.robot.commands.shooter.LaunchSpeedCalibrationCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -83,7 +84,9 @@ public class RobotContainer {
     public final IndexerSubsystem m_IndexerSubsystem = new IndexerSubsystem();
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
-    private boolean hoodForTrenchDown = false;
+    private final Command launchSpeedCalibration = new LaunchSpeedCalibrationCommand(
+        m_ShooterSubsystem, m_TurretSubsystem, m_OuttakeSubsystem, m_IndexerSubsystem
+    ).until(() -> !DriverStation.isTeleopEnabled());
     private boolean shootDriveLimitActive = false;
     private final SendableChooser<Command> autoChooser;
     private final Autopilot autopilot = new Autopilot(drivetrain);
@@ -267,16 +270,15 @@ public class RobotContainer {
 
         // Reset the field-centric heading on POV LEFT.
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
-        joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.zeroEncoder();
-        })))));
+        joystick.povRight().onTrue(Commands.runOnce(m_TurretSubsystem::zeroEncoder)
+            .onlyIf(this::calibrationControlsIdle));
         /* Right Bumper: Enable Intake */
         joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
 
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
-        joystick.rightTrigger().whileTrue(createDriverShootCommand());
+        // This lab branch uses A/B for shooting; normal right-trigger shooting is unbound.
 
         joystick.leftTrigger().whileTrue((Commands.sequence((Commands.runOnce(() -> {
             // m_IntakeSubsystem.disableRoller();
@@ -289,87 +291,58 @@ public class RobotContainer {
         //     m_IntakeSubsystem.disableRoller();
         // })))));
 
-        joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            if (!hoodForTrenchDown) {
-                // we lower it down
-                hoodForTrenchDown = true;
-                m_TurretSubsystem.setAutoAimSuppressed(true); // disable the autoaim
-                // m_TurretSubsystem.
-                m_ShooterSubsystem.setTargetPositionRotation(Constants.Shooter.MAX_HOOD_POSITION_ROT);
-                System.out.println("driver move down the hood for trench");
-            } else {
-                hoodForTrenchDown = false;
-                m_TurretSubsystem.setAutoAimSuppressed(false);
-             System.out.println("driver move down the hood for trench");
+        // Sample speed only on a fresh A press. Holding/re-pressing A never restarts a trial.
+        joystick.a().onTrue(Commands.runOnce(() -> {
+            if (DriverStation.isTeleopEnabled() && calibrationControlsIdle()) {
+                CommandScheduler.getInstance().schedule(launchSpeedCalibration);
             }
-            
-        })))));
+        }));
+        // Continuous stop while held gives B priority over simultaneous mechanism inputs.
+        joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
 
-        // joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_OuttakeSubsystem.disableRoller();
-        //     m_OuttakeSubsystem.setRollerTargetVelocity(0);
-        // })))));
-        joystick.b().whileTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IntakeSubsystem.disableExtension();
-            m_IntakeSubsystem.disableRoller();
-        })))));
-
-        // joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_ShooterSubsystem.enableRoller();
-        //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
-        // })))));
-
-        // joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_ShooterSubsystem.disableRoller();
-        //     m_ShooterSubsystem.setRollerTargetVelocity(0);
-        // })))));
-
-        joystick.povDown().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.setAutoAimSuppressed(false);
-            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getTurretPositionRotations()), false);
-            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getKraken().getPosition().getValueAsDouble()), false);
-        })))));
-        joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.setAutoAimSuppressed(true);
-        })))));
-
-        /* Right Trigger (while holdiing): Starts Shooter + Outtake + Indexer */
-        // joystick.a().whileTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
-
-        // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
-        // joystick.rightBumper().onTrue(constantVelocitySweep());
-
-        // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
-        // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
-
-        // joystick.x().onTrue((Commands.runOnce(() -> {
-        //     m_IntakeSubsystem.zeroEncoder();
-        // })));
+        joystick.povDown().onTrue(Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(false)
+        ).onlyIf(this::calibrationControlsIdle));
+        joystick.povUp().onTrue(Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(true)
+        ).onlyIf(this::calibrationControlsIdle));
 
         joystick.y().whileTrue(createAutopilotCommand(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))));
 
 
-        // zero hood and turret
-        joystick.start().onTrue(Commands.runOnce(
-            () -> {
-                m_TurretSubsystem.zeroEncoder();
-                m_ShooterSubsystem.zeroEncoder();
-            }
-        ).andThen(()->Commands.waitSeconds(2)).andThen(()->{
+        // Encoder resets and normal aiming controls must not change a running trial.
+        joystick.start().onTrue(Commands.runOnce(() -> {
+            m_TurretSubsystem.zeroEncoder();
+            m_ShooterSubsystem.zeroEncoder();
             m_TurretSubsystem.setPositionMode(true);
             m_ShooterSubsystem.setHoodEnabled(true);
-        }));
-
-        // disable hood and turret
-        joystick.back().onTrue(Commands.runOnce(
-            () -> {
-                m_TurretSubsystem.setPositionMode(false);
-                m_ShooterSubsystem.setHoodEnabled(false);
-            }
-        ));
-
+        }).onlyIf(this::calibrationControlsIdle));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+    }
+
+    private boolean calibrationControlsIdle() {
+        return !launchSpeedCalibration.isScheduled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean();
+    }
+
+    private Command createCalibrationStopCommand() {
+        return Commands.run(() -> {
+            m_ShooterSubsystem.disableRoller();
+            m_ShooterSubsystem.setRollerTargetVelocity(0.0);
+            m_OuttakeSubsystem.disableRoller();
+            m_OuttakeSubsystem.setRollerTargetVelocity(0.0);
+            m_IndexerSubsystem.disableRoller();
+            m_IndexerSubsystem.setRollerTargetVelocity(0.0);
+            m_ShooterSubsystem.setHoodEnabled(false);
+            m_TurretSubsystem.setPositionMode(false);
+            m_TurretSubsystem.setAutoAimSuppressed(true);
+            m_TurretSubsystem.invalidateAimState("calibration-stopped");
+            m_IntakeSubsystem.disableExtension();
+            m_IntakeSubsystem.disableRoller();
+        }, m_ShooterSubsystem, m_TurretSubsystem, m_OuttakeSubsystem,
+            m_IndexerSubsystem, m_IntakeSubsystem)
+            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming);
     }
 
     private Command createDriverShootCommand() {

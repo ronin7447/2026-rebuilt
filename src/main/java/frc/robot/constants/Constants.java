@@ -318,6 +318,13 @@ public final class Constants {
         public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394;
     }
 
+    /** Manual motor-speed trials; values are motor RPS, not RPM or Fuel exit speed. */
+    public static final class LaunchSpeedCalibration {
+        public static final boolean USE_DASHBOARD_RPS = true;
+        public static final double ROLLER_SPEED_RPS = 25.0;
+        public static final double LAUNCH_ANGLE_DEG = 70.0;
+    }
+
     public static final class ShotMap {
         public static final boolean USE_ROBUST_SOTM = true;
         /** Explicit rollback only. The robust evaluator never silently falls back after rejection. */

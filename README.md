@@ -1,6 +1,9 @@
 # 2026-rebuilt
 Code repository for the FRC 2026 season, REBUILT, for Team 7447 Rōnin Robotics.
 
+For the A/B manual shooter trials on this branch, see the
+[launch-speed calibration guide](docs/launch-speed-calibration.md).
+
 ## Field readiness
 
 Start with the [human step-by-step guide](docs/field-readiness/HUMAN-GUIDE.md). It links the [AI implementation handoffs](docs/field-readiness/ai-handoffs/README.md) and measurement forms for bring-up, new-flywheel calibration, controller qualification, power trials, and release checks.
