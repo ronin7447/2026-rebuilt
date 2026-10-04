@@ -71,11 +71,17 @@ public final class RobustShotModel {
 
         double radialVelocityMps = velocityComponents.radialVelocityMps();
         double tangentialVelocityMps = velocityComponents.tangentialVelocityMps();
-        Optional<ShotCommand> shotCommand = shotCommandForInput(request, distanceMeters, radialVelocityMps);
+        Optional<ShotCommand> shotCommand = shotCommandForInput(
+            request, distanceMeters, radialVelocityMps, tangentialVelocityMps);
         if (shotCommand.isEmpty()) {
-            String reason = distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
-                ? "outside-shot-map-domain-close-range-no-direct-shot"
-                : "outside-shot-map-domain";
+            String reason;
+            if (request.targetConstraints().targetType() == ShotTargetConstraints.TargetType.PASSBACK) {
+                reason = insideTargetDomain(request.targetConstraints(), distanceMeters, radialVelocityMps)
+                    ? "no-feasible-passback-shot" : "outside-passback-domain";
+            } else {
+                reason = distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
+                    ? "outside-shot-map-domain-close-range-no-direct-shot" : "outside-shot-map-domain";
+            }
             return Optional.of(invalidSolution(
                 reason,
                 releaseState,
@@ -280,7 +286,8 @@ public final class RobustShotModel {
     private static Optional<ShotCommand> shotCommandForInput(
         RobustShotRequest request,
         double distanceMeters,
-        double radialVelocityMps
+        double radialVelocityMps,
+        double tangentialVelocityMps
     ) {
         ShotTargetConstraints constraints = request.targetConstraints();
         if (constraints.targetType() == ShotTargetConstraints.TargetType.HUB
@@ -305,17 +312,19 @@ public final class RobustShotModel {
             ));
         }
 
-        boolean insideTargetDomain = distanceMeters >= constraints.minDistanceMeters()
-            && distanceMeters <= constraints.maxDistanceMeters()
-            && radialVelocityMps >= constraints.minRadialVelocityMps()
-            && radialVelocityMps <= constraints.maxRadialVelocityMps();
-        if (insideTargetDomain
-            && (constraints.targetType() == ShotTargetConstraints.TargetType.PASSBACK
-                || distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS)) {
+        if (insideTargetDomain(constraints, distanceMeters, radialVelocityMps)
+            && constraints.targetType() == ShotTargetConstraints.TargetType.PASSBACK) {
+            // Select against the actual compensated flight, not a stationary/radial-only shot
+            // that loses downrange speed when some launch velocity is spent cancelling strafe.
+            return solveDirectShot(request, distanceMeters, radialVelocityMps, tangentialVelocityMps);
+        }
+        if (insideTargetDomain(constraints, distanceMeters, radialVelocityMps)
+            && distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS) {
             return solveDirectShot(
                 request,
                 roundToStep(distanceMeters, 0.05),
-                roundToStep(radialVelocityMps, 0.05)
+                roundToStep(radialVelocityMps, 0.05),
+                0.0
             );
         }
 
@@ -325,7 +334,8 @@ public final class RobustShotModel {
     private static Optional<ShotCommand> solveDirectShot(
         RobustShotRequest request,
         double distanceMeters,
-        double radialVelocityMps
+        double radialVelocityMps,
+        double tangentialVelocityMps
     ) {
         ShotCommand best = null;
         for (double hoodPositionRot = request.minHoodPositionRot();
@@ -338,6 +348,7 @@ public final class RobustShotModel {
                     request,
                     distanceMeters,
                     radialVelocityMps,
+                    tangentialVelocityMps,
                     hoodPositionRot,
                     exitSpeedMps
                 );
@@ -353,6 +364,7 @@ public final class RobustShotModel {
         RobustShotRequest request,
         double distanceMeters,
         double radialVelocityMps,
+        double tangentialVelocityMps,
         double hoodPositionRot,
         double exitSpeedMps
     ) {
@@ -360,7 +372,9 @@ public final class RobustShotModel {
         double launchAngleRad = Math.toRadians(launchAngleDeg);
         double horizontalLaunchSpeed = exitSpeedMps * Math.cos(launchAngleRad);
         double verticalLaunchSpeed = exitSpeedMps * Math.sin(launchAngleRad);
-        double targetLineFieldSpeed = horizontalLaunchSpeed + radialVelocityMps;
+        if (Math.abs(tangentialVelocityMps) >= horizontalLaunchSpeed) return null;
+        double targetLineFieldSpeed = Math.sqrt(horizontalLaunchSpeed * horizontalLaunchSpeed
+            - tangentialVelocityMps * tangentialVelocityMps) + radialVelocityMps;
         if (targetLineFieldSpeed <= 0.05) {
             return null;
         }
@@ -614,6 +628,14 @@ public final class RobustShotModel {
 
     private static double roundToStep(double value, double step) {
         return Math.round(value / step) * step;
+    }
+
+    private static boolean insideTargetDomain(ShotTargetConstraints constraints,
+        double distanceMeters, double radialVelocityMps) {
+        return distanceMeters >= constraints.minDistanceMeters()
+            && distanceMeters <= constraints.maxDistanceMeters()
+            && radialVelocityMps >= constraints.minRadialVelocityMps()
+            && radialVelocityMps <= constraints.maxRadialVelocityMps();
     }
 
     public record VelocityComponents(double radialVelocityMps, double tangentialVelocityMps) {}

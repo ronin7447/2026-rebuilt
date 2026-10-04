@@ -112,7 +112,11 @@ export function evaluateReferenceShot(input: ReferenceShotInput): ReferenceShotR
     const candidateConfig = input.usesPolynomial
       ? { ...closeRangeHubConfig, targetHeightMeters: input.config.targetHeightMeters }
       : input.config;
-    candidate = findBestCandidate(candidateConfig, quantized, input.candidateSelection);
+    // Passback selection must include the horizontal velocity spent cancelling lateral motion.
+    // Keep the existing Hub close-range quantization separate from continuous passback inputs.
+    candidate = findBestCandidate(candidateConfig,
+      input.usesPolynomial ? quantized : { distanceMeters, radialVelocityMps },
+      input.candidateSelection, input.usesPolynomial ? 0 : tangentialVelocityMps);
     if (candidate) {
       hoodPositionRot = candidate.hoodRot;
       rollerRps = candidate.rollerRps;

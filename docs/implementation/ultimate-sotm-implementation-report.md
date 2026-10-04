@@ -6,6 +6,8 @@ Configuration ID: `ultimate-sotm-v1`
 
 ## Status
 
+Follow-up, 2026-10-03: the [pass-back investigation and retest guide](../qualification/passback-check.md) records a correction to the original pass-back candidate search. Pass-back now selects using continuous inputs and lateral-motion compensation. The quantized pass-back behavior described below is historical. Hardware qualification remains pending.
+
 | Area | Implemented | Software verified | Hardware verified | Competition qualified |
 |---|---|---|---|---|
 | Coordinate/evaluator contract | yes | yes | pending | no |

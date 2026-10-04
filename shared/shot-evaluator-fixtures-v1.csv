@@ -11,5 +11,7 @@ schema_version,id,target_type,pose_x_m,pose_y_m,heading_deg,field_vx_mps,field_v
 1,hub-domain-boundary,HUB,2.69353,4.25069,0,0,0,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,0.738473071,0.000002
 1,hub-lateral-opening-reject,HUB,1.0,4.0,0,0,2.4,0,0,0,0,0,0,4.02844,4.03479,2.13,false,GENERATED_POLYNOMIAL,2.213758799,0.000002
 1,passback-blue-upper,PASSBACK,6.0,4.0,0,0.5,-0.4,0,0,0,0,0,0,0.48,6.0,0.5,true,DIRECT_CANDIDATE,1.566991410,0.000002
-1,passback-red-lower,PASSBACK,10.0,4.0,180,-0.5,0.4,0,0,0,0,0,0,16.1,2.5,0.5,true,DIRECT_CANDIDATE,1.617628263,0.000002
+1,passback-red-lower,PASSBACK,10.0,4.0,180,-0.5,0.4,0,0,0,0,0,0,16.1,2.5,0.5,true,DIRECT_CANDIDATE,1.607524119,0.000002
+1,passback-strafe-negative,PASSBACK,6.0,4.0,0,0,-2,0,0,0,0,0,0,0.48,4.0,0.5,true,DIRECT_CANDIDATE,1.517513298,0.000002
+1,passback-strafe-positive,PASSBACK,6.0,4.0,0,0,2,0,0,0,0,0,0,0.48,4.0,0.5,true,DIRECT_CANDIDATE,1.480628219,0.000002
 1,nonfinite-omega,HUB,1.0,4.0,0,0,0,NaN,0,0,0,0,0,4.02844,4.03479,2.13,false,NONE,NaN,0.000002

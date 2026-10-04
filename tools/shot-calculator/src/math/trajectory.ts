@@ -48,12 +48,15 @@ export function simulateCandidate(
   input: ShotInput,
   hoodRot: number,
   exitSpeedMps: number,
+  tangentialVelocityMps = 0,
 ): TrajectoryCandidate | null {
   const launchAngleDeg = launchAngleDegForHood(config, hoodRot);
   const launchAngleRad = (launchAngleDeg * Math.PI) / 180.0;
   const horizontalLaunchSpeed = exitSpeedMps * Math.cos(launchAngleRad);
   const verticalLaunchSpeed = exitSpeedMps * Math.sin(launchAngleRad);
-  const targetLineSpeed = horizontalLaunchSpeed + input.radialVelocityMps;
+  if (Math.abs(tangentialVelocityMps) >= horizontalLaunchSpeed) return null;
+  const targetLineSpeed = Math.sqrt(horizontalLaunchSpeed ** 2 - tangentialVelocityMps ** 2)
+    + input.radialVelocityMps;
   if (targetLineSpeed <= 0.05) return null;
 
   const flightTimeSec = input.distanceMeters / targetLineSpeed;
@@ -95,13 +98,14 @@ export function findBestCandidate(
   config: ShotCalculatorConfig,
   input: ShotInput,
   selection: CandidateSelection = 'robust',
+  tangentialVelocityMps = 0,
 ): TrajectoryCandidate | null {
   if (!isInsideShotMapDomain(config, input)) return null;
 
   let best: TrajectoryCandidate | null = null;
   for (let hoodRot = config.minHoodRot; hoodRot <= config.maxHoodRot + 1e-9; hoodRot += 0.025) {
     for (let exitSpeedMps = config.minExitSpeedMps; exitSpeedMps <= config.maxExitSpeedMps + 1e-9; exitSpeedMps += 0.05) {
-      const candidate = simulateCandidate(config, input, hoodRot, exitSpeedMps);
+      const candidate = simulateCandidate(config, input, hoodRot, exitSpeedMps, tangentialVelocityMps);
       if (candidate && isBetterCandidate(selection, candidate, best)) {
         best = candidate;
       }

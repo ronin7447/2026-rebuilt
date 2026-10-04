@@ -11,6 +11,8 @@ Start with the [complete human field-readiness guide](../field-readiness/HUMAN-G
 
 ## Driver behavior
 
+**Calibration-branch exception:** `launch-speed-calibration` currently leaves normal right-trigger shooting unbound and uses A/B for fixed-angle calibration. The normal controls below do not describe that branch's active bindings. See the [pass-back retest guide](passback-check.md) before testing automatic passing.
+
 Hold right trigger to request shooting. Automatic feed requires the final roller speed, hood position, legal aligned turret, a current feasible shot result, and valid bounded setpoints. Vision age appears as `Feed/VisionDegradedWarning` but does not block a fused-odometry shot.
 
 While holding right trigger, hold right-stick click for momentary manual readiness override. Releasing either control ends it. Override cannot bypass disabled operation, nonfinite/out-of-range setpoints, or turret actuator protections. It never creates a shoot command by itself. Autonomous has no override.

@@ -39,6 +39,26 @@ describe('pure reference evaluator', () => {
     expect(evaluateReferenceShot({ ...base, omegaRadPerSec: Number.NaN }).reason).toBe('nonfinite-input');
   });
 
+  test('passback selects a compensated shot rather than retaining a radial-only speed', () => {
+    for (const distance of [2, 4, 6, 8]) {
+      for (const lateral of [-2, 2]) {
+        const result = evaluateReferenceShot({ ...base,
+          pose: { x: 0, y: 0, headingRad: 0 }, shooterOffset: { x: 0, y: 0 },
+          velocity: { x: 0, y: lateral }, releaseLatencySec: 0,
+          targetPoint: { x: distance, y: 0 }, config: passbackConfig,
+          usesPolynomial: false, candidateSelection: 'flat-fast' });
+        expect(result.feasible, `distance=${distance}, lateral=${lateral}: ${result.reason}`).toBe(true);
+        const launch = result.turret!.launchVector;
+        const time = distance / launch.x;
+        const height = passbackConfig.shooterExitHeightMeters + launch.z * time - 0.5 * 9.81 * time ** 2;
+        expect(Math.abs(height - 0.5)).toBeLessThanOrEqual(0.24);
+        expect((launch.y + lateral) * time).toBeCloseTo(0, 9);
+        expect(result.targetPlaneCrossingTimeSec).toBeCloseTo(time, 9);
+        expect(Math.abs(result.rollerRps!)).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
   test('matches an independently calculated ballistic target-plane sample', () => {
     const radialSpeed = 5.0;
     const verticalSpeed = 4.0;
