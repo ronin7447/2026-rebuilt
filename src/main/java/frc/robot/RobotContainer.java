@@ -6,6 +6,7 @@ package frc.robot;
 
 import java.util.Set;
 
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -17,6 +18,8 @@ import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
@@ -44,10 +47,12 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.sotm.ShotReadinessSnapshot;
+import frc.robot.util.sotm.ShootingDriveLimiter;
 
 public class RobotContainer {
     private double MaxSpeed = Constants.Drivebase.MAX_SPEED; // 1.0 * kSpeedAt12Volts desired top speed
     private double MaxAngularRate = Constants.Drivebase.MAX_ANGULAR_RATE;
+    private final ShootingDriveLimiter shootingDriveLimiter = new ShootingDriveLimiter();
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -237,11 +242,31 @@ public class RobotContainer {
                 double currentMaxSpeed = getTeleopLinearSpeedLimit();
                 double currentMaxAngularRate = getTeleopAngularSpeedLimit();
 
-                return drive.withVelocityX(-joystick.getLeftY() * currentMaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * currentMaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * currentMaxAngularRate); // Drive counterclockwise with negative X (left)
+                boolean shooting = DriverStation.isTeleopEnabled() && shootDriveLimitActive;
+                ChassisSpeeds requested = new ChassisSpeeds(-joystick.getLeftY() * currentMaxSpeed,
+                    -joystick.getLeftX() * currentMaxSpeed, -joystick.getRightX() * currentMaxAngularRate);
+                if (!shooting) {
+                    // Track the command actually applied after the normal request deadbands.
+                    if (Math.hypot(requested.vxMetersPerSecond, requested.vyMetersPerSecond)
+                        <= Constants.Drivebase.DRIVE_DEADBAND) {
+                        requested.vxMetersPerSecond = 0.0;
+                        requested.vyMetersPerSecond = 0.0;
+                    }
+                    if (Math.abs(requested.omegaRadiansPerSecond) <= Constants.Drivebase.ROTATIONAL_DEADBAND) {
+                        requested.omegaRadiansPerSecond = 0.0;
+                    }
+                }
+                ChassisSpeeds limited = shootingDriveLimiter.calculate(requested, shooting,
+                    Timer.getFPGATimestamp(), currentMaxSpeed, currentMaxAngularRate,
+                    Constants.Drivebase.SHOOT_MAX_ACCEL_MPS2,
+                    Constants.Drivebase.SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2);
+                return drive.withDeadband(shooting ? 0.0 : Constants.Drivebase.DRIVE_DEADBAND)
+                    .withRotationalDeadband(shooting ? 0.0 : Constants.Drivebase.ROTATIONAL_DEADBAND)
+                    .withVelocityX(limited.vxMetersPerSecond)
+                    .withVelocityY(limited.vyMetersPerSecond)
+                    .withRotationalRate(limited.omegaRadiansPerSecond);
             }
-            )
+            ).beforeStarting(this::resetShootingDriveLimiter)
         );
 
         // Idle while the robot is disabled. This ensures the configured
@@ -402,6 +427,15 @@ public class RobotContainer {
         return MaxSpeed;
     }
 
+    private void resetShootingDriveLimiter() {
+        var state = drivetrain.getStateCopy();
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, state.Pose.getRotation());
+        Translation2d operatorVelocity = new Translation2d(fieldSpeeds.vxMetersPerSecond,
+            fieldSpeeds.vyMetersPerSecond).rotateBy(drivetrain.getOperatorForwardDirection().unaryMinus());
+        shootingDriveLimiter.reset(new ChassisSpeeds(operatorVelocity.getX(), operatorVelocity.getY(),
+            fieldSpeeds.omegaRadiansPerSecond), Timer.getFPGATimestamp());
+    }
+
     private double getTeleopAngularSpeedLimit() {
         if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
             return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
@@ -417,6 +451,21 @@ public class RobotContainer {
             : Double.POSITIVE_INFINITY;
         boolean boundedSetpoints = m_TurretSubsystem.hasFiniteMappedSetpoints()
             && m_ShooterSubsystem.hasFiniteBoundedSetpoints();
+        var motion = drivetrain.getShotMotionEstimate();
+        var motionBlockers = motion.shootingBlockers(Utils.getCurrentTimeSeconds(),
+            Constants.ShotMap.MAX_MOTION_AGE_SEC, Constants.ShotMap.BASE_RELEASE_LATENCY_SEC,
+            Constants.ShotMap.MAX_SHOOT_SPEED_MPS, Constants.ShotMap.MAX_SHOOT_ACCEL_MPS2,
+            Constants.ShotMap.MAX_SHOOT_OMEGA_RAD_PER_SEC, Constants.ShotMap.MAX_SHOOT_ALPHA_RAD_PER_SEC2);
+        SmartDashboard.putBoolean("Feed/MotionWithinLimits", motionBlockers.isEmpty());
+        SmartDashboard.putString("Feed/MotionBlockers", String.join(",", motionBlockers));
+        SmartDashboard.putNumber("SOTM/MotionAgeSec", Utils.getCurrentTimeSeconds() - motion.timestampSec());
+        SmartDashboard.putNumber("SOTM/RawAccelerationMps2", motion.rawLinearAccelMps2());
+        SmartDashboard.putNumber("SOTM/RawAngularAccelerationRadPerSec2", motion.rawAngularAccelRadPerSec2());
+        if (motion.motion() != null) {
+            SmartDashboard.putNumber("SOTM/FilteredAccelerationXMps2", motion.motion().fieldAccelXMps2());
+            SmartDashboard.putNumber("SOTM/FilteredAccelerationYMps2", motion.motion().fieldAccelYMps2());
+            SmartDashboard.putNumber("SOTM/FilteredAngularAccelerationRadPerSec2", motion.motion().angularAccelRadPerSec2());
+        }
         return ShotReadinessSnapshot.evaluate(
             nowSec,
             DriverStation.isEnabled(),
@@ -432,7 +481,7 @@ public class RobotContainer {
             boundedSetpoints,
             m_vision.getVisionAgeSec(),
             Constants.ShotMap.MAX_SOLUTION_AGE_SEC
-        );
+        ).withMotionBlockers(motionBlockers);
     }
 
     private Command createAutopilotCommand(Pose2d goal) {
@@ -481,7 +530,8 @@ public class RobotContainer {
         String mode = DriverStation.isAutonomousEnabled()
             ? "autonomous"
             : (DriverStation.isTeleopEnabled() ? "teleop" : (DriverStation.isTestEnabled() ? "test" : "disabled"));
-        var speeds = drivetrain.getState().Speeds;
+        var speeds = drivetrain.getStateCopy().Speeds;
+        var shotMotion = drivetrain.getShotMotionEstimate();
         return new PowerHealthRecorder.Context(
             DriverStation.isEnabled(),
             mode,
@@ -500,7 +550,10 @@ public class RobotContainer {
             m_vision.getVisionAgeSec(),
             m_IntakeSubsystem.isExtensionEnabled(),
             m_IntakeSubsystem.isRollerEnabled(),
-            m_IntakeSubsystem.getHomingStatus().name()
+            m_IntakeSubsystem.getHomingStatus().name(),
+            shotMotion,
+            Utils.getCurrentTimeSeconds() - shotMotion.timestampSec(),
+            SmartDashboard.getString("Feed/Blockers", "not-evaluated")
         );
     }
 

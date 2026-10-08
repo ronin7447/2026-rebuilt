@@ -25,6 +25,9 @@ public final class Constants {
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
         public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.20;
         public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.15;
+        /** Provisional command ramps; qualify with moving-shot logs before raising. */
+        public static final double SHOOT_MAX_ACCEL_MPS2 = 1.0;
+        public static final double SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(90.0);
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75;
         public static final double SHORT_ALIGN_TRANSLATION_KP = 2.5;
         public static final double SHORT_ALIGN_TRANSLATION_KI = 0.0;
@@ -334,6 +337,12 @@ public final class Constants {
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.25;
         public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.10;
         public static final double MAX_SOLUTION_AGE_SEC = 0.10;
+        /** Provisional measured-motion envelope, checked for teleop and autonomous feed. */
+        public static final double MAX_SHOOT_SPEED_MPS = 2.0;
+        public static final double MAX_SHOOT_ACCEL_MPS2 = 2.0;
+        public static final double MAX_SHOOT_OMEGA_RAD_PER_SEC = Units.degreesToRadians(90.0);
+        public static final double MAX_SHOOT_ALPHA_RAD_PER_SEC2 = Units.degreesToRadians(180.0);
+        public static final double MAX_MOTION_AGE_SEC = 0.05;
     }
 
     public static final class PowerLogging {
@@ -344,7 +353,7 @@ public final class Constants {
         public static final double DASHBOARD_RATE_HZ = 5.0;
         public static final int CONFIG_APPLY_ATTEMPTS = 3;
         public static final String BATTERY_LABEL = "UNKNOWN";
-        public static final String CONFIGURATION_ID = "ultimate-sotm-v1";
+        public static final String CONFIGURATION_ID = "ultimate-sotm-v2-motion";
 
         private PowerLogging() {}
     }

@@ -8,6 +8,23 @@ import frc.robot.util.sotm.ShotReadinessSnapshot;
 
 class FeedSequencerTest {
     @Test
+    void motionLimitDropsFeedAndRequiresContinuousRecoveryBeforeRestaging() {
+        FeedSequencer sequencer = new FeedSequencer(0.10, 0.25, 0.10);
+        sequencer.update(0, ready(), false, true);
+        assertTrue(sequencer.update(0.35, ready(), false, true).indexerEnabled());
+        var blocked = ready().withMotionBlockers(List.of("robot-acceleration"));
+        var lost = sequencer.update(0.36, blocked, false, true);
+        assertFalse(lost.outtakeEnabled());
+        assertFalse(lost.indexerEnabled());
+        assertEquals("robot-acceleration", lost.reason());
+        assertEquals("recovering-readiness", sequencer.update(0.4, ready(), false, true).reason());
+        assertFalse(sequencer.update(0.5, ready(), false, true).outtakeEnabled());
+        assertTrue(sequencer.update(0.85, ready(), false, true).indexerEnabled());
+        // Existing deliberate manual override policy applies to motion readiness as well.
+        assertTrue(sequencer.update(0.86, blocked, true, true).overrideActive());
+    }
+
+    @Test
     void stagesInitialFeedAndDropsBothOutputsImmediately() {
         FeedSequencer sequencer = new FeedSequencer(0.10, 0.25, 0.10);
         assertFalse(sequencer.update(0.0, ready(), false, true).outtakeEnabled());

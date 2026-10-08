@@ -11,9 +11,11 @@ Start with the [complete human field-readiness guide](../field-readiness/HUMAN-G
 
 ## Driver behavior
 
-Hold right trigger to request shooting. Automatic feed requires the final roller speed, hood position, legal aligned turret, a current feasible shot result, and valid bounded setpoints. Vision age appears as `Feed/VisionDegradedWarning` but does not block a fused-odometry shot.
+Hold right trigger to request shooting. Automatic feed requires the final roller speed, hood position, legal aligned turret, a current feasible shot result, valid bounded setpoints, and fresh measured motion inside the [provisional shooting envelope](../implementation/ultimate-sotm-motion-envelope.md). This motion gate also applies to autonomous; faster autonomous paths may pause feeding. Vision age appears as `Feed/VisionDegradedWarning` but does not block a fused-odometry shot.
 
-While holding right trigger, hold right-stick click for momentary manual readiness override. Releasing either control ends it. Override cannot bypass disabled operation, nonfinite/out-of-range setpoints, or turret actuator protections. It never creates a shoot command by itself. Autonomous has no override.
+Teleop shooting retains the existing reduced speed caps and adds translation-vector and angular command ramps. Entering shooting from a faster command decelerates toward those caps; physical motion must satisfy feed readiness. These ramps act on the default joystick drive command. Autonomous and autopilot motion use their own controllers and are checked by the measured-motion feed gate.
+
+While holding right trigger, hold right-stick click for momentary manual readiness override, including motion-envelope readiness. Releasing either control ends it. Override cannot bypass disabled operation, nonfinite/out-of-range setpoints, or turret actuator protections. It never creates a shoot command by itself. Autonomous has no override. Qualification shots must have override inactive.
 
 ## Rollback
 
