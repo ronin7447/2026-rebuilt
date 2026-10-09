@@ -23,11 +23,12 @@ public final class Constants {
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
-        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.20;
-        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.15;
-        /** Provisional command ramps; qualify with moving-shot logs before raising. */
-        public static final double SHOOT_MAX_ACCEL_MPS2 = 1.0;
-        public static final double SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(90.0);
+        /** Fraction of normal full-stick MAX_SPEED: 0.70 = 70%, 1.0 = no shooting speed reduction. */
+        public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.70;
+        /** Fraction of normal full-stick MAX_ANGULAR_RATE: 0.50 = 50%. */
+        public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.50;
+        public static final double SHOOT_MAX_ACCEL_MPS2 = 2.0;
+        public static final double SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(180.0);
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75;
         public static final double SHORT_ALIGN_TRANSLATION_KP = 2.5;
         public static final double SHORT_ALIGN_TRANSLATION_KI = 0.0;
@@ -71,7 +72,9 @@ public final class Constants {
         public static final double FORWARD_REFERENCE_MOTOR_ROTATIONS = 0.00;
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused with forward motor reference zeroing
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0);
-        public static final double AIM_TOLERANCE_DEG = 0.5;
+        public static final double AIM_TOLERANCE_DEG = 2.0;
+        /** Keep bench step diagnostics independent of the more permissive shooting alignment. */
+        public static final double DIAGNOSTIC_TOLERANCE_DEG = 0.5;
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25;
         public static final double TRACKING_WINDOW_SEC = 1.0;
         public static final double STEP_ERROR_DEADBAND_DEG = 0.15;
@@ -303,9 +306,14 @@ public final class Constants {
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
         public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
 
-        public static final double ROLLER_TOLERANCE = 1.0; // How much the actual velocity in rps can differ from target
-        /** Provisional until measured with the hood under load. */
-        public static final double HOOD_POSITION_TOLERANCE_ROT = 0.02;
+        /** Start within the larger of the absolute band and this fraction of target magnitude. */
+        public static final double ROLLER_START_TOLERANCE_RPS = 3.0;
+        public static final double ROLLER_START_TOLERANCE_SCALE = 0.10;
+        /** Wider running band prevents normal flywheel fluctuation from repeatedly stopping feed. */
+        public static final double ROLLER_RUNNING_TOLERANCE_RPS = 5.0;
+        public static final double ROLLER_RUNNING_TOLERANCE_SCALE = 0.15;
+        /** About 0.93 degrees of launch elevation with the current calibration. */
+        public static final double HOOD_POSITION_TOLERANCE_ROT = 0.08;
         public static final double MAX_MECHANISM_FEEDBACK_AGE_SEC = 0.10;
         public static final double EXIT_HEIGHT_METERS = 0.4064;
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_SLOPE = 0.0857913;
@@ -333,15 +341,21 @@ public final class Constants {
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65;
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55;
         public static final boolean FEED_INTERLOCK_ENABLED = true;
-        public static final double FEED_RECOVERY_READY_TIME_SEC = 0.10;
-        public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.25;
-        public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.10;
+        public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05;
+        public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05;
+        public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025;
         public static final double MAX_SOLUTION_AGE_SEC = 0.10;
-        /** Provisional measured-motion envelope, checked for teleop and autonomous feed. */
-        public static final double MAX_SHOOT_SPEED_MPS = 2.0;
-        public static final double MAX_SHOOT_ACCEL_MPS2 = 2.0;
-        public static final double MAX_SHOOT_OMEGA_RAD_PER_SEC = Units.degreesToRadians(90.0);
-        public static final double MAX_SHOOT_ALPHA_RAD_PER_SEC2 = Units.degreesToRadians(180.0);
+        /** Feed envelope follows the shooting percentages; raising them does not leave a hidden fixed cap. */
+        public static final double SHOOT_MEASURED_SPEED_HEADROOM_SCALE = 1.20;
+        public static final double SHOOT_MEASURED_ACCEL_HEADROOM_SCALE = 1.50;
+        public static final double MAX_SHOOT_SPEED_MPS = Drivebase.MAX_SPEED
+            * Drivebase.SHOOT_LINEAR_SPEED_LIMIT_SCALE * SHOOT_MEASURED_SPEED_HEADROOM_SCALE;
+        public static final double MAX_SHOOT_ACCEL_MPS2 = Drivebase.SHOOT_MAX_ACCEL_MPS2
+            * SHOOT_MEASURED_ACCEL_HEADROOM_SCALE;
+        public static final double MAX_SHOOT_OMEGA_RAD_PER_SEC = Drivebase.MAX_ANGULAR_RATE
+            * Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE * SHOOT_MEASURED_SPEED_HEADROOM_SCALE;
+        public static final double MAX_SHOOT_ALPHA_RAD_PER_SEC2 = Drivebase.SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2
+            * SHOOT_MEASURED_ACCEL_HEADROOM_SCALE;
         public static final double MAX_MOTION_AGE_SEC = 0.05;
     }
 
@@ -353,7 +367,7 @@ public final class Constants {
         public static final double DASHBOARD_RATE_HZ = 5.0;
         public static final int CONFIG_APPLY_ATTEMPTS = 3;
         public static final String BATTERY_LABEL = "UNKNOWN";
-        public static final String CONFIGURATION_ID = "ultimate-sotm-v2-motion";
+        public static final String CONFIGURATION_ID = "ultimate-sotm-v3-throughput";
 
         private PowerLogging() {}
     }

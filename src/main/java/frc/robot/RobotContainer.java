@@ -302,6 +302,7 @@ public class RobotContainer {
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
         joystick.rightTrigger().whileTrue(createDriverShootCommand());
+        SmartDashboard.putString("Feed/OverrideControl", "Hold right trigger + right-stick click to force feed immediately");
 
         joystick.leftTrigger().whileTrue((Commands.sequence((Commands.runOnce(() -> {
             // m_IntakeSubsystem.disableRoller();
@@ -449,7 +450,7 @@ public class RobotContainer {
         double solutionAgeSec = Double.isFinite(evaluationTimestampSec)
             ? nowSec - evaluationTimestampSec
             : Double.POSITIVE_INFINITY;
-        boolean boundedSetpoints = m_TurretSubsystem.hasFiniteMappedSetpoints()
+        boolean boundedSetpoints = m_TurretSubsystem.hasFiniteBoundedSetpoint()
             && m_ShooterSubsystem.hasFiniteBoundedSetpoints();
         var motion = drivetrain.getShotMotionEstimate();
         var motionBlockers = motion.shootingBlockers(Utils.getCurrentTimeSeconds(),
@@ -469,7 +470,7 @@ public class RobotContainer {
         return ShotReadinessSnapshot.evaluate(
             nowSec,
             DriverStation.isEnabled(),
-            m_TurretSubsystem.isShotSolutionValid(),
+            m_TurretSubsystem.isShotSolutionValid() && m_TurretSubsystem.hasFiniteMappedSetpoints(),
             solutionAgeSec,
             m_ShooterSubsystem.isRollerEnabled(),
             m_ShooterSubsystem.atTargetSpeed(),

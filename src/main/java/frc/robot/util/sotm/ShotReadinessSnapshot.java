@@ -85,9 +85,9 @@ public record ShotReadinessSnapshot(
             turretAtGoal, turretGoalLegal, setpointsFiniteAndBounded, acceptedVisionAgeSec, combined);
     }
 
-    /** Override bypasses readiness, but never enabled-state, numeric, or actuator protections. */
+    /** Force feed uses existing bounded commands; it does not require an auto-aim solution. */
     public boolean overrideSafe() {
-        return enabledOperation && setpointsFiniteAndBounded && turretGoalLegal;
+        return enabledOperation && shooterRollerEnabled && setpointsFiniteAndBounded;
     }
 
     public boolean visionDegraded(double warningAgeSec) {

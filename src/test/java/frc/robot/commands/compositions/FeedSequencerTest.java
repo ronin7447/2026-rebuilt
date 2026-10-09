@@ -5,8 +5,57 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import frc.robot.util.sotm.ShotReadinessSnapshot;
+import frc.robot.constants.Constants;
+import frc.robot.util.ShooterSpeedReadiness;
 
 class FeedSequencerTest {
+    @Test
+    void floatingFlywheelStartsQuicklyAndDoesNotRepeatedlyRestageFeed() {
+        var speed = new ShooterSpeedReadiness(Constants.Shooter.ROLLER_START_TOLERANCE_RPS,
+            Constants.Shooter.ROLLER_START_TOLERANCE_SCALE,
+            Constants.Shooter.ROLLER_RUNNING_TOLERANCE_RPS, Constants.Shooter.ROLLER_RUNNING_TOLERANCE_SCALE);
+        var sequencer = new FeedSequencer(Constants.ShotMap.FEED_RECOVERY_READY_TIME_SEC,
+            Constants.ShotMap.OUTTAKE_DELAY_AFTER_READY_SEC, Constants.ShotMap.INDEXER_DELAY_AFTER_OUTTAKE_SEC);
+        for (int i = 0; i <= 30; i++) {
+            double actual = i % 2 == 0 ? 26.5 : 28.5;
+            boolean speedReady = speed.update(actual, 25, true);
+            assertTrue(speedReady);
+            var snapshot = ShotReadinessSnapshot.evaluate(i * 0.02, true, true, 0,
+                true, speedReady, true, true, true, true, true, true, 0, 0.10);
+            var state = sequencer.update(i * 0.02, snapshot, false, true);
+            if (i >= 4) assertTrue(state.indexerEnabled()); // Starts by the 80 ms scheduler sample.
+        }
+        var droop = ShotReadinessSnapshot.evaluate(0.62, true, true, 0,
+            true, speed.update(15, 25, true), true, true, true, true, true, true, 0, 0.10);
+        assertFalse(sequencer.update(0.62, droop, false, true).indexerEnabled());
+    }
+
+    @Test
+    void forceFeedIsImmediateWithoutAutoAimSpeedAlignmentOrMotionReadiness() {
+        var sequencer = new FeedSequencer(0.10, 0.25, 0.10);
+        var blocked = new ShotReadinessSnapshot(0, true, false, 99, true, false,
+            true, false, false, false, false, true, Double.POSITIVE_INFINITY,
+            List.of("invalid-shot-solution", "shooter-speed", "turret-alignment", "robot-speed"));
+        var forced = sequencer.update(0, blocked, true, true);
+        assertTrue(forced.overrideActive());
+        assertTrue(forced.outtakeEnabled());
+        assertTrue(forced.indexerEnabled());
+        assertEquals("manual-override", forced.reason());
+        var released = sequencer.update(0.02, blocked, false, true);
+        assertFalse(released.outtakeEnabled());
+        assertFalse(released.indexerEnabled());
+        assertTrue(sequencer.update(0.04, blocked, true, false).indexerEnabled());
+    }
+
+    @Test
+    void releasingForceFeedRestoresAutomaticRecoveryBeforeStaging() {
+        var sequencer = new FeedSequencer(0.05, 0.05, 0.025);
+        sequencer.update(0, blocked(), true, true);
+        assertEquals("recovering-readiness", sequencer.update(0.02, ready(), false, true).reason());
+        assertFalse(sequencer.update(0.07, ready(), false, true).indexerEnabled());
+        assertTrue(sequencer.update(0.145, ready(), false, true).indexerEnabled());
+    }
+
     @Test
     void motionLimitDropsFeedAndRequiresContinuousRecoveryBeforeRestaging() {
         FeedSequencer sequencer = new FeedSequencer(0.10, 0.25, 0.10);
@@ -49,7 +98,7 @@ class FeedSequencerTest {
     }
 
     @Test
-    void overrideCannotBypassEnabledNumericOrActuatorProtections() {
+    void overrideCannotBypassDisabledRobotDisabledShooterOrInvalidCommands() {
         FeedSequencer sequencer = new FeedSequencer(0.10, 0.25, 0.10);
         ShotReadinessSnapshot ordinaryBlock = new ShotReadinessSnapshot(
             0, true, false, 1, true, false, true, false, true, false, true, true,
@@ -59,6 +108,14 @@ class FeedSequencerTest {
             0, false, false, 1, true, false, true, false, true, false, true, true,
             Double.POSITIVE_INFINITY, List.of("robot-not-enabled"));
         assertFalse(sequencer.update(1, unsafe, true, true).permitted());
+        var disabledShooter = new ShotReadinessSnapshot(
+            0, true, false, 1, false, false, true, false, false, false, true, true,
+            0, List.of("shooter-disabled"));
+        assertFalse(sequencer.update(2, disabledShooter, true, true).permitted());
+        var invalidCommands = new ShotReadinessSnapshot(
+            0, true, false, 1, true, false, true, false, false, false, true, false,
+            0, List.of("invalid-setpoint"));
+        assertFalse(sequencer.update(3, invalidCommands, true, true).permitted());
     }
 
     @Test

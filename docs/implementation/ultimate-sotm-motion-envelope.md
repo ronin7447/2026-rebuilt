@@ -1,9 +1,9 @@
 # Ultimate SOTM: release prediction and scoring envelope
 
-Date: 2026-10-08. Branch: `ultimate-sotm`. Configuration: `ultimate-sotm-v2-motion`.
+Date: 2026-10-08. Branch: `ultimate-sotm`. Configuration: `ultimate-sotm-v3-throughput`.
 Software verified; hardware qualification pending.
 
-The minimum useful result is Fuel entering the Hub. A feasible trajectory and aligned mechanisms are prerequisites; neither establishes measured scoring accuracy. Limiting speed and acceleration during shooting is an acceptable operating tradeoff for repeatable scoring. This follow-up implements the user's requested motion limits; the September plan's instruction to preserve drive caps described the earlier implementation.
+The objective is useful scoring throughput. The user explicitly accepts some misses in exchange for faster feeding and more freedom of motion. The current settings loosen alignment and flywheel readiness and provide immediate manual force feed. Automatic shots still require a feasible solver result; driver override can feed using existing actuator commands without that result. The September plan's instruction to preserve drive caps described the earlier implementation.
 
 ## What already accounted for acceleration
 
@@ -15,21 +15,29 @@ Robot acceleration affects the state at departure. After departure, the projecti
 
 One continuously updated drivetrain motion estimate now serves both aiming and feed readiness. Derivatives use successive Phoenix odometry timestamps and field-frame velocities. Repeated timestamps preserve the estimate; missing, nonfinite, invalid-odometry, reversed-time, or excessively separated samples cannot authorize automatic feed. A fresh pair is required after a history gap. Aiming includes sample age in its prediction horizon, so release is predicted from the observation time through evaluation and launch latency.
 
-Feed readiness checks measured current and predicted release speed, raw and filtered linear acceleration, current and predicted angular speed, and raw and filtered angular acceleration. Raw magnitudes prevent filtering or clamping from hiding sudden motion. Readiness loss stops commanded feed outputs immediately; recovery still requires 100 ms continuously ready followed by the existing staged feed delays. Fuel already in transport can still depart after commanded feed stops, which is why latency and transient trials matter.
+Feed readiness checks measured current and predicted release speed, raw and filtered linear acceleration, current and predicted angular speed, and raw and filtered angular acceleration. Raw magnitudes prevent filtering or clamping from hiding sudden motion. Readiness loss stops commanded feed outputs immediately; automatic recovery requires 50 ms continuously ready followed by 50 ms outtake staging and another 25 ms to the indexer. Force feed bypasses all of these delays. Fuel already in transport can still depart after commanded feed stops, which is why latency and transient trials matter.
 
 | Quantity | Provisional limit | Where enforced |
 |---|---:|---|
-| Translation speed | 2.0 m/s | Automatic feed, teleop and autonomous, current and predicted release vector magnitude |
-| Translation acceleration | 2.0 m/s² | Automatic feed, raw and filtered vector magnitude |
-| Angular speed | 90°/s | Automatic feed, current and predicted release |
-| Angular acceleration | 180°/s² | Automatic feed, raw and filtered magnitude |
+| Translation speed | 2.0748 m/s | Automatic feed, current and predicted release vector magnitude; 120% of the configured shooting command cap |
+| Translation acceleration | 3.0 m/s² | Automatic feed, raw and filtered vector magnitude; 150% of the configured command ramp |
+| Angular speed | 194.4°/s | Automatic feed, current and predicted release; 120% of the configured shooting command cap |
+| Angular acceleration | 270°/s² | Automatic feed, raw and filtered magnitude; 150% of the configured command ramp |
 | Motion sample age | 0.05 s | Aiming and automatic feed |
-| Teleop shooting translation command | 0.494 m/s | Existing 20% shooting cap; now a vector cap, including diagonal input |
-| Teleop shooting angular command | 48.6°/s | Existing 15% shooting cap |
-| Teleop shooting translation command ramp | 1.0 m/s² | Default joystick drive, including direction changes and deceleration |
-| Teleop shooting angular command ramp | 90°/s² | Default joystick drive |
+| Teleop shooting translation command | 1.729 m/s | 70% of normal full-stick translation; vector cap includes diagonal input |
+| Teleop shooting angular command | 162°/s | 50% of normal full-stick rotation |
+| Teleop shooting translation command ramp | 2.0 m/s² | Default joystick drive, including direction changes and deceleration |
+| Teleop shooting angular command ramp | 180°/s² | Default joystick drive |
 
-These numbers are engineering starting settings, not a measured accuracy envelope. Joystick ramps regulate requested motion; measured-motion readiness checks the physical response. Entry from a higher speed ramps down rather than stepping instantly to the lower cap. Autonomous and autopilot controllers retain their own motion commands; the feed gate pauses shooting outside this envelope. Adjust paths or limits deliberately after testing. Existing momentary manual override can bypass motion readiness, and the explicit interlock-off rollback also bypasses it; neither setting qualifies automatic scoring.
+These numbers are engineering starting settings, not a measured accuracy envelope. Joystick ramps regulate requested motion; measured-motion readiness checks the physical response. Entry from a higher speed ramps down rather than stepping instantly to the lower cap. Autonomous and autopilot controllers retain their own motion commands; the feed gate pauses shooting outside this envelope. The two `Constants.Drivebase.SHOOT_*_SPEED_LIMIT_SCALE` values are fractions of normal full-stick speeds: `0.70` means 70%, and `1.0` removes the shooting speed reduction. Feed speed limits derive from these same settings, with configurable headroom, so increasing the percentages does not leave an unrelated fixed feed cap. Solver domain and actuator limits still apply to automatic shots. Manual force feed and interlock-off operation must be recorded separately from automatic scoring.
+
+## Throughput readiness and force feed
+
+Turret shooting alignment is ±2°. Bench diagnostic settling remains ±0.5°. Hood readiness is ±0.08 motor rotations, about ±0.93° of calibrated launch elevation.
+
+Flywheel readiness starts within the larger of ±3 RPS or ±10% of target magnitude, and stays ready within the larger of ±5 RPS or ±15%. Thus 25 RPS requested with 26.5 RPS measured starts immediately without a stability dwell. The wider running band prevents normal variation from repeatedly resetting feed staging. Bad/stale feedback, disable, a zero target, wrong rotation direction, and large target changes reset the readiness latch.
+
+Hold right trigger and right-stick click to force feed: both feed motors start on the next command execution, bypassing solution validity, roller speed, hood/turret alignment, motion limits, and all staging/recovery delays. This uses current finite, bounded actuator commands even when no solver mapping exists. Auto aim continues when active; override does not overwrite manually requested launch settings or select a new fallback shot. Robot disabled state, a disabled/unconfigured shooter roller, and invalid actuator setpoints still prevent feed. Motor-controller protections remain active. Release the click to resume automatic readiness/recovery; release right trigger to stop shooting. Autonomous has no override.
 
 ## Verification and hardware acceptance
 
@@ -41,8 +49,8 @@ Measure actual Fuel departure latency and spread; calibrate hood angle and RPS-t
 
 ## Software evidence
 
-- `./gradlew test --offline`: 67 Java tests passed, including new release/motion/feed regression cases.
-- Shot calculator: 28 tests passed; production build passed.
+- `./gradlew test --offline`: 75 tests passed, including signed flywheel hysteresis, the 25/26.5 RPS startup and fluctuation regression, immediate force feed without a solver result, override release, and disabled/invalid-command protections, alongside existing trajectory/motion tests.
+- The preceding motion implementation passed 28 shot-calculator tests and its production build; this follow-up changes Java readiness/control policy and leaves calculator code and shared trajectory fixtures unchanged.
 - `git diff --check`: passed.
 
 No robot deployment or hardware scoring test was performed by this change. Competition accuracy remains unqualified.

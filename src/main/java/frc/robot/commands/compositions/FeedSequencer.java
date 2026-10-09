@@ -34,13 +34,22 @@ public final class FeedSequencer {
         boolean overrideRequested,
         boolean interlockEnabled
     ) {
-        boolean overrideActive = interlockEnabled && overrideRequested && readiness.overrideSafe();
+        boolean overrideActive = overrideRequested && readiness.overrideSafe();
+        if (overrideActive) {
+            // Force feed skips readiness, stability dwell and all startup/recovery staging.
+            // Releasing override returns to automatic readiness and recovery staging.
+            recoveryRequired = true;
+            stableReadySinceSec = Double.NaN;
+            stagingStartSec = Double.NaN;
+            setState(nowSec, true, true, true, true, "manual-override");
+            return state;
+        }
         boolean permitted = !interlockEnabled
             ? readiness.enabledOperation()
                 && readiness.shooterAtTarget()
                 && readiness.setpointsFiniteAndBounded()
                 && readiness.turretGoalLegal()
-            : readiness.ready() || overrideActive;
+            : readiness.ready();
         if (!permitted) {
             if (Double.isFinite(stagingStartSec) || Double.isFinite(stableReadySinceSec)) recoveryRequired = true;
             stableReadySinceSec = Double.NaN;

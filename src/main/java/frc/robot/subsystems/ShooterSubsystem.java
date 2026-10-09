@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.util.ConfigurationHealth;
+import frc.robot.util.ShooterSpeedReadiness;
 import static edu.wpi.first.units.Units.*;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -24,6 +25,9 @@ public class ShooterSubsystem extends SubsystemBase {
     private double targetPosRot = getHoodPosition(); 
     private double targetRollerVelRps = Constants.Shooter.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+    private final ShooterSpeedReadiness speedReadiness = new ShooterSpeedReadiness(
+        Constants.Shooter.ROLLER_START_TOLERANCE_RPS, Constants.Shooter.ROLLER_START_TOLERANCE_SCALE,
+        Constants.Shooter.ROLLER_RUNNING_TOLERANCE_RPS, Constants.Shooter.ROLLER_RUNNING_TOLERANCE_SCALE);
 
     private boolean hoodEnabled = true;
     private final boolean hoodConfigured;
@@ -155,6 +159,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public void disableRoller() {
         rollerEnabled = false;
+        speedReadiness.reset();
         if (rollerKraken != null) {
             rollerKraken.stopMotor();
         }
@@ -174,12 +179,8 @@ public class ShooterSubsystem extends SubsystemBase {
 
     public boolean atTargetSpeed() {
         double velocity = getRollerVelocity();
-        return rollerConfigured
-            && rollerEnabled
-            && isSignalFresh(rollerKraken.getVelocity())
-            && Double.isFinite(velocity)
-            && Double.isFinite(targetRollerVelRps)
-            && Math.abs(velocity - targetRollerVelRps) < Constants.Shooter.ROLLER_TOLERANCE;
+        return speedReadiness.update(velocity, targetRollerVelRps,
+            rollerConfigured && rollerEnabled && isSignalFresh(rollerKraken.getVelocity()));
     }
 
     public boolean isRollerEnabled() {
