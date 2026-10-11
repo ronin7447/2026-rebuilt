@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
-        public static final double MAX_SPEED = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
+        public static final double MAX_SPEED = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Driver speed cap: 50% of configured speed at 12 V
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // 90% of a rotation per second max angular velocity
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // 15% of max speed as deadband
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // 15% of max angular rate as deadband
@@ -56,16 +56,16 @@ public final class Constants {
         public static final double SUPPLY_CURRENT_LIMIT_A = 20.0;
         public static final double STALL_VEL_RPS = 0.25;
         public static final double STALL_TIME_S = 0.10;
-        public static final double KS = 0.15; // Add 0.25 V output to overcome static friction
+        public static final double KS = 0.15; // Static-friction feedforward in volts
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 5.75; // 35 V per rotation of position error
-        public static final double KI = 1.075; // no output for integrated error
-        public static final double KD = 0.50; // 0.20 V output for error derivative
+        public static final double KP = 5.75; // Position gain in V per motor rotation of error
+        public static final double KI = 1.075; // Integral position gain in V per motor rotation-second of accumulated error
+        public static final double KD = 0.50; // Derivative position gain in V per motor rps of error change
 
-        public static final double CRUISE_VELOCITY = 90.0;
-        public static final double ACCELERATION = 700.0;
-        public static final double JERK = 4000.0;
+        public static final double CRUISE_VELOCITY = 90.0; // Motion Magic cruise velocity in motor rot/s
+        public static final double ACCELERATION = 700.0; // Motion Magic acceleration limit in motor rot/s^2
+        public static final double JERK = 4000.0; // Motion Magic jerk limit in motor rot/s^3
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // 100:25 ratio
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0;
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); 
@@ -256,8 +256,8 @@ public final class Constants {
         public static final double EXTENSION_COLLAPSE_VELOCITY = 90.0;
         public static final double EXTENSION_COLLAPSE_ACCELERATION = 400.0;
         public static final double EXTENSION_COLLAPSE_JERK = 4000.0;
-        public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 100.0;
-        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 60.0;
+        public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 100.0; // Per extension motor; limits torque and heating
+        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 60.0; // Per extension motor; limits battery current
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 30.0;
         public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 20.0;
         public static final double INTAKE_STALL_CURRENT = 6.0;
@@ -291,9 +291,9 @@ public final class Constants {
         public static final double KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double KP = 35.0; // 35 V per rotation of position error
+        public static final double KP = 35.0; // Position gain in V per motor rotation of error
         public static final double KI = 0.00; // no output for integrated error
-        public static final double KD = 0.20; // 0.20 V output for error derivative
+        public static final double KD = 0.20; // Derivative position gain in V per motor rps of error change
 
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
@@ -304,7 +304,7 @@ public final class Constants {
         public static final double ROLLER_DIRECTION_SIGN = -1.0;
         public static final double ROLLER_VELOCITY = -31.98;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
-        public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
+        public static final double ROLLER_JERK = 4000.0; // Motion Magic jerk limit in motor rot/s^3
 
         /** Start within the larger of the absolute band and this fraction of target magnitude. */
         public static final double ROLLER_START_TOLERANCE_RPS = 3.0;
@@ -383,7 +383,7 @@ public final class Constants {
         public static final double ROLLER_KD = 0.00; // no output for error derivative
         public static final double ROLLER_VELOCITY = -35;
         public static final double ROLLER_ACCELERATION = 400.0; // Target acceleration of 400 rps/s
-        public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
+        public static final double ROLLER_JERK = 4000.0; // Motion Magic jerk limit in motor rot/s^3
         public static final int ROLLER_KRAKEN_ID = 25;
     }
     public static final class Indexer {
@@ -392,12 +392,12 @@ public final class Constants {
         public static final double ROLLER_KS = 0.25; // Add 0.25 V output to overcome static friction
         public static final double ROLLER_KV = 0.12; // A velocity target of 1 rps results in 0.12 V output
         public static final double ROLLER_KA = 0.01; // An acceleration of 1 rps/s requires 0.01 V output
-        public static final double ROLLER_KP = 100.00; // An error of 1 rps results in 0.11 V output
+        public static final double ROLLER_KP = 1.0; // Velocity gain in V per motor rps of error; provisional bench setting
         public static final double ROLLER_KI = 0.00; // no output for integrated error
         public static final double ROLLER_KD = 0.00; // no output for error derivative
-        public static final double ROLLER_VELOCITY = -100.0;
-        public static final double ROLLER_ACCELERATION = 800.0; // Target acceleration of 400 rps/s
-        public static final double ROLLER_JERK = 4000.0; // Target jerk of 4000 rps/s/s
+        public static final double ROLLER_VELOCITY = -100.0; // Target motor rot/s; spinner speed depends on pulley reduction
+        public static final double ROLLER_ACCELERATION = 800.0; // Motion Magic acceleration limit in motor rot/s^2
+        public static final double ROLLER_JERK = 0.0; // Motor rot/s^3; zero disables jerk smoothing for a trapezoidal profile
         public static final int ROLLER_KRAKEN_ID = 36;
     }
 }
