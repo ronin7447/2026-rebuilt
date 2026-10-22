@@ -278,7 +278,7 @@ public final class Constants {
         public static final double INTAKE_TARGET_ROT_TOLERANCE = 0.02; // Allowed pivot position error in master motor rotations.
 
         public static final double INTAKE_COLLAPSED_POS = 0.0; // Collapsed master motor position; startup zero assumes intake is in.
-        public static final double INTAKE_EXTENDED_POS = 1.538; // Deployed master motor position, relative to collapsed zero.
+        public static final double INTAKE_EXTENDED_POS = 1.500; // Deployed master motor position, relative to collapsed zero.
         // Master motor position reached during an optional retract pulse.
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             INTAKE_COLLAPSED_POS;
