@@ -4,6 +4,8 @@ Date: 2026-09-12
 Starting revision: `bb932a869bd61fdbb047fdd811c1bb70bc5d6f76` (`ultimate-sotm`)  
 Configuration ID: `ultimate-sotm-v1`
 
+The 2026-10-08 [motion-envelope follow-up](ultimate-sotm-motion-envelope.md) adds shared timestamped acceleration estimation, motion readiness gates, and teleop command ramps. Its current configuration, `ultimate-sotm-v3-throughput`, loosens alignment/flywheel readiness, shortens staging, derives drive/feed limits from shooting percentages, and provides immediate manual force feed. The evidence below describes the original v1 implementation.
+
 ## Status
 
 | Area | Implemented | Software verified | Hardware verified | Competition qualified |

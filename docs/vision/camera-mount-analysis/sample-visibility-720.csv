@@ -1,0 +1,101 @@
+pose,x_m,y_m,heading_deg,configuration,camera_1_tag_ids,camera_2_tag_ids
+A near Tower,1.8,4.0,0,existing level side cameras,,29
+A near Tower,1.8,4.0,0,front/rear 15 deg,"25,26","31,32"
+A near Tower,1.8,4.0,0,front/rear 20 deg,"25,26","31,32"
+A near Tower,1.8,4.0,0,front/rear 25 deg,"25,26",
+A near Tower,1.8,4.0,0,front 40cm/15deg + rear 22in/10deg,"25,26","31,32"
+A near Tower,1.8,4.0,90,existing level side cameras,"31,32",
+A near Tower,1.8,4.0,90,front/rear 15 deg,,29
+A near Tower,1.8,4.0,90,front/rear 20 deg,,29
+A near Tower,1.8,4.0,90,front/rear 25 deg,,
+A near Tower,1.8,4.0,90,front 40cm/15deg + rear 22in/10deg,,29
+A near Tower,1.8,4.0,180,existing level side cameras,29,
+A near Tower,1.8,4.0,180,front/rear 15 deg,"31,32","25,26"
+A near Tower,1.8,4.0,180,front/rear 20 deg,"31,32","25,26"
+A near Tower,1.8,4.0,180,front/rear 25 deg,,"25,26"
+A near Tower,1.8,4.0,180,front 40cm/15deg + rear 22in/10deg,"31,32","25,26"
+A near Tower,1.8,4.0,270,existing level side cameras,,"31,32"
+A near Tower,1.8,4.0,270,front/rear 15 deg,29,
+A near Tower,1.8,4.0,270,front/rear 20 deg,29,
+A near Tower,1.8,4.0,270,front/rear 25 deg,,
+A near Tower,1.8,4.0,270,front 40cm/15deg + rear 22in/10deg,29,
+B near Hub,3.2,4.0,0,existing level side cameras,23,28
+B near Hub,3.2,4.0,0,front/rear 15 deg,,"31,32"
+B near Hub,3.2,4.0,0,front/rear 20 deg,,"31,32"
+B near Hub,3.2,4.0,0,front/rear 25 deg,,
+B near Hub,3.2,4.0,0,front 40cm/15deg + rear 22in/10deg,,"31,32"
+B near Hub,3.2,4.0,90,existing level side cameras,"31,32",
+B near Hub,3.2,4.0,90,front/rear 15 deg,23,28
+B near Hub,3.2,4.0,90,front/rear 20 deg,23,28
+B near Hub,3.2,4.0,90,front/rear 25 deg,23,28
+B near Hub,3.2,4.0,90,front 40cm/15deg + rear 22in/10deg,23,28
+B near Hub,3.2,4.0,180,existing level side cameras,28,23
+B near Hub,3.2,4.0,180,front/rear 15 deg,"31,32",
+B near Hub,3.2,4.0,180,front/rear 20 deg,"31,32",
+B near Hub,3.2,4.0,180,front/rear 25 deg,,
+B near Hub,3.2,4.0,180,front 40cm/15deg + rear 22in/10deg,"31,32",
+B near Hub,3.2,4.0,270,existing level side cameras,,"31,32"
+B near Hub,3.2,4.0,270,front/rear 15 deg,28,23
+B near Hub,3.2,4.0,270,front/rear 20 deg,28,23
+B near Hub,3.2,4.0,270,front/rear 25 deg,28,23
+B near Hub,3.2,4.0,270,front 40cm/15deg + rear 22in/10deg,28,23
+C Outpost lane,3.2,0.8,0,existing level side cameras,"18,25,26,27",
+C Outpost lane,3.2,0.8,0,front/rear 15 deg,28,"29,30"
+C Outpost lane,3.2,0.8,0,front/rear 20 deg,28,"29,30"
+C Outpost lane,3.2,0.8,0,front/rear 25 deg,28,
+C Outpost lane,3.2,0.8,0,front 40cm/15deg + rear 22in/10deg,28,"29,30"
+C Outpost lane,3.2,0.8,90,existing level side cameras,"29,30",
+C Outpost lane,3.2,0.8,90,front/rear 15 deg,"18,25,26,27",
+C Outpost lane,3.2,0.8,90,front/rear 20 deg,"18,25,26,27",
+C Outpost lane,3.2,0.8,90,front/rear 25 deg,"18,25,26,27",
+C Outpost lane,3.2,0.8,90,front 40cm/15deg + rear 22in/10deg,"18,25,26,27",
+C Outpost lane,3.2,0.8,180,existing level side cameras,,"18,25,26,27"
+C Outpost lane,3.2,0.8,180,front/rear 15 deg,"29,30",28
+C Outpost lane,3.2,0.8,180,front/rear 20 deg,"29,30",28
+C Outpost lane,3.2,0.8,180,front/rear 25 deg,,28
+C Outpost lane,3.2,0.8,180,front 40cm/15deg + rear 22in/10deg,"29,30",28
+C Outpost lane,3.2,0.8,270,existing level side cameras,,"29,30"
+C Outpost lane,3.2,0.8,270,front/rear 15 deg,,"18,25,26,27"
+C Outpost lane,3.2,0.8,270,front/rear 20 deg,,"18,25,26,27"
+C Outpost lane,3.2,0.8,270,front/rear 25 deg,,"18,25,26,27"
+C Outpost lane,3.2,0.8,270,front 40cm/15deg + rear 22in/10deg,,"18,25,26,27"
+D opposite lane,3.2,7.2,0,existing level side cameras,,"21,24,25,26"
+D opposite lane,3.2,7.2,0,front/rear 15 deg,23,
+D opposite lane,3.2,7.2,0,front/rear 20 deg,23,
+D opposite lane,3.2,7.2,0,front/rear 25 deg,23,
+D opposite lane,3.2,7.2,0,front 40cm/15deg + rear 22in/10deg,23,
+D opposite lane,3.2,7.2,90,existing level side cameras,,
+D opposite lane,3.2,7.2,90,front/rear 15 deg,,"21,24,25,26"
+D opposite lane,3.2,7.2,90,front/rear 20 deg,,"21,24,25,26"
+D opposite lane,3.2,7.2,90,front/rear 25 deg,,"21,24,25,26"
+D opposite lane,3.2,7.2,90,front 40cm/15deg + rear 22in/10deg,,"21,24,25,26"
+D opposite lane,3.2,7.2,180,existing level side cameras,"24,25,26",
+D opposite lane,3.2,7.2,180,front/rear 15 deg,,23
+D opposite lane,3.2,7.2,180,front/rear 20 deg,,23
+D opposite lane,3.2,7.2,180,front/rear 25 deg,,23
+D opposite lane,3.2,7.2,180,front 40cm/15deg + rear 22in/10deg,,23
+D opposite lane,3.2,7.2,270,existing level side cameras,,
+D opposite lane,3.2,7.2,270,front/rear 15 deg,"21,24,25,26",
+D opposite lane,3.2,7.2,270,front/rear 20 deg,"21,24,25,26",
+D opposite lane,3.2,7.2,270,front/rear 25 deg,"21,24,25,26",
+D opposite lane,3.2,7.2,270,front 40cm/15deg + rear 22in/10deg,"21,24,25,26",
+E neutral Hub side,6.0,4.0,0,existing level side cameras,22,17
+E neutral Hub side,6.0,4.0,0,front/rear 15 deg,"3,4",
+E neutral Hub side,6.0,4.0,0,front/rear 20 deg,"3,4",
+E neutral Hub side,6.0,4.0,0,front/rear 25 deg,"3,4",
+E neutral Hub side,6.0,4.0,0,front 40cm/15deg + rear 22in/10deg,"3,4",
+E neutral Hub side,6.0,4.0,90,existing level side cameras,,"3,4"
+E neutral Hub side,6.0,4.0,90,front/rear 15 deg,22,17
+E neutral Hub side,6.0,4.0,90,front/rear 20 deg,22,17
+E neutral Hub side,6.0,4.0,90,front/rear 25 deg,22,17
+E neutral Hub side,6.0,4.0,90,front 40cm/15deg + rear 22in/10deg,22,17
+E neutral Hub side,6.0,4.0,180,existing level side cameras,17,22
+E neutral Hub side,6.0,4.0,180,front/rear 15 deg,,"3,4"
+E neutral Hub side,6.0,4.0,180,front/rear 20 deg,,"3,4"
+E neutral Hub side,6.0,4.0,180,front/rear 25 deg,,"3,4"
+E neutral Hub side,6.0,4.0,180,front 40cm/15deg + rear 22in/10deg,,"3,4"
+E neutral Hub side,6.0,4.0,270,existing level side cameras,"3,4",
+E neutral Hub side,6.0,4.0,270,front/rear 15 deg,17,22
+E neutral Hub side,6.0,4.0,270,front/rear 20 deg,17,22
+E neutral Hub side,6.0,4.0,270,front/rear 25 deg,17,22
+E neutral Hub side,6.0,4.0,270,front 40cm/15deg + rear 22in/10deg,17,22

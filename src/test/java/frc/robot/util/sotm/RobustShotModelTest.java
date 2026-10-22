@@ -21,6 +21,64 @@ class RobustShotModelTest {
     private static final double EPSILON = 1e-6;
 
     @Test
+    void acceleratingRotatingShotReconstructsScoringTrajectoryFromActuatorCommands() {
+        double latency = 0.14;
+        double heading = 0.2;
+        Pose2d pose = new Pose2d(0, 0, Rotation2d.fromRadians(heading));
+        ChassisSpeeds field = new ChassisSpeeds(0.4, 0.3, 0.3);
+        Translation2d pivot = new Translation2d(0.2, 0.1);
+        ShotMotionState motion = new ShotMotionState(pose,
+            ChassisSpeeds.fromFieldRelativeSpeeds(field, pose.getRotation()), field,
+            0.5, -0.4, 0.2, new Rotation3d(0.01, 0.02, heading));
+        var request = new RobustShotRequest(motion, pivot, Constants.Shooter.EXIT_HEIGHT_METERS,
+            new Translation3d(4, 0, Constants.FieldTargets.HUB_TARGET_HEIGHT_METERS), Rotation2d.kZero,
+            Constants.Shooter.MIN_HOOD_POSITION_ROT, Constants.Shooter.MAX_HOOD_POSITION_ROT,
+            Constants.Shooter.MAX_EXIT_SPEED_MPS, latency);
+        var solution = RobustShotModel.solve(request).orElseThrow();
+        assertTrue(solution.quality().insideTolerance(), solution.quality().reason());
+
+        // Independently reconstruct departure and launch from turret, hood and RPS commands.
+        double releaseHeading = heading + 0.3 * latency + 0.5 * 0.2 * latency * latency;
+        Translation2d offset = pivot.rotateBy(Rotation2d.fromRadians(releaseHeading));
+        Translation2d releasePosition = new Translation2d(0.4 * latency + 0.25 * latency * latency,
+            0.3 * latency - 0.2 * latency * latency).plus(offset);
+        double omega = 0.3 + 0.2 * latency;
+        Translation3d inherited = new Translation3d(0.4 + 0.5 * latency - omega * offset.getY(),
+            0.3 - 0.4 * latency + omega * offset.getX(), 0);
+        double speed = (Math.abs(solution.rollerRps()) - Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT)
+            / Constants.Shooter.ROLLER_RPS_PER_EXIT_SPEED_SLOPE;
+        double pitch = Math.toRadians((solution.hoodPositionRot() - Constants.Shooter.HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT)
+            / Constants.Shooter.HOOD_POSITION_PER_LAUNCH_DEG_SLOPE);
+        double yaw = solution.desiredTurretYaw().getRadians();
+        Translation3d relative = new Translation3d(speed * Math.cos(pitch) * Math.cos(yaw),
+            speed * Math.cos(pitch) * Math.sin(yaw), speed * Math.sin(pitch))
+            .rotateBy(new Rotation3d(0.01, 0.02, releaseHeading));
+        Translation3d velocity = relative.plus(inherited);
+        double time = (4 - releasePosition.getX()) / velocity.getX();
+        assertEquals(0, releasePosition.getY() + velocity.getY() * time, 1e-6);
+        assertEquals(solution.flightTimeSec(), time, 1e-6);
+        double z = Constants.Shooter.EXIT_HEIGHT_METERS + velocity.getZ() * time - 4.905 * time * time;
+        assertTrue(Math.abs(z - request.targetFieldPoint().getZ()) <= request.targetConstraints().goalRadiusMeters());
+        double entryAngle = Math.toDegrees(Math.atan2(9.81 * time - velocity.getZ(),
+            Math.hypot(velocity.getX(), velocity.getY())));
+        assertTrue(entryAngle >= request.targetConstraints().minEntryAngleDeg());
+        double frontTime = Math.max(0, time - request.targetConstraints().hubOpeningDepthMeters()
+            / (2 * Math.hypot(velocity.getX(), velocity.getY())));
+        double frontHeight = Constants.Shooter.EXIT_HEIGHT_METERS + velocity.getZ() * frontTime
+            - 4.905 * frontTime * frontTime;
+        assertTrue(frontHeight >= request.targetConstraints().hubFrontLipHeightMeters()
+            + request.targetConstraints().fuelRadiusMeters() + request.targetConstraints().hubLipClearanceMeters());
+
+        ShotMotionState noAcceleration = new ShotMotionState(pose, motion.robotRelativeSpeeds(), field,
+            0, 0, 0, motion.robotOrientation());
+        var unaccelerated = RobustShotModel.solve(new RobustShotRequest(noAcceleration, pivot,
+            request.shooterExitHeightMeters(), request.targetFieldPoint(), request.turretZeroOffset(),
+            request.minHoodPositionRot(), request.maxHoodPositionRot(), request.maxExitSpeedMps(), latency)).orElseThrow();
+        assertTrue(Math.abs(solution.desiredTurretYaw().minus(unaccelerated.desiredTurretYaw()).getRadians()) > 1e-4);
+        assertTrue(Math.abs(solution.rollerRps() - unaccelerated.rollerRps()) > 1e-4);
+    }
+
+    @Test
     void decomposesRadialAndTangentialVelocity() {
         RobustShotModel.VelocityComponents components = RobustShotModel.decomposeVelocity(
             new Translation2d(4.0, 0.0),

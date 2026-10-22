@@ -3,13 +3,14 @@ package frc.robot.commands.compositions;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+import com.ctre.phoenix6.Utils;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -34,11 +35,6 @@ public class AutoAimTurretCommand extends Command {
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
     private final ShooterCalibration shooterCalibration = new LinearShooterCalibration();
-    private ChassisSpeeds lastFieldSpeeds = null;
-    private double lastMotionSampleTimeSec = -1.0;
-    private double filteredFieldAccelXMps2 = 0.0;
-    private double filteredFieldAccelYMps2 = 0.0;
-    private double filteredAngularAccelRadPerSec2 = 0.0;
 
     public AutoAimTurretCommand(
         CommandSwerveDrivetrain drivetrain,
@@ -54,15 +50,22 @@ public class AutoAimTurretCommand extends Command {
     }
 
     @Override
-    public void initialize() {
-        resetMotionHistory();
-    }
-
-    @Override
     public void execute() {
-        var drivetrainState = drivetrain.getState();
-        Pose2d robotPose = drivetrainState.Pose;
-        ChassisSpeeds robotRelativeSpeeds = drivetrainState.Speeds;
+        var motionEstimate = drivetrain.getShotMotionEstimate();
+        double motionAgeSec = Utils.getCurrentTimeSeconds() - motionEstimate.timestampSec();
+        if (Constants.ShotMap.USE_ROBUST_SOTM && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK
+            && (motionEstimate.motion() == null || !motionEstimate.derivativeValid()
+                || !Double.isFinite(motionAgeSec) || motionAgeSec < 0.0
+                || motionAgeSec > Constants.ShotMap.MAX_MOTION_AGE_SEC)) {
+            turret.holdCurrentPosition();
+            turret.invalidateAimState("invalid-shot-motion");
+            return;
+        }
+        var drivetrainState = drivetrain.getStateCopy();
+        Pose2d robotPose = motionEstimate.motion() != null
+            ? motionEstimate.motion().robotPose() : drivetrainState.Pose;
+        ChassisSpeeds robotRelativeSpeeds = motionEstimate.motion() != null
+            ? motionEstimate.motion().robotRelativeSpeeds() : drivetrainState.Speeds;
         Translation2d pivotFieldPosition = AimMath.computeTurretPivotFieldPosition(
             robotPose,
             Constants.Turret.ROBOT_TO_TURRET_PIVOT
@@ -75,11 +78,9 @@ public class AutoAimTurretCommand extends Command {
 
         if (!turret.getPositionMode()) {
             turret.invalidateAimState("turret-position-mode-disabled");
-            resetMotionHistory();
             return;
         }
         if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
-            resetMotionHistory();
             turret.holdCurrentPosition();
             publishAimState(
                 AutoAimTargeting.TargetMode.HOLD.name(),
@@ -101,7 +102,6 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (allianceOpt.isEmpty()) {
-            resetMotionHistory();
             turret.park();
             publishAimState(
                 AutoAimTargeting.TargetMode.PARK.name(),
@@ -141,7 +141,6 @@ public class AutoAimTurretCommand extends Command {
         boolean inNeutralZone = targetSelection.inNeutralZone();
 
         if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HOLD) {
-            resetMotionHistory();
             turret.holdCurrentPosition();
             publishAimState(
                 targetSelection.targetMode().name(),
@@ -193,7 +192,7 @@ public class AutoAimTurretCommand extends Command {
 
         if (Constants.ShotMap.USE_ROBUST_SOTM
             && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK) {
-            ShotMotionState motionState = sampleShotMotionState(robotPose, robotRelativeSpeeds);
+            ShotMotionState motionState = motionEstimate.motion();
             ShotTargetConstraints targetConstraints = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
                 ? ShotTargetConstraints.hub(selectedTargetPoint3d.getZ())
                 : ShotTargetConstraints.passback(selectedTargetPoint3d.getZ());
@@ -206,7 +205,7 @@ public class AutoAimTurretCommand extends Command {
                 Constants.Shooter.MIN_HOOD_POSITION_ROT,
                 Constants.Shooter.MAX_HOOD_POSITION_ROT,
                 Constants.Shooter.MAX_EXIT_SPEED_MPS,
-                Constants.ShotMap.BASE_RELEASE_LATENCY_SEC,
+                Constants.ShotMap.BASE_RELEASE_LATENCY_SEC + motionAgeSec,
                 targetConstraints
             ));
 
@@ -276,57 +275,6 @@ public class AutoAimTurretCommand extends Command {
         );
     }
 
-    private ShotMotionState sampleShotMotionState(Pose2d robotPose, ChassisSpeeds robotRelativeSpeeds) {
-        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(
-            robotRelativeSpeeds.vxMetersPerSecond,
-            robotRelativeSpeeds.vyMetersPerSecond,
-            robotRelativeSpeeds.omegaRadiansPerSecond,
-            robotPose.getRotation()
-        );
-        double timestampSec = Timer.getFPGATimestamp();
-        if (lastFieldSpeeds != null && lastMotionSampleTimeSec >= 0.0) {
-            double dtSec = timestampSec - lastMotionSampleTimeSec;
-            if (dtSec > 1e-6 && dtSec <= Constants.ShotMap.MAX_ACCEL_SAMPLE_DT_SEC) {
-                filteredFieldAccelXMps2 = filteredAcceleration(
-                    filteredFieldAccelXMps2,
-                    (fieldSpeeds.vxMetersPerSecond - lastFieldSpeeds.vxMetersPerSecond) / dtSec,
-                    Constants.ShotMap.MAX_FIELD_ACCEL_MPS2
-                );
-                filteredFieldAccelYMps2 = filteredAcceleration(
-                    filteredFieldAccelYMps2,
-                    (fieldSpeeds.vyMetersPerSecond - lastFieldSpeeds.vyMetersPerSecond) / dtSec,
-                    Constants.ShotMap.MAX_FIELD_ACCEL_MPS2
-                );
-                filteredAngularAccelRadPerSec2 = filteredAcceleration(
-                    filteredAngularAccelRadPerSec2,
-                    (fieldSpeeds.omegaRadiansPerSecond - lastFieldSpeeds.omegaRadiansPerSecond) / dtSec,
-                    Constants.ShotMap.MAX_ANGULAR_ACCEL_RAD_PER_SEC2
-                );
-            } else {
-                filteredFieldAccelXMps2 = 0.0;
-                filteredFieldAccelYMps2 = 0.0;
-                filteredAngularAccelRadPerSec2 = 0.0;
-            }
-        }
-        lastFieldSpeeds = fieldSpeeds;
-        lastMotionSampleTimeSec = timestampSec;
-
-        return new ShotMotionState(
-            robotPose,
-            robotRelativeSpeeds,
-            fieldSpeeds,
-            filteredFieldAccelXMps2,
-            filteredFieldAccelYMps2,
-            filteredAngularAccelRadPerSec2,
-            drivetrain.getRobotOrientation3d()
-        );
-    }
-
-    private double filteredAcceleration(double previousValue, double rawValue, double maxMagnitude) {
-        double clampedRaw = Math.max(-maxMagnitude, Math.min(maxMagnitude, rawValue));
-        return previousValue + (Constants.ShotMap.ACCEL_FILTER_ALPHA * (clampedRaw - previousValue));
-    }
-
     private void publishRobustShotTelemetry(
         String shotModelName,
         Optional<RobustShotSolution> robustShotSolution
@@ -368,15 +316,6 @@ public class AutoAimTurretCommand extends Command {
     public void end(boolean interrupted) {
         turret.holdCurrentPosition();
         turret.invalidateAimState(interrupted ? "command-interrupted" : "command-ended");
-        resetMotionHistory();
-    }
-
-    private void resetMotionHistory() {
-        lastFieldSpeeds = null;
-        lastMotionSampleTimeSec = -1.0;
-        filteredFieldAccelXMps2 = 0.0;
-        filteredFieldAccelYMps2 = 0.0;
-        filteredAngularAccelRadPerSec2 = 0.0;
     }
 
     @Override

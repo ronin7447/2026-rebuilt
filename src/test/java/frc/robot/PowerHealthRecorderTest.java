@@ -18,6 +18,8 @@ class PowerHealthRecorderTest {
         );
         recorder.periodic();
         assertEquals(false, sink.booleans.get("Power/PDHAvailable"));
+        assertEquals(false, sink.booleans.get("Power/ShotMotionDerivativeValid"));
+        assertTrue(Double.isNaN(sink.numbers.get("Power/ShotRawAccelerationMps2")));
         assertTrue(recorder.isHealthy());
     }
 

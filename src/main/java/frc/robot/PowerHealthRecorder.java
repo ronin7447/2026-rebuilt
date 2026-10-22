@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.util.ConfigurationHealth;
+import frc.robot.util.sotm.ShotMotionEstimator;
 
 /** Single owner for synchronized power, motor, CAN, and robot-health recording. */
 public final class PowerHealthRecorder {
@@ -192,6 +193,16 @@ public final class PowerHealthRecorder {
         sink.number("Power/DriveVxMps", context.driveVxMps());
         sink.number("Power/DriveVyMps", context.driveVyMps());
         sink.number("Power/DriveOmegaRadPerSec", context.driveOmegaRadPerSec());
+        sink.text("Power/FeedBlockers", context.feedBlockers());
+        var shotMotion = context.shotMotionEstimate();
+        var motion = shotMotion == null ? null : shotMotion.motion();
+        sink.bool("Power/ShotMotionDerivativeValid", shotMotion != null && shotMotion.derivativeValid());
+        sink.number("Power/ShotMotionAgeSec", context.shotMotionAgeSec());
+        sink.number("Power/ShotRawAccelerationMps2", shotMotion == null ? Double.NaN : shotMotion.rawLinearAccelMps2());
+        sink.number("Power/ShotRawAngularAccelerationRadPerSec2", shotMotion == null ? Double.NaN : shotMotion.rawAngularAccelRadPerSec2());
+        sink.number("Power/ShotFieldAccelXMps2", motion == null ? Double.NaN : motion.fieldAccelXMps2());
+        sink.number("Power/ShotFieldAccelYMps2", motion == null ? Double.NaN : motion.fieldAccelYMps2());
+        sink.number("Power/ShotAngularAccelRadPerSec2", motion == null ? Double.NaN : motion.angularAccelRadPerSec2());
         sink.number("Power/AcceptedVisionAgeSec", context.acceptedVisionAgeSec());
         sink.bool("Power/IntakeExtensionEnabled", context.intakeExtensionEnabled());
         sink.bool("Power/IntakeRollerEnabled", context.intakeRollerEnabled());
@@ -334,7 +345,10 @@ public final class PowerHealthRecorder {
         double acceptedVisionAgeSec,
         boolean intakeExtensionEnabled,
         boolean intakeRollerEnabled,
-        String intakeHomingStatus
+        String intakeHomingStatus,
+        ShotMotionEstimator.Estimate shotMotionEstimate,
+        double shotMotionAgeSec,
+        String feedBlockers
     ) {
         public Context(
             boolean enabled,
@@ -346,7 +360,7 @@ public final class PowerHealthRecorder {
         ) {
             this(enabled, mode, Double.NaN, shootRequested, feedPermitted, manualOverride, Double.NaN,
                 shooterTargetRps, "UNKNOWN", "UNKNOWN", "UNKNOWN", Double.NaN, Double.NaN,
-                Double.NaN, Double.NaN, false, false, "UNKNOWN");
+                Double.NaN, Double.NaN, false, false, "UNKNOWN", null, Double.NaN, "UNKNOWN");
         }
     }
 

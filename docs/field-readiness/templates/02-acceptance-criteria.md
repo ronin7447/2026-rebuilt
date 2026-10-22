@@ -10,7 +10,7 @@ A test is INCOMPLETE when required criteria or conditions are missing. Criteria 
 
 ## Provisional bench starting point
 
-These are suggested engineering test criteria for a small turret step, **not measured facts or universal competition requirements**. Explicitly accept or replace every row before the test. Current code uses 0.5° aim tolerance; it is also provisional as a scoring requirement.
+These are suggested engineering test criteria for a small turret step, **not measured facts or universal competition requirements**. Explicitly accept or replace every row before the test. Current code keeps the 0.5° bench diagnostic tolerance separate from its relaxed 2° shooting alignment tolerance; neither is a measured scoring requirement.
 
 | Criterion | Suggested starting criterion | Accepted value / rationale |
 |---|---|---|

@@ -76,9 +76,18 @@ public record ShotReadinessSnapshot(
         return blockers.isEmpty();
     }
 
-    /** Override bypasses readiness, but never enabled-state, numeric, or actuator protections. */
+    /** Adds measured-motion reasons without conflating trajectory feasibility and feed readiness. */
+    public ShotReadinessSnapshot withMotionBlockers(List<String> motionBlockers) {
+        List<String> combined = new ArrayList<>(blockers);
+        combined.addAll(motionBlockers);
+        return new ShotReadinessSnapshot(timestampSec, enabledOperation, solutionValid, solutionAgeSec,
+            shooterRollerEnabled, shooterAtTarget, hoodEnabled, hoodAtTarget, turretAutoAimActive,
+            turretAtGoal, turretGoalLegal, setpointsFiniteAndBounded, acceptedVisionAgeSec, combined);
+    }
+
+    /** Force feed uses existing bounded commands; it does not require an auto-aim solution. */
     public boolean overrideSafe() {
-        return enabledOperation && setpointsFiniteAndBounded && turretGoalLegal;
+        return enabledOperation && shooterRollerEnabled && setpointsFiniteAndBounded;
     }
 
     public boolean visionDegraded(double warningAgeSec) {

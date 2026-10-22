@@ -26,6 +26,8 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 
 import frc.robot.constants.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.constants.Constants;
+import frc.robot.util.sotm.ShotMotionEstimator;
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -38,6 +40,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
+    private final ShotMotionEstimator shotMotionEstimator = new ShotMotionEstimator(
+        Constants.ShotMap.ACCEL_FILTER_ALPHA, Constants.ShotMap.MAX_ACCEL_SAMPLE_DT_SEC,
+        Constants.ShotMap.MAX_FIELD_ACCEL_MPS2, Constants.ShotMap.MAX_ANGULAR_ACCEL_RAD_PER_SEC2);
 
     /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
@@ -223,6 +228,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     @Override
     public void periodic() {
+        var state = getStateCopy();
+        shotMotionEstimator.sample(state.Timestamp, isOdometryValid() ? state.Pose : null,
+            state.Speeds, getRobotOrientation3d());
         /*
          * Periodically try to apply the operator perspective.
          * If we haven't applied the operator perspective before, then we should apply it regardless of DS state.
@@ -304,5 +312,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     public Rotation3d getRobotOrientation3d() {
         return getRotation3d();
+    }
+
+    public ShotMotionEstimator.Estimate getShotMotionEstimate() {
+        return shotMotionEstimator.estimate();
     }
 }

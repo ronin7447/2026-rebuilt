@@ -1,0 +1,8 @@
+{
+  "branch": "ultimate-sotm",
+  "revision": "3323e73",
+  "calculatorSha256": "1d8ab132253c71bf4a9787e592d42f7ff5f9cbd9054c04d45423fb8834fff59d",
+  "powerAnalyzerSha256": "b430a18e3afeabfd300947a3a20b870f8e9dc4a2021b7c89ef3ac46c1a155ab6",
+  "calculatorPresentation": "Blue presentation skin, concise live readout, repository path presets, model-score labels. Physics, trajectory, path sampling and controller implementations retained.",
+  "powerPresentation": "Node filesystem and CLI entry points removed; parseCsv, analyzeRows and their helpers retained."
+}

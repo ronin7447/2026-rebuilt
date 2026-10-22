@@ -121,6 +121,7 @@ public class ShootCommand extends Command {
         SmartDashboard.putBoolean("Feed/Permitted", false);
         SmartDashboard.putBoolean("Feed/OverrideActive", false);
         SmartDashboard.putString("Feed/Reason", interrupted ? "command-interrupted" : "command-ended");
+        SmartDashboard.putString("Feed/Blockers", interrupted ? "command-interrupted" : "command-ended");
         SmartDashboard.putNumber("Feed/TransitionTimestampSec", clockSec.getAsDouble());
     }
 

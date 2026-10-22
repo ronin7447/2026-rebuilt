@@ -79,7 +79,7 @@ public class TurretSubsystem extends SubsystemBase {
     private final boolean configured;
     private double lastAimEvaluationTimestampSec = Double.NaN;
     private final TurretDiagnostics diagnostics = new TurretDiagnostics(
-        Constants.Turret.AIM_TOLERANCE_DEG,
+        Constants.Turret.DIAGNOSTIC_TOLERANCE_DEG,
         Constants.Turret.STEP_SETTLE_TIME_SEC,
         Constants.Turret.STEP_ERROR_DEADBAND_DEG,
         Constants.Turret.TRACKING_WINDOW_SEC
@@ -382,6 +382,13 @@ public class TurretSubsystem extends SubsystemBase {
             && mappedRollerRpsAvailable
             && Double.isFinite(mappedHoodPosition)
             && Double.isFinite(mappedRollerRps);
+    }
+
+    /** Actual bounded actuator goal remains usable for manual feed even without a solver result. */
+    public boolean hasFiniteBoundedSetpoint() {
+        return Double.isFinite(targetTurretRot)
+            && targetTurretRot >= Constants.Turret.SOFT_LIMIT_LOW
+            && targetTurretRot <= Constants.Turret.SOFT_LIMIT_HIGH;
     }
 
     public String getShotReason() {
