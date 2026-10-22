@@ -119,13 +119,57 @@ class FeedSequencerTest {
     }
 
     @Test
-    void visionAgeIsWarningOnlyAndInterlockOffRestoresSpeedLatchPolicy() {
+    void visionAgeIsWarningOnly() {
         ShotReadinessSnapshot staleVision = ready();
         assertTrue(staleVision.ready());
         assertTrue(staleVision.visionDegraded(0.25));
         FeedSequencer sequencer = new FeedSequencer(0.10, 0.25, 0.10);
         assertTrue(sequencer.update(0, staleVision, false, true).permitted());
-        assertTrue(sequencer.update(0, blockedButAtSpeed(), false, false).permitted());
+    }
+
+    @Test
+    void interlockOffFeedsDespiteSpeedAlignmentSolutionAndMotionReadiness() {
+        var sequencer = new FeedSequencer(0.10, 0.05, 0.025);
+        var notReady = new ShotReadinessSnapshot(0, true, false, 99, true, false,
+            false, false, false, false, false, true, Double.POSITIVE_INFINITY,
+            List.of("invalid-shot-solution", "stale-shot-solution", "shooter-speed",
+                "hood-position", "turret-alignment", "turret-software-limit", "robot-acceleration"));
+        var starting = sequencer.update(0, notReady, false, false);
+        assertTrue(starting.permitted());
+        assertFalse(starting.outtakeEnabled());
+        assertEquals("readiness-bypassed", starting.reason());
+        assertTrue(sequencer.update(0.05, notReady, false, false).outtakeEnabled());
+        assertTrue(sequencer.update(0.075, notReady, false, false).indexerEnabled());
+        assertTrue(sequencer.update(0.10, ready(), false, false).indexerEnabled());
+        assertTrue(sequencer.update(0.12, notReady, false, false).indexerEnabled());
+        assertFalse(sequencer.state().overrideActive());
+
+        // Re-enabling the checks immediately restores their effect.
+        assertFalse(sequencer.update(0.14, notReady, false, true).permitted());
+    }
+
+    @Test
+    void interlockOffStillStopsForDisabledRobotDisabledShooterAndInvalidSetpoints() {
+        for (int failedGuard = 0; failedGuard < 3; failedGuard++) {
+            var sequencer = new FeedSequencer(0.10, 0.05, 0.025);
+            sequencer.update(0, ready(), false, false);
+            assertTrue(sequencer.update(0.075, ready(), false, false).indexerEnabled());
+            var unsafe = new ShotReadinessSnapshot(0, failedGuard != 0, true, 0,
+                failedGuard != 1, true, true, true, true, true, true, failedGuard != 2,
+                0, List.of("basic-feed-protection"));
+            var stopped = sequencer.update(0.10, unsafe, false, false);
+            assertFalse(stopped.permitted());
+            assertFalse(stopped.outtakeEnabled());
+            assertFalse(stopped.indexerEnabled());
+        }
+    }
+
+    @Test
+    void releasingOverrideWithInterlockOffDoesNotWaitForReadinessRecovery() {
+        var sequencer = new FeedSequencer(0.50, 0.05, 0.025);
+        assertTrue(sequencer.update(0, blocked(), true, false).indexerEnabled());
+        assertEquals("readiness-bypassed", sequencer.update(0.02, blocked(), false, false).reason());
+        assertTrue(sequencer.update(0.095, blocked(), false, false).indexerEnabled());
     }
 
     private static ShotReadinessSnapshot ready() {
@@ -135,9 +179,5 @@ class FeedSequencerTest {
     private static ShotReadinessSnapshot blocked() {
         return new ShotReadinessSnapshot(0, true, false, 0, true, false, true, true, true, true, true, true,
             0, List.of("invalid-shot-solution", "shooter-speed"));
-    }
-    private static ShotReadinessSnapshot blockedButAtSpeed() {
-        return new ShotReadinessSnapshot(0, true, false, 1, true, true, true, false, false, false, true, true,
-            0, List.of("invalid-shot-solution"));
     }
 }

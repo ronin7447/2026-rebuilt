@@ -44,12 +44,7 @@ public final class FeedSequencer {
             setState(nowSec, true, true, true, true, "manual-override");
             return state;
         }
-        boolean permitted = !interlockEnabled
-            ? readiness.enabledOperation()
-                && readiness.shooterAtTarget()
-                && readiness.setpointsFiniteAndBounded()
-                && readiness.turretGoalLegal()
-            : readiness.ready();
+        boolean permitted = interlockEnabled ? readiness.ready() : readiness.overrideSafe();
         if (!permitted) {
             if (Double.isFinite(stagingStartSec) || Double.isFinite(stableReadySinceSec)) recoveryRequired = true;
             stableReadySinceSec = Double.NaN;
@@ -59,7 +54,7 @@ public final class FeedSequencer {
         }
 
         if (!Double.isFinite(stableReadySinceSec)) stableReadySinceSec = nowSec;
-        double requiredStableSec = recoveryRequired ? recoveryReadySec : 0.0;
+        double requiredStableSec = interlockEnabled && recoveryRequired ? recoveryReadySec : 0.0;
         if (nowSec - stableReadySinceSec + 1e-9 < requiredStableSec) {
             setState(nowSec, true, false, false, overrideActive, "recovering-readiness");
             return state;
@@ -68,7 +63,8 @@ public final class FeedSequencer {
         double elapsed = nowSec - stagingStartSec;
         boolean outtake = elapsed + 1e-9 >= outtakeDelaySec;
         boolean indexer = elapsed + 1e-9 >= outtakeDelaySec + indexerDelaySec;
-        setState(nowSec, true, outtake, indexer, overrideActive, overrideActive ? "manual-override" : "ready");
+        setState(nowSec, true, outtake, indexer, false,
+            interlockEnabled ? "ready" : "readiness-bypassed");
         return state;
     }
 

@@ -20,6 +20,18 @@ class LaunchSpeedCalibrationCommandTest {
     }
 
     @Test
+    void sharedInterlockSwitchBypassesCalibrationMechanismReadiness() {
+        assertEquals("", LaunchSpeedCalibrationCommand.readinessBlocker(false, false, false, false));
+        assertEquals("waiting-for-shooter-speed",
+            LaunchSpeedCalibrationCommand.readinessBlocker(true, false, false, false));
+        assertEquals("waiting-for-hood",
+            LaunchSpeedCalibrationCommand.readinessBlocker(true, true, false, false));
+        assertEquals("waiting-for-turret",
+            LaunchSpeedCalibrationCommand.readinessBlocker(true, true, true, false));
+        assertEquals("", LaunchSpeedCalibrationCommand.readinessBlocker(true, true, true, true));
+    }
+
+    @Test
     void usesMotorRpsAndExistingSeventyDegreeHoodMapping() {
         FakeMechanisms mechanisms = new FakeMechanisms();
         var command = new LaunchSpeedCalibrationCommand(mechanisms, () -> 25.0);

@@ -14,7 +14,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.util.LinearShooterCalibration;
 
-/** Latched manual trial. Feed follows measured readiness on every cycle, with no timers. */
+/** Latched manual trial. Uses the shared feed-readiness switch, with no feed timers. */
 public final class LaunchSpeedCalibrationCommand extends Command {
     public static final String DASHBOARD_PREFIX = "LaunchSpeedCalibration/";
     private final Mechanisms mechanisms;
@@ -41,12 +41,13 @@ public final class LaunchSpeedCalibrationCommand extends Command {
             @Override
             public String feedBlocker() {
                 if (!DriverStation.isTeleopEnabled()) return "not-teleop-enabled";
-                if (!shooter.hasFiniteBoundedSetpoints()) return "invalid-setpoints";
-                if (!shooter.atTargetSpeed()) return "waiting-for-shooter-speed";
-                if (!shooter.isHoodAtTarget()) return "waiting-for-hood";
-                if (!turret.getPositionMode() || !turret.isTurretAtAimGoal()
-                    || turret.isOnSoftwareLimit()) return "waiting-for-turret";
-                return "";
+                if (!shooter.hasFiniteBoundedSetpoints() || !turret.hasFiniteBoundedSetpoint()) {
+                    return "invalid-setpoints";
+                }
+                if (!shooter.isRollerEnabled()) return "shooter-disabled";
+                return readinessBlocker(Constants.ShotMap.FEED_INTERLOCK_ENABLED,
+                    shooter.atTargetSpeed(), shooter.isHoodAtTarget(),
+                    turret.getPositionMode() && turret.isTurretAtAimGoal() && !turret.isOnSoftwareLimit());
             }
 
             @Override
@@ -115,6 +116,15 @@ public final class LaunchSpeedCalibrationCommand extends Command {
             : Constants.LaunchSpeedCalibration.ROLLER_SPEED_RPS;
     }
 
+    static String readinessBlocker(boolean interlockEnabled, boolean shooterAtSpeed,
+        boolean hoodAtTarget, boolean turretAtGoal) {
+        if (!interlockEnabled) return "";
+        if (!shooterAtSpeed) return "waiting-for-shooter-speed";
+        if (!hoodAtTarget) return "waiting-for-hood";
+        if (!turretAtGoal) return "waiting-for-turret";
+        return "";
+    }
+
     @Override
     public void initialize() {
         mechanisms.stop();
@@ -131,8 +141,11 @@ public final class LaunchSpeedCalibrationCommand extends Command {
         SmartDashboard.putNumber(DASHBOARD_PREFIX + "HoodTargetRot", hoodPositionRot);
         SmartDashboard.putBoolean(DASHBOARD_PREFIX + "Running", validTrial);
         SmartDashboard.putBoolean(DASHBOARD_PREFIX + "Feeding", false);
+        SmartDashboard.putBoolean(DASHBOARD_PREFIX + "ReadinessChecksEnabled",
+            Constants.ShotMap.FEED_INTERLOCK_ENABLED);
         SmartDashboard.putString(DASHBOARD_PREFIX + "Status",
-            validTrial ? "waiting-for-readiness" : "invalid-speed-or-hood-target");
+            !validTrial ? "invalid-speed-or-hood-target"
+                : (Constants.ShotMap.FEED_INTERLOCK_ENABLED ? "waiting-for-readiness" : "starting"));
         if (validTrial) {
             mechanisms.start(Constants.Shooter.ROLLER_DIRECTION_SIGN * speedRps, hoodPositionRot);
         }

@@ -102,10 +102,12 @@ public class ShootCommand extends Command {
         if (state.indexerEnabled()) indexerSubsystem.enableRoller();
         else indexerSubsystem.disableRoller();
         SmartDashboard.putBoolean("Feed/Permitted", state.permitted());
+        SmartDashboard.putBoolean("Feed/ReadinessChecksEnabled", Constants.ShotMap.FEED_INTERLOCK_ENABLED);
         SmartDashboard.putBoolean("Feed/OverrideActive", state.overrideActive());
         SmartDashboard.putString("Feed/Reason", state.reason());
         SmartDashboard.putNumber("Feed/TransitionTimestampSec", state.transitionTimestampSec());
-        SmartDashboard.putString("Feed/Blockers", readiness.blockerSummary());
+        SmartDashboard.putString("Feed/Blockers", state.permitted() ? "" : state.reason());
+        SmartDashboard.putString("Feed/ReadinessWarnings", readiness.ready() ? "" : readiness.blockerSummary());
         SmartDashboard.putBoolean(
             "Feed/VisionDegradedWarning",
             readiness.visionDegraded(Constants.Turret.MAX_VISION_AGE_FOR_SHOT_SEC)
