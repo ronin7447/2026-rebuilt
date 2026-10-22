@@ -57,12 +57,12 @@ public final class Constants {
         public static final double SUPPLY_CURRENT_LIMIT_A = 20.0; // Battery-current limit in amps.
         public static final double STALL_VEL_RPS = 0.25; // Maximum motor rot/s considered stalled; not a normal-move cutoff.
         public static final double STALL_TIME_S = 0.10; // Continuous low-speed/high-current dwell for stall detection.
-        public static final double KS = 0.15; // Static-friction feedforward in volts.
-        public static final double KV = 0.12; // Velocity feedforward in V/(motor rot/s).
-        public static final double KA = 0.01; // Acceleration feedforward in V/(motor rot/s^2).
-        public static final double KP = 5.75; // Position feedback gain in V/motor rotation.
-        public static final double KI = 1.075; // Integral position gain in V/(motor rotation * s).
-        public static final double KD = 0.50; // Derivative position gain in V/(motor rot/s).
+        public static final double KS = 0.18; // Static-friction feedforward in volts.
+        public static final double KV = 0.0; // Velocity feedforward in V/(motor rot/s).
+        public static final double KA = 0.0; // Acceleration feedforward in V/(motor rot/s^2).
+        public static final double KP = 10.0; // Position feedback gain in V/motor rotation.
+        public static final double KI = 0.0; // Integral position gain in V/(motor rotation * s).
+        public static final double KD = 0.90; // Derivative position gain in V/(motor rot/s).
 
         public static final double CRUISE_VELOCITY = 90.0; // Motion Magic cruise cap in motor rot/s; also used by the hood.
         public static final double ACCELERATION = 700.0; // Motion Magic acceleration cap in motor rot/s^2; also used by the hood.
