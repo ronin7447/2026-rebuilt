@@ -54,7 +54,7 @@ public final class Constants {
         public static final int TURRET_KRAKEN_ID = 37; // Turret motor CAN ID on CANivore1.
         public static final double STALL_CURRENT_A = 6.0; // Minimum stator amps for the optional stall detector.
         public static final double STATOR_CURRENT_LIMIT_A = 50.0; // Motor torque/heating limit in amps.
-        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0; // Battery-current limit in amps.
+        public static final double SUPPLY_CURRENT_LIMIT_A = 15.0; // Battery-current limit in amps.
         public static final double STALL_VEL_RPS = 0.25; // Maximum motor rot/s considered stalled; not a normal-move cutoff.
         public static final double STALL_TIME_S = 0.10; // Continuous low-speed/high-current dwell for stall detection.
         public static final double KS = 0.18; // Static-friction feedforward in volts.
@@ -62,7 +62,7 @@ public final class Constants {
         public static final double KA = 0.03; // Acceleration feedforward in V/(motor rot/s^2).
         public static final double KP = 10.0; // Position feedback gain in V/motor rotation.
         public static final double KI = 0.0; // Integral position gain in V/(motor rotation * s).
-        public static final double KD = 0.90; // Derivative position gain in V/(motor rot/s).
+        public static final double KD = 0.88; // Derivative position gain in V/(motor rot/s).
 
         public static final double CRUISE_VELOCITY = 90.0; // Motion Magic cruise cap in motor rot/s; also used by the hood.
         public static final double ACCELERATION = 700.0; // Motion Magic acceleration cap in motor rot/s^2; also used by the hood.
@@ -80,6 +80,13 @@ public final class Constants {
         public static final double TRACKING_WINDOW_SEC = 1.0; // Rolling window for turret tracking-error metrics.
         public static final double STEP_ERROR_DEADBAND_DEG = 0.15; // Ignore smaller errors when counting oscillation sign changes.
         public static final double STEP_SETTLE_TIME_SEC = 0.10; // Continuous tolerance dwell before recording first settled time.
+
+        public static final boolean TARGET_STABILIZATION_ENABLED = true; // Master switch for target hysteresis, revalidated shot reuse, and goal deadband; false restores raw aiming.
+        public static final double TARGET_SWITCH_CONFIRM_SEC = 0.10; // A different target must remain selected this long before switching.
+        public static final double PASSBACK_SWITCH_ADVANTAGE_METERS = 0.15; // New passback target must be this much nearer in Y before switching.
+        public static final double PREVIOUS_SOLUTION_MAX_AGE_SEC = 0.10; // Maximum time since a fresh solution for reuse; every reused shot is fully revalidated.
+        public static final double GOAL_DEADBAND_DEG = 0.15; // Ignore smaller accumulated goal changes; zero disables the deadband without delaying normal tracking.
+        public static final double STABILIZATION_MAX_SAMPLE_GAP_SEC = 0.10; // Reset goal/target history after a larger sample gap or clock reversal.
         
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0; // Aim tolerance in turret turns; currently unused.
 
@@ -266,7 +273,7 @@ public final class Constants {
         public static final double EXTENSION_COLLAPSE_ACCELERATION = 400.0; // Retract acceleration cap in motor rot/s^2.
         public static final double EXTENSION_COLLAPSE_JERK = 4000.0; // Retract jerk cap in motor rot/s^3; zero removes S-curve smoothing.
         public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 100.0; // Torque/heating limit in amps per pivot motor.
-        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 60.0; // Battery-current limit in amps per pivot motor.
+        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 30.0; // Battery-current limit in amps per pivot motor.
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 30.0; // Intake roller torque/heating limit in amps.
         public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 20.0; // Intake roller battery-current limit in amps.
         public static final double INTAKE_STALL_CURRENT = 6.0; // Minimum master stator amps for homing/anti-jam stall detection.
@@ -286,7 +293,7 @@ public final class Constants {
         public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25; // Maximum wait for each anti-jam position step.
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
 
-        public static final double ROLLER_VELOCITY = 90.0; // Forward intake roller target in motor rot/s.
+        public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
     }
 
     public static final class Shooter {
@@ -295,7 +302,7 @@ public final class Constants {
         public static final double HOOD_STATOR_CURRENT_LIMIT_A = 40.0; // Hood torque/heating limit in amps.
         public static final double HOOD_SUPPLY_CURRENT_LIMIT_A = 25.0; // Hood battery-current limit in amps.
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 70.0; // Flywheel torque/heating limit in amps.
-        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 55.0; // Flywheel battery-current limit in amps.
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 35.0; // Flywheel battery-current limit in amps.
 
         public static final double KS = 0.25; // Static-friction feedforward in volts.
         public static final double KV = 0.12; // Velocity feedforward in V/(motor rot/s).
@@ -352,7 +359,7 @@ public final class Constants {
         public static final double MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(900.0); // Prediction angular-acceleration clamp; feed still checks raw acceleration.
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65; // Unused advisory scale; current drive limits use Drivebase settings.
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55; // Unused advisory scale; current yaw limits use Drivebase settings.
-        public static final boolean FEED_INTERLOCK_ENABLED = false; // Temporary bypass for normal/autonomous/calibration feed; true restores shot-readiness checks.
+        public static final boolean FEED_INTERLOCK_ENABLED = false; // Master feed-readiness switch: true gates normal/autonomous/calibration feed; false bypasses shot readiness. Motor guards and calibration input validation remain.
         public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
         public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025; // Extra delay before spindexer start; force feed skips it.

@@ -222,7 +222,8 @@ public class TurretSubsystem extends SubsystemBase {
         return positionSignal.getStatus().isOK()
             && positionSignal.getTimestamp().isValid()
             && positionSignal.getTimestamp().getLatency() <= Constants.Shooter.MAX_MECHANISM_FEEDBACK_AGE_SEC
-            && Math.abs(getTurretAimErrorDeg()) <= Constants.Turret.AIM_TOLERANCE_DEG;
+            && Math.abs(getTurretAimErrorDeg()) <= Constants.Turret.AIM_TOLERANCE_DEG
+            && Math.abs(desiredTurretAngle.minus(getTurretAngle()).getDegrees()) <= Constants.Turret.AIM_TOLERANCE_DEG;
     }
 
     public boolean isTurretAtAimGoal() {
@@ -244,12 +245,18 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void setTurretGoal(Rotation2d goal) {
-        if (goal == null || !Double.isFinite(goal.getRotations())) {
+        setTurretGoal(goal, getTurretPositionRotations());
+    }
+
+    /** A legal reference lets continuous auto aim retain its chosen cable-wrap branch. */
+    public void setTurretGoal(Rotation2d goal, double referenceRotations) {
+        if (goal == null || !Double.isFinite(goal.getRotations()) || !Double.isFinite(referenceRotations)) {
             movingShotSolutionValid = false;
             robustShotReason = "nonfinite-turret-goal";
             return;
         }
-        Rotation2d clampedGoal = wrapTurretAngleToLegalRange(goal);
+        Rotation2d clampedGoal = Rotation2d.fromRotations(TurretMath.getNearestEquivalentLegalTurretRotation(
+            goal.getRotations(), referenceRotations, Constants.Turret.SOFT_LIMIT_LOW, Constants.Turret.SOFT_LIMIT_HIGH));
         desiredTurretAngle = goal;
         goalClampedBySoftwareLimit = Math.abs(clampedGoal.minus(goal).getDegrees()) > 1e-3;
         setTargetTurretRotation(clampedGoal.getRotations());

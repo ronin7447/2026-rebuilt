@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -22,12 +23,16 @@ import frc.robot.util.AutoAimTargeting;
 import frc.robot.util.LinearShooterCalibration;
 import frc.robot.util.ShooterCalibration;
 import frc.robot.util.ShooterKinematics;
+import frc.robot.util.StableAutoAimTargetSelector;
+import frc.robot.util.TurretGoalStabilizer;
+import frc.robot.util.sotm.CommandSource;
 import frc.robot.util.sotm.RobustShotModel;
 import frc.robot.util.sotm.RobustShotRequest;
 import frc.robot.util.sotm.RobustShotSolution;
 import frc.robot.util.sotm.ShotMotionState;
 import frc.robot.util.sotm.ShotQuality;
 import frc.robot.util.sotm.ShotTargetConstraints;
+import frc.robot.util.sotm.StableShotSolutionSelector;
 
 public class AutoAimTurretCommand extends Command {
     private final CommandSwerveDrivetrain drivetrain;
@@ -35,6 +40,16 @@ public class AutoAimTurretCommand extends Command {
     private final TurretSubsystem turret;
     private final ShooterSubsystem shooter;
     private final ShooterCalibration shooterCalibration = new LinearShooterCalibration();
+    private final StableAutoAimTargetSelector targetSelector = new StableAutoAimTargetSelector(
+        Constants.Turret.TARGET_SWITCH_CONFIRM_SEC, Constants.Turret.PASSBACK_SWITCH_ADVANTAGE_METERS,
+        Constants.Turret.STABILIZATION_MAX_SAMPLE_GAP_SEC);
+    private final TurretGoalStabilizer goalStabilizer = new TurretGoalStabilizer(
+        Constants.Turret.GOAL_DEADBAND_DEG, Constants.Turret.STABILIZATION_MAX_SAMPLE_GAP_SEC,
+        Constants.Turret.SOFT_LIMIT_LOW, Constants.Turret.SOFT_LIMIT_HIGH);
+    private final StableShotSolutionSelector solutionSelector = new StableShotSolutionSelector(
+        Constants.Turret.PREVIOUS_SOLUTION_MAX_AGE_SEC);
+    private AutoAimTargeting.TargetSelection lastTarget;
+    private DriverStation.Alliance lastAlliance;
 
     public AutoAimTurretCommand(
         CommandSwerveDrivetrain drivetrain,
@@ -50,13 +65,32 @@ public class AutoAimTurretCommand extends Command {
     }
 
     @Override
+    public void initialize() {
+        resetStabilization();
+    }
+
+    private void resetStabilization() {
+        targetSelector.reset();
+        goalStabilizer.reset();
+        solutionSelector.reset();
+        lastTarget = null;
+        lastAlliance = null;
+        SmartDashboard.putBoolean("Turret/Stabilization/RevalidatedPrevious", false);
+        SmartDashboard.putString("Turret/Stabilization/Status", "reset");
+    }
+
+    @Override
     public void execute() {
+        double nowSec = Utils.getCurrentTimeSeconds();
+        boolean stabilize = Constants.Turret.TARGET_STABILIZATION_ENABLED;
+        SmartDashboard.putBoolean("Turret/Stabilization/Enabled", stabilize);
         var motionEstimate = drivetrain.getShotMotionEstimate();
-        double motionAgeSec = Utils.getCurrentTimeSeconds() - motionEstimate.timestampSec();
+        double motionAgeSec = nowSec - motionEstimate.timestampSec();
         if (Constants.ShotMap.USE_ROBUST_SOTM && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK
             && (motionEstimate.motion() == null || !motionEstimate.derivativeValid()
                 || !Double.isFinite(motionAgeSec) || motionAgeSec < 0.0
                 || motionAgeSec > Constants.ShotMap.MAX_MOTION_AGE_SEC)) {
+            resetStabilization();
             turret.holdCurrentPosition();
             turret.invalidateAimState("invalid-shot-motion");
             return;
@@ -77,10 +111,12 @@ public class AutoAimTurretCommand extends Command {
         boolean autoAimAllowedMode = DriverStation.isTeleopEnabled() || DriverStation.isAutonomousEnabled();
 
         if (!turret.getPositionMode()) {
+            resetStabilization();
             turret.invalidateAimState("turret-position-mode-disabled");
             return;
         }
         if (!autoAimAllowedMode || turret.isAutoAimSuppressed()) {
+            resetStabilization();
             turret.holdCurrentPosition();
             publishAimState(
                 AutoAimTargeting.TargetMode.HOLD.name(),
@@ -102,6 +138,7 @@ public class AutoAimTurretCommand extends Command {
         }
 
         if (allianceOpt.isEmpty()) {
+            resetStabilization();
             turret.park();
             publishAimState(
                 AutoAimTargeting.TargetMode.PARK.name(),
@@ -123,11 +160,14 @@ public class AutoAimTurretCommand extends Command {
         }
 
         DriverStation.Alliance alliance = allianceOpt.get();
-        AutoAimTargeting.TargetSelection targetSelection = AutoAimTargeting.selectTarget(
-            alliance,
-            robotPose.getTranslation(),
-            robotPose.getY()
-        );
+        AutoAimTargeting.TargetSelection targetSelection = targetSelector.select(
+            alliance, robotPose.getTranslation(), nowSec, stabilize);
+        if (lastAlliance != alliance || !targetSelection.equals(lastTarget)) {
+            goalStabilizer.reset();
+            solutionSelector.reset();
+        }
+        lastAlliance = alliance;
+        lastTarget = targetSelection;
         Translation2d selectedTargetPoint = targetSelection.targetPoint();
         Translation3d selectedTargetPoint3d = targetSelection.targetPoint3d();
         Rotation2d stationaryDesiredTurretAngle = AimMath.computeDesiredTurretAngle(
@@ -141,6 +181,7 @@ public class AutoAimTurretCommand extends Command {
         boolean inNeutralZone = targetSelection.inNeutralZone();
 
         if (targetSelection.targetMode() == AutoAimTargeting.TargetMode.HOLD) {
+            resetStabilization();
             turret.holdCurrentPosition();
             publishAimState(
                 targetSelection.targetMode().name(),
@@ -192,11 +233,13 @@ public class AutoAimTurretCommand extends Command {
 
         if (Constants.ShotMap.USE_ROBUST_SOTM
             && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK) {
+            shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
+                ? "RobustShotMap" : "ReferencePassback";
             ShotMotionState motionState = motionEstimate.motion();
             ShotTargetConstraints targetConstraints = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
                 ? ShotTargetConstraints.hub(selectedTargetPoint3d.getZ())
                 : ShotTargetConstraints.passback(selectedTargetPoint3d.getZ());
-            robustShotSolution = RobustShotModel.solve(new RobustShotRequest(
+            RobustShotRequest robustRequest = new RobustShotRequest(
                 motionState,
                 Constants.Turret.ROBOT_TO_TURRET_PIVOT,
                 Constants.Shooter.EXIT_HEIGHT_METERS,
@@ -207,7 +250,9 @@ public class AutoAimTurretCommand extends Command {
                 Constants.Shooter.MAX_EXIT_SPEED_MPS,
                 Constants.ShotMap.BASE_RELEASE_LATENCY_SEC + motionAgeSec,
                 targetConstraints
-            ));
+            );
+            robustShotSolution = solutionSelector.select(robustRequest,
+                RobustShotModel.solve(robustRequest), nowSec, stabilize);
 
             if (robustShotSolution.isPresent() && robustShotSolution.get().quality().insideTolerance()) {
                 RobustShotSolution solution = robustShotSolution.get();
@@ -217,9 +262,6 @@ public class AutoAimTurretCommand extends Command {
                 mappedRollerRps = OptionalDouble.of(solution.rollerRps());
                 mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
                 mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
-                shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
-                    ? "RobustShotMap"
-                    : "ReferencePassback";
                 movingShotSolution = Optional.of(new ShooterKinematics.MovingShotSolution(
                     solution.desiredFieldYaw(),
                     solution.desiredTurretYaw(),
@@ -255,8 +297,27 @@ public class AutoAimTurretCommand extends Command {
             mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
         }
 
+        boolean holdingInvalid = stabilize && Constants.ShotMap.USE_ROBUST_SOTM
+            && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK && movingShotSolution.isEmpty();
+        if (holdingInvalid) {
+            // Do not alternate compensated and stationary aim when trajectory validity flickers.
+            // This is only a bounded motor-position hold; it never counts as a valid shot.
+            commandedTurretAngle = turret.getTurretGoal();
+            desiredFieldYaw = commandedTurretAngle.plus(robotPose.getRotation());
+        }
+        Rotation2d rawGoal = commandedTurretAngle;
+        Rotation2d stableGoal = goalStabilizer.calculate(rawGoal, turret.getTurretPositionRotations(), nowSec, stabilize);
+        if (stabilize) turret.setTurretGoal(stableGoal, stableGoal.getRotations());
+        else turret.setTurretGoal(rawGoal);
+        SmartDashboard.putNumber("Turret/Stabilization/RawGoalDeg", rawGoal.getDegrees());
+        SmartDashboard.putNumber("Turret/Stabilization/CommandedGoalDeg", turret.getTurretGoal().getDegrees());
+        SmartDashboard.putNumber("Turret/Stabilization/CorrectionDeg", stableGoal.minus(rawGoal).getDegrees());
+        boolean reusingPrevious = robustShotSolution.isPresent()
+            && robustShotSolution.get().commandSource() == CommandSource.REVALIDATED_PREVIOUS;
+        SmartDashboard.putBoolean("Turret/Stabilization/RevalidatedPrevious", reusingPrevious);
+        SmartDashboard.putString("Turret/Stabilization/Status", !stabilize ? "disabled"
+            : (holdingInvalid ? "holding-invalid-shot" : (reusingPrevious ? "revalidated-previous" : "tracking")));
         publishRobustShotTelemetry(shotModelName, robustShotSolution);
-        turret.setTurretGoal(commandedTurretAngle);
         publishAimState(
             targetSelection.targetMode().name(),
             alliance.name(),
@@ -267,7 +328,7 @@ public class AutoAimTurretCommand extends Command {
             true,
             pivotFieldPosition,
             selectedTargetPoint,
-            commandedTurretAngle,
+            rawGoal,
             desiredFieldYaw,
             movingShotSolution,
             mappedHoodPosition,
@@ -314,6 +375,7 @@ public class AutoAimTurretCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        resetStabilization();
         turret.holdCurrentPosition();
         turret.invalidateAimState(interrupted ? "command-interrupted" : "command-ended");
     }

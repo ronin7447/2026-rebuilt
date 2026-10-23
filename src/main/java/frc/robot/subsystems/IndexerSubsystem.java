@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.util.ConfigurationHealth;
@@ -15,7 +16,7 @@ public class IndexerSubsystem extends SubsystemBase {
     private final TalonFX rollerKraken;
     
     private final MotionMagicVelocityVoltage rollerVel = new MotionMagicVelocityVoltage(0.0);
-    private double targetRollerVelRps = Constants.Outtake.ROLLER_VELOCITY;
+    private double targetRollerVelRps = Constants.Indexer.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
     private final boolean configured;
 
@@ -89,11 +90,17 @@ public class IndexerSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-
+        String controlStatus = "disabled";
         if (rollerEnabled && configured && rollerKraken != null) {
-            rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
+            controlStatus = rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps)).getName();
         } else if (!configured) {
             rollerKraken.stopMotor();
+            controlStatus = "configuration-failed";
         }
+        SmartDashboard.putBoolean("Spindexer/Configured", configured);
+        SmartDashboard.putBoolean("Spindexer/Enabled", rollerEnabled);
+        SmartDashboard.putNumber("Spindexer/TargetRPS", targetRollerVelRps);
+        SmartDashboard.putNumber("Spindexer/ActualRPS", getRollerVelocity());
+        SmartDashboard.putString("Spindexer/ControlStatus", controlStatus);
     }
 }

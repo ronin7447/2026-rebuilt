@@ -149,19 +149,45 @@ class FeedSequencerTest {
     }
 
     @Test
-    void interlockOffStillStopsForDisabledRobotDisabledShooterAndInvalidSetpoints() {
-        for (int failedGuard = 0; failedGuard < 3; failedGuard++) {
-            var sequencer = new FeedSequencer(0.10, 0.05, 0.025);
-            sequencer.update(0, ready(), false, false);
-            assertTrue(sequencer.update(0.075, ready(), false, false).indexerEnabled());
-            var unsafe = new ShotReadinessSnapshot(0, failedGuard != 0, true, 0,
-                failedGuard != 1, true, true, true, true, true, true, failedGuard != 2,
-                0, List.of("basic-feed-protection"));
-            var stopped = sequencer.update(0.10, unsafe, false, false);
+    void interlockOffFeedsWithStartupHoodOutsideShotMapAndUnavailableShooter() {
+        // Hood startup/home is 0, outside the negative modeled shooting interval.
+        // This snapshot also covers no valid solver result and unavailable flywheel readiness.
+        var startup = ShotReadinessSnapshot.evaluate(0, true, false, Double.POSITIVE_INFINITY,
+            false, false, true, false, false, false, false, false,
+            Double.POSITIVE_INFINITY, 0.10);
+        assertTrue(startup.blockers().contains("invalid-setpoint"));
+        assertFalse(startup.overrideSafe());
+        var sequencer = new FeedSequencer(0.10, 0.05, 0.025);
+        assertTrue(sequencer.update(0, startup, false, false).permitted());
+        assertTrue(sequencer.update(0.075, startup, false, false).indexerEnabled());
+        assertTrue(sequencer.update(0.10, startup, false, false).outtakeEnabled());
+        assertFalse(sequencer.update(0.12, startup, false, true).permitted());
+    }
+
+    @Test
+    void interlockOffAndOverrideStillStopWhenRobotIsDisabled() {
+        var disabled = ShotReadinessSnapshot.evaluate(0, false, false, Double.POSITIVE_INFINITY,
+            false, false, false, false, false, false, false, false, 0, 0.10);
+        var sequencer = new FeedSequencer(0.10, 0.05, 0.025);
+        sequencer.update(0, ready(), false, false);
+        assertTrue(sequencer.update(0.075, ready(), false, false).indexerEnabled());
+        for (boolean override : new boolean[] {false, true}) {
+            var stopped = sequencer.update(0.10, disabled, override, false);
             assertFalse(stopped.permitted());
+            assertFalse(stopped.overrideActive());
             assertFalse(stopped.outtakeEnabled());
             assertFalse(stopped.indexerEnabled());
         }
+    }
+
+    @Test
+    void interlockOffOverrideIsImmediateDespiteInvalidShotSetpoints() {
+        var startup = ShotReadinessSnapshot.evaluate(0, true, false, 99,
+            false, false, false, false, false, false, false, false, 0, 0.10);
+        var forced = new FeedSequencer(0.10, 0.05, 0.025).update(0, startup, true, false);
+        assertTrue(forced.overrideActive());
+        assertTrue(forced.outtakeEnabled());
+        assertTrue(forced.indexerEnabled());
     }
 
     @Test

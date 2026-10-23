@@ -50,6 +50,9 @@ recovery delay** in this A/B command.
 
 Normal right-trigger shooting remains bound and uses the same readiness switch;
 it retains its 50 ms outtake and additional 25 ms spindexer startup staging.
+With the switch false, normal/autonomous feed requires only that the robot is
+enabled; it does not check the flywheel, hood, turret, or shot solution. Motor
+configuration guards and current/soft limits remain local to each subsystem.
 The right-stick override skips that staging. Switching between normal shooting
 and calibration interrupts the previous command. Start and turret POV controls
 are ignored during a trial or while B/Back is held. Drivetrain and

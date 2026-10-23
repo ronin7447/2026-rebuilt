@@ -4,5 +4,6 @@ package frc.robot.util.sotm;
 public enum CommandSource {
     GENERATED_POLYNOMIAL,
     DIRECT_CANDIDATE,
+    REVALIDATED_PREVIOUS,
     NONE
 }
