@@ -66,7 +66,7 @@ public final class Constants {
 
         public static final double CRUISE_VELOCITY = 90.0; // Motion Magic cruise cap in motor rot/s; also used by the hood.
         public static final double ACCELERATION = 700.0; // Motion Magic acceleration cap in motor rot/s^2; also used by the hood.
-        public static final double JERK = 4000.0; // Motion Magic jerk cap in motor rot/s^3; also used by the hood.
+        public static final double JERK = 12000.0; // Motion Magic jerk cap in motor rot/s^3; also used by the hood.
         public static final double MOTOR_ROTATIONS_PER_TURRET_ROTATION = 4; // Motor turns per turret turn; configured 100:25 reduction.
         public static final double POSITIVE_TURRET_YAW_MOTOR_SIGN = -1.0; // Motor direction corresponding to positive turret yaw.
         public static final Translation2d ROBOT_TO_TURRET_PIVOT = new Translation2d(-0.1651, -0.2159); // Pivot offset in robot-frame meters: +X forward, +Y left.
