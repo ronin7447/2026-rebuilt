@@ -58,9 +58,9 @@ public final class Constants {
         public static final double STALL_VEL_RPS = 0.25; // Maximum motor rot/s considered stalled; not a normal-move cutoff.
         public static final double STALL_TIME_S = 0.10; // Continuous low-speed/high-current dwell for stall detection.
         public static final double KS = 0.18; // Static-friction feedforward in volts.
-        public static final double KV = 0.0; // Velocity feedforward in V/(motor rot/s).
-        public static final double KA = 0.0; // Acceleration feedforward in V/(motor rot/s^2).
-        public static final double KP = 9.0; // Position feedback gain in V/motor rotation.
+        public static final double KV = 0.16; // Velocity feedforward in V/(motor rot/s).
+        public static final double KA = 0.03; // Acceleration feedforward in V/(motor rot/s^2).
+        public static final double KP = 10.0; // Position feedback gain in V/motor rotation.
         public static final double KI = 0.0; // Integral position gain in V/(motor rotation * s).
         public static final double KD = 0.88; // Derivative position gain in V/(motor rot/s).
 
