@@ -20,6 +20,17 @@ public final class RobustShotModel {
     private RobustShotModel() {}
 
     public static Optional<RobustShotSolution> solve(RobustShotRequest request) {
+        return solve(request, null);
+    }
+
+    /** Recomputes release state, motion/tilt compensation and all trajectory checks for an old shot. */
+    public static Optional<RobustShotSolution> revalidate(RobustShotRequest request, RobustShotSolution previous) {
+        if (previous == null || previous.quality() == null || !previous.quality().insideTolerance()
+            || previous.launchVectorField() == null) return Optional.empty();
+        return solve(request, previous);
+    }
+
+    private static Optional<RobustShotSolution> solve(RobustShotRequest request, RobustShotSolution previous) {
         long startNanos = System.nanoTime();
         if (request == null
             || request.motionState() == null
@@ -71,7 +82,9 @@ public final class RobustShotModel {
 
         double radialVelocityMps = velocityComponents.radialVelocityMps();
         double tangentialVelocityMps = velocityComponents.tangentialVelocityMps();
-        Optional<ShotCommand> shotCommand = shotCommandForInput(request, distanceMeters, radialVelocityMps);
+        Optional<ShotCommand> shotCommand = previous == null
+            ? shotCommandForInput(request, distanceMeters, radialVelocityMps)
+            : previousShotCommand(request, previous, distanceMeters, radialVelocityMps);
         if (shotCommand.isEmpty()) {
             String reason = distanceMeters < GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
                 ? "outside-shot-map-domain-close-range-no-direct-shot"
@@ -320,6 +333,29 @@ public final class RobustShotModel {
         }
 
         return Optional.empty();
+    }
+
+    private static Optional<ShotCommand> previousShotCommand(RobustShotRequest request,
+        RobustShotSolution previous, double distanceMeters, double radialVelocityMps) {
+        ShotTargetConstraints constraints = request.targetConstraints();
+        if (distanceMeters < constraints.minDistanceMeters() || distanceMeters > constraints.maxDistanceMeters()
+            || radialVelocityMps < constraints.minRadialVelocityMps()
+            || radialVelocityMps > constraints.maxRadialVelocityMps()) return Optional.empty();
+        Translation3d vector = previous.launchVectorField();
+        // The stored local hood angle includes the old tilt. Recover the field pitch instead,
+        // then apply the current orientation later in the same path as a fresh solution.
+        double fieldPitchDeg = Math.toDegrees(Math.atan2(vector.getZ(), Math.hypot(vector.getX(), vector.getY())));
+        double baseHood = hoodPositionForLaunchAngleDeg(fieldPitchDeg);
+        double rps = previous.rollerRps();
+        if (!Double.isFinite(baseHood) || !Double.isFinite(rps)
+            || baseHood < request.minHoodPositionRot() - EPSILON
+            || baseHood > request.maxHoodPositionRot() + EPSILON) {
+            return Optional.empty();
+        }
+        baseHood = Math.max(request.minHoodPositionRot(), Math.min(baseHood, request.maxHoodPositionRot()));
+        return Optional.of(new ShotCommand(baseHood, rps, rollerRpsToExitSpeedMps(rps),
+            GeneratedShotMapCoefficients.estimateRobustnessMargin(distanceMeters, radialVelocityMps),
+            CommandSource.REVALIDATED_PREVIOUS));
     }
 
     private static Optional<ShotCommand> solveDirectShot(

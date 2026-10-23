@@ -80,6 +80,13 @@ public final class Constants {
         public static final double TRACKING_WINDOW_SEC = 1.0; // Rolling window for turret tracking-error metrics.
         public static final double STEP_ERROR_DEADBAND_DEG = 0.15; // Ignore smaller errors when counting oscillation sign changes.
         public static final double STEP_SETTLE_TIME_SEC = 0.10; // Continuous tolerance dwell before recording first settled time.
+
+        public static final boolean TARGET_STABILIZATION_ENABLED = true; // Master switch for target hysteresis, revalidated shot reuse, and goal deadband; false restores raw aiming.
+        public static final double TARGET_SWITCH_CONFIRM_SEC = 0.10; // A different target must remain selected this long before switching.
+        public static final double PASSBACK_SWITCH_ADVANTAGE_METERS = 0.15; // New passback target must be this much nearer in Y before switching.
+        public static final double PREVIOUS_SOLUTION_MAX_AGE_SEC = 0.10; // Maximum time since a fresh solution for reuse; every reused shot is fully revalidated.
+        public static final double GOAL_DEADBAND_DEG = 0.15; // Ignore smaller accumulated goal changes; zero disables the deadband without delaying normal tracking.
+        public static final double STABILIZATION_MAX_SAMPLE_GAP_SEC = 0.10; // Reset goal/target history after a larger sample gap or clock reversal.
         
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0; // Aim tolerance in turret turns; currently unused.
 
@@ -352,7 +359,7 @@ public final class Constants {
         public static final double MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(900.0); // Prediction angular-acceleration clamp; feed still checks raw acceleration.
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65; // Unused advisory scale; current drive limits use Drivebase settings.
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55; // Unused advisory scale; current yaw limits use Drivebase settings.
-        public static final boolean FEED_INTERLOCK_ENABLED = false; // Normal/autonomous feed requires only robot enable; calibration still validates trial inputs. True restores readiness gates.
+        public static final boolean FEED_INTERLOCK_ENABLED = false; // Master feed-readiness switch: true gates normal/autonomous/calibration feed; false bypasses shot readiness. Motor guards and calibration input validation remain.
         public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
         public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025; // Extra delay before spindexer start; force feed skips it.
