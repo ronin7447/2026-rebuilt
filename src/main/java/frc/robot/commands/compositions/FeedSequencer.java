@@ -34,7 +34,8 @@ public final class FeedSequencer {
         boolean overrideRequested,
         boolean interlockEnabled
     ) {
-        boolean overrideActive = overrideRequested && readiness.overrideSafe();
+        boolean overrideActive = overrideRequested
+            && (interlockEnabled ? readiness.overrideSafe() : readiness.enabledOperation());
         if (overrideActive) {
             // Force feed skips readiness, stability dwell and all startup/recovery staging.
             // Releasing override returns to automatic readiness and recovery staging.
@@ -44,7 +45,9 @@ public final class FeedSequencer {
             setState(nowSec, true, true, true, true, "manual-override");
             return state;
         }
-        boolean permitted = interlockEnabled ? readiness.ready() : readiness.overrideSafe();
+        // A disabled interlock must not depend on any shooter/hood/turret readiness.
+        // Each motor subsystem still enforces its own configuration and actuator limits.
+        boolean permitted = interlockEnabled ? readiness.ready() : readiness.enabledOperation();
         if (!permitted) {
             if (Double.isFinite(stagingStartSec) || Double.isFinite(stableReadySinceSec)) recoveryRequired = true;
             stableReadySinceSec = Double.NaN;

@@ -60,9 +60,9 @@ public final class Constants {
         public static final double KS = 0.18; // Static-friction feedforward in volts.
         public static final double KV = 0.0; // Velocity feedforward in V/(motor rot/s).
         public static final double KA = 0.0; // Acceleration feedforward in V/(motor rot/s^2).
-        public static final double KP = 10.0; // Position feedback gain in V/motor rotation.
+        public static final double KP = 9.0; // Position feedback gain in V/motor rotation.
         public static final double KI = 0.0; // Integral position gain in V/(motor rotation * s).
-        public static final double KD = 0.90; // Derivative position gain in V/(motor rot/s).
+        public static final double KD = 0.88; // Derivative position gain in V/(motor rot/s).
 
         public static final double CRUISE_VELOCITY = 90.0; // Motion Magic cruise cap in motor rot/s; also used by the hood.
         public static final double ACCELERATION = 700.0; // Motion Magic acceleration cap in motor rot/s^2; also used by the hood.
@@ -286,7 +286,7 @@ public final class Constants {
         public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25; // Maximum wait for each anti-jam position step.
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
 
-        public static final double ROLLER_VELOCITY = 90.0; // Forward intake roller target in motor rot/s.
+        public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
     }
 
     public static final class Shooter {
@@ -352,7 +352,7 @@ public final class Constants {
         public static final double MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(900.0); // Prediction angular-acceleration clamp; feed still checks raw acceleration.
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65; // Unused advisory scale; current drive limits use Drivebase settings.
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55; // Unused advisory scale; current yaw limits use Drivebase settings.
-        public static final boolean FEED_INTERLOCK_ENABLED = false; // Temporary bypass for normal/autonomous/calibration feed; true restores shot-readiness checks.
+        public static final boolean FEED_INTERLOCK_ENABLED = false; // Normal/autonomous feed requires only robot enable; calibration still validates trial inputs. True restores readiness gates.
         public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
         public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025; // Extra delay before spindexer start; force feed skips it.
