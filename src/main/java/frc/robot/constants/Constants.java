@@ -295,7 +295,7 @@ public final class Constants {
         public static final double HOOD_STATOR_CURRENT_LIMIT_A = 40.0; // Hood torque/heating limit in amps.
         public static final double HOOD_SUPPLY_CURRENT_LIMIT_A = 25.0; // Hood battery-current limit in amps.
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 70.0; // Flywheel torque/heating limit in amps.
-        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 45.0; // Flywheel battery-current limit in amps.
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 35.0; // Flywheel battery-current limit in amps.
 
         public static final double KS = 0.25; // Static-friction feedforward in volts.
         public static final double KV = 0.12; // Velocity feedforward in V/(motor rot/s).
