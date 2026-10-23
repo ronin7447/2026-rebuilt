@@ -54,7 +54,7 @@ public final class Constants {
         public static final int TURRET_KRAKEN_ID = 37; // Turret motor CAN ID on CANivore1.
         public static final double STALL_CURRENT_A = 6.0; // Minimum stator amps for the optional stall detector.
         public static final double STATOR_CURRENT_LIMIT_A = 50.0; // Motor torque/heating limit in amps.
-        public static final double SUPPLY_CURRENT_LIMIT_A = 20.0; // Battery-current limit in amps.
+        public static final double SUPPLY_CURRENT_LIMIT_A = 15.0; // Battery-current limit in amps.
         public static final double STALL_VEL_RPS = 0.25; // Maximum motor rot/s considered stalled; not a normal-move cutoff.
         public static final double STALL_TIME_S = 0.10; // Continuous low-speed/high-current dwell for stall detection.
         public static final double KS = 0.18; // Static-friction feedforward in volts.
@@ -266,7 +266,7 @@ public final class Constants {
         public static final double EXTENSION_COLLAPSE_ACCELERATION = 400.0; // Retract acceleration cap in motor rot/s^2.
         public static final double EXTENSION_COLLAPSE_JERK = 4000.0; // Retract jerk cap in motor rot/s^3; zero removes S-curve smoothing.
         public static final double EXTENSION_STATOR_CURRENT_LIMIT_A = 100.0; // Torque/heating limit in amps per pivot motor.
-        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 60.0; // Battery-current limit in amps per pivot motor.
+        public static final double EXTENSION_SUPPLY_CURRENT_LIMIT_A = 30.0; // Battery-current limit in amps per pivot motor.
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 30.0; // Intake roller torque/heating limit in amps.
         public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 20.0; // Intake roller battery-current limit in amps.
         public static final double INTAKE_STALL_CURRENT = 6.0; // Minimum master stator amps for homing/anti-jam stall detection.
@@ -295,7 +295,7 @@ public final class Constants {
         public static final double HOOD_STATOR_CURRENT_LIMIT_A = 40.0; // Hood torque/heating limit in amps.
         public static final double HOOD_SUPPLY_CURRENT_LIMIT_A = 25.0; // Hood battery-current limit in amps.
         public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 70.0; // Flywheel torque/heating limit in amps.
-        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 55.0; // Flywheel battery-current limit in amps.
+        public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 45.0; // Flywheel battery-current limit in amps.
 
         public static final double KS = 0.25; // Static-friction feedforward in volts.
         public static final double KV = 0.12; // Velocity feedforward in V/(motor rot/s).
