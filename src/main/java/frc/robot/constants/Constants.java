@@ -143,9 +143,9 @@ public final class Constants {
 
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
             new Translation3d(
-                Units.centimetersToMeters(-27.25),
-                Units.centimetersToMeters(26.50),
-                Units.centimetersToMeters(51.0)
+                -27.25 / 100.0,
+                26.50 / 100.0,
+                51.0 / 100.0
             ),
             new Rotation3d(
                 0.0,
@@ -159,9 +159,9 @@ public final class Constants {
 
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
             new Translation3d(
-                Units.centimetersToMeters(-21.25),
-                Units.centimetersToMeters(21.50),
-                Units.centimetersToMeters(51.0)
+                -21.25 / 100.0,
+                21.50 / 100.0,
+                51.0 / 100.0
             ),
             new Rotation3d(
                 0.0,
