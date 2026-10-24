@@ -306,25 +306,22 @@ public class RobotContainer {
         joystick.rightTrigger().whileTrue(createDriverShootCommand());
         SmartDashboard.putString("Feed/OverrideControl", "Hold right trigger + right-stick click to force feed immediately");
 
-        joystick.leftTrigger().whileTrue((Commands.sequence((Commands.runOnce(() -> {
-            // m_IntakeSubsystem.disableRoller();
-            m_IntakeSubsystem.runRoller(Constants.Intake.ROLLER_VELOCITY * -0.5);
-        })))));
-        joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IntakeSubsystem.disableRoller();
-        })))));
-        //  joystick.leftTrigger().onFalse((Commands.sequence((Commands.runOnce(() -> {
-        //     m_IntakeSubsystem.disableRoller();
-        // })))));
+        // Roller-only override deliberately shares no pivot requirement with intake/shoot commands.
+        joystick.leftTrigger().and(() -> DriverStation.isTeleopEnabled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean())
+            .whileTrue(Commands.startEnd(
+                () -> m_IntakeSubsystem.setRollerReverseRequested(true),
+                () -> m_IntakeSubsystem.setRollerReverseRequested(false)
+            ));
 
         // Sample speed only on a fresh A press. Holding/re-pressing A never restarts a trial.
-        joystick.a().onTrue(Commands.runOnce(() -> {
-            if (DriverStation.isTeleopEnabled() && calibrationControlsIdle()) {
-                CommandScheduler.getInstance().schedule(launchSpeedCalibration);
-            }
-        }));
+        // joystick.a().onTrue(Commands.runOnce(() -> {
+        //     if (DriverStation.isTeleopEnabled() && calibrationControlsIdle()) {
+        //         CommandScheduler.getInstance().schedule(launchSpeedCalibration);
+        //     }
+        // }));
         // Continuous stop while held gives B priority over simultaneous mechanism inputs.
-        joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
+        // joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
 
         joystick.povDown().onTrue(Commands.runOnce(
             () -> m_TurretSubsystem.setAutoAimSuppressed(false)
@@ -366,6 +363,7 @@ public class RobotContainer {
             m_TurretSubsystem.invalidateAimState("calibration-stopped");
             m_IntakeSubsystem.disableExtension();
             m_IntakeSubsystem.disableRoller();
+            m_IntakeSubsystem.setRollerReverseRequested(false);
         }, m_ShooterSubsystem, m_TurretSubsystem, m_OuttakeSubsystem,
             m_IndexerSubsystem, m_IntakeSubsystem)
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming);

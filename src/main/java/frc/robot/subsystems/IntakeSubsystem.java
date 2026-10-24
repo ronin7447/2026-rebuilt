@@ -15,6 +15,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -37,6 +38,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private boolean mmPosEnabled = false;
     private boolean rollerEnabled = false;
+    private boolean rollerReverseRequested = false;
     private int currentLevel = 0;
     private ExtensionProfile activeExtensionProfile = ExtensionProfile.EXTEND;
     private HomingStatus homingStatus = HomingStatus.NOT_RUN;
@@ -134,12 +136,9 @@ public class IntakeSubsystem extends SubsystemBase {
         return rollerKraken;
     }
 
-    public void runRoller(double vel) {
-        if (rollerConfigured && Double.isFinite(vel)) {
-            rollerKraken.setControl(rollerVel.withVelocity(vel));
-        } else {
-            rollerKraken.stopMotor();
-        }
+    /** Overrides only the roller; preserves the latest normal forward/stop request. */
+    public void setRollerReverseRequested(boolean reverse) {
+        rollerReverseRequested = reverse && rollerConfigured;
     }
 
     public double getIntakePosition() {
@@ -255,6 +254,7 @@ public class IntakeSubsystem extends SubsystemBase {
     public boolean beginHoming() {
         disableExtension();
         disableRoller();
+        setRollerReverseRequested(false);
         resetStallDetection();
         homingStatus = HomingStatus.RUNNING;
         if (extensionMasterConfigured && extensionFollowerConfigured) {
@@ -283,7 +283,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public boolean isRollerEnabled() {
-        return rollerEnabled;
+        return rollerEnabled || rollerReverseRequested;
     }
 
     @Override
@@ -299,13 +299,19 @@ public class IntakeSubsystem extends SubsystemBase {
         }
         // extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Aligned));
         
-        if (rollerEnabled && rollerConfigured) {
-
-            rollerKraken.setControl(rollerVel.withVelocity(Constants.Intake.ROLLER_VELOCITY));
-        } else {
-
-            rollerKraken.setControl(rollerVel.withVelocity(0));     
+        if (DriverStation.isDisabled()) {
+            rollerReverseRequested = false;
         }
+        double rollerTargetRps = rollerReverseRequested ? Constants.Intake.ROLLER_REVERSE_VELOCITY
+            : (rollerEnabled ? Constants.Intake.ROLLER_VELOCITY : 0.0);
+        if (rollerConfigured) {
+            rollerKraken.setControl(rollerVel.withVelocity(rollerTargetRps));
+        } else {
+            rollerKraken.stopMotor();
+        }
+
+        SmartDashboard.putBoolean("Intake/RollerReverseRequested", rollerReverseRequested);
+        SmartDashboard.putNumber("Intake/RollerTargetRPS", rollerTargetRps);
 
         SmartDashboard.putNumber("StatorCurrent-ExtensionMaster", getExtensionKrakenMaster().getStatorCurrent().getValueAsDouble());
         SmartDashboard.putNumber("StatorCurrent-ExtensionFollower", getExtensionKrakenFollower().getStatorCurrent().getValueAsDouble());
