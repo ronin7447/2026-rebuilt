@@ -1,0 +1,183 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.453095577746077,
+        "y": 0.5868473609129818
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.009457917261056,
+        "y": 0.5868473609129818
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.419771754636234,
+        "y": 0.858559201141228
+      },
+      "prevControl": {
+        "x": 5.347274231275447,
+        "y": 0.7156172832588976
+      },
+      "nextControl": {
+        "x": 6.683915675753327,
+        "y": 0.8937641669887199
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.66188302425107,
+        "y": 1.479614835948646
+      },
+      "prevControl": {
+        "x": 7.545435092724677,
+        "y": 1.2467189728958645
+      },
+      "nextControl": {
+        "x": 7.773686423126062,
+        "y": 1.7032216336986266
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 7.1960912981455065,
+        "y": 4.144978601997147
+      },
+      "prevControl": {
+        "x": 7.810938293450417,
+        "y": 3.4912093371516266
+      },
+      "nextControl": {
+        "x": 6.744585315097523,
+        "y": 4.625066716381198
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.0057346647646215,
+        "y": 3.756818830242511
+      },
+      "prevControl": {
+        "x": 5.962562918849818,
+        "y": 4.378491971415684
+      },
+      "nextControl": {
+        "x": 6.070427960057061,
+        "y": 2.825235378031384
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.721084165477888,
+        "y": 2.450014265335236
+      },
+      "prevControl": {
+        "x": 6.04386918448745,
+        "y": 2.454318065588697
+      },
+      "nextControl": {
+        "x": 4.750684736091298,
+        "y": 2.4370756062767476
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.4050641940085593,
+        "y": 2.566462196861627
+      },
+      "prevControl": {
+        "x": 4.349586305278173,
+        "y": 2.4758915834522113
+      },
+      "nextControl": {
+        "x": 3.078485271610605,
+        "y": 2.597777983940883
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.732253922967189,
+        "y": 2.566462196861627
+      },
+      "prevControl": {
+        "x": 2.983136445269214,
+        "y": 2.5191014158786365
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": null
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.6119402985074661,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 1.641791044776137,
+      "rotationDegrees": 65.22485943116827
+    },
+    {
+      "waypointRelativePos": 2.0,
+      "rotationDegrees": 88.91907581333946
+    },
+    {
+      "waypointRelativePos": 2.4440104166666656,
+      "rotationDegrees": 105.24480897279403
+    },
+    {
+      "waypointRelativePos": 3.3534813596491237,
+      "rotationDegrees": -167.47471035288677
+    },
+    {
+      "waypointRelativePos": 4.0,
+      "rotationDegrees": -97.59464336859158
+    },
+    {
+      "waypointRelativePos": 4.79355982730263,
+      "rotationDegrees": -91.0115362493031
+    },
+    {
+      "waypointRelativePos": 5.877004523026316,
+      "rotationDegrees": -91.31262277291898
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 4.5,
+    "maxAcceleration": 4.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0.8,
+    "rotation": -92.54480437981302
+  },
+  "reversed": false,
+  "folder": null,
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}
