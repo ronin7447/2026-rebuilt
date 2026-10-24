@@ -114,28 +114,60 @@ public final class Constants {
         public static final AprilTagFieldLayout FIELD_LAYOUT_OBJECT = AprilTagFieldLayout.loadField(AprilTagFields.k2026RebuiltWelded); // Loaded welded-field AprilTag geometry used by pose estimation.
         public static final boolean FORCE_ACCEPT_VISION_MEASUREMENTS = false; // Debug bypass of pose/ambiguity/age filters; timestamp sanity remains.
 
+        // /* AprilTag Camera 1 */
+        // public static final String APRILTAG_CAM1 = "APRILTAG_LEFT"; // PhotonVision name of the left camera.
+        // // Left camera pose in robot coordinates; translation meters, rotation radians.
+        // public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
+        //     new Translation3d(
+        //         Units.inchesToMeters(2.0),
+        //         Units.inchesToMeters(13.0),
+        //         Units.inchesToMeters(18.5)
+        //     ),
+        //     new Rotation3d(0.0, 0.0, Units.degreesToRadians(90.0))
+        // );
+
+        // /* AprilTag Camera 2 */
+        // public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT"; // PhotonVision name of the right camera.
+        // // Right camera pose in robot coordinates; translation meters, rotation radians.
+        // public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
+        //     new Translation3d(
+        //         Units.inchesToMeters(2.0),
+        //         Units.inchesToMeters(-13.0),
+        //         Units.inchesToMeters(17)
+        //     ),
+        //     new Rotation3d(0.0, 0.0, Units.degreesToRadians(-90.0))
+        // );
+
         /* AprilTag Camera 1 */
-        public static final String APRILTAG_CAM1 = "APRILTAG_LEFT"; // PhotonVision name of the left camera.
-        // Left camera pose in robot coordinates; translation meters, rotation radians.
+        public static final String APRILTAG_CAM1 = "APRILTAG_LEFT";
+
         public static final Transform3d ROBOT_TO_CAM1 = new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(2.0),
-                Units.inchesToMeters(13.0),
-                Units.inchesToMeters(18.5)
+                Units.centimetersToMeters(-27.25),
+                Units.centimetersToMeters(26.50),
+                Units.centimetersToMeters(51.0)
             ),
-            new Rotation3d(0.0, 0.0, Units.degreesToRadians(90.0))
+            new Rotation3d(
+                0.0,
+                Units.degreesToRadians(-10.0),  // Pitch: 10° upward
+                Units.degreesToRadians(135.0)   // Yaw: rear-left
+            )
         );
 
         /* AprilTag Camera 2 */
-        public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT"; // PhotonVision name of the right camera.
-        // Right camera pose in robot coordinates; translation meters, rotation radians.
+        public static final String APRILTAG_CAM2 = "APRILTAG_RIGHT";
+
         public static final Transform3d ROBOT_TO_CAM2 = new Transform3d(
             new Translation3d(
-                Units.inchesToMeters(2.0),
-                Units.inchesToMeters(-13.0),
-                Units.inchesToMeters(17)
+                Units.centimetersToMeters(-21.25),
+                Units.centimetersToMeters(21.50),
+                Units.centimetersToMeters(51.0)
             ),
-            new Rotation3d(0.0, 0.0, Units.degreesToRadians(-90.0))
+            new Rotation3d(
+                0.0,
+                Units.degreesToRadians(-10.0),  // Pitch: 10° upward
+                Units.degreesToRadians(-45.0)   // Yaw: front-right
+            )
         );
 
         /* Field layout, CA district is welded */
