@@ -175,6 +175,9 @@ public final class Constants {
         /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded; // Welded-field layout selector; current loader uses the enum directly.
 
+        public static final double MAX_SINGLE_TAG_DISTANCE_METERS = 4.0; // Maximum average camera-to-tag range for single-tag fallback.
+        public static final double MAX_MULTI_TAG_DISTANCE_METERS = 6.0; // Maximum average range of tags used by a MultiTag estimate.
+        public static final boolean USE_VISION_HEADING = false; // False fuses vision XY only; heading follows gyro/odometry and deliberate field resets.
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // Largest accepted reported single-tag ambiguity.
         public static final double MAX_POSE_Z_METERS = 2.05; // Largest accepted absolute robot height from vision.
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0; // Largest accepted absolute vision roll or pitch.
