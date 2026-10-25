@@ -183,8 +183,8 @@ public final class Constants {
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0; // Largest accepted absolute vision roll or pitch.
         public static final double MAX_MEASUREMENT_AGE_SEC = 0.6; // Reject captured vision older than this many seconds.
         public static final double VISION_HEALTHY_AGE_SEC = 0.70; // Accepted-vision age threshold for the health indicator.
-        public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.20; // Base translation uncertainty for multi-tag measurements.
-        public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.50; // Base translation uncertainty for single-tag measurements.
+        public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.15; // Base translation uncertainty for multi-tag measurements.
+        public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.30; // Base translation uncertainty for single-tag measurements.
         public static final double MULTI_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(3.0); // Base heading uncertainty for multi-tag measurements.
         public static final double SINGLE_TAG_BASE_THETA_STD_DEV_RAD = Units.degreesToRadians(8.0); // Base heading uncertainty for single-tag measurements.
         public static final double DISTANCE_STD_DEV_SCALE = 1.0 / 25.0; // Uncertainty multiplier is 1 + distance^2 * this factor (1/m^2).
