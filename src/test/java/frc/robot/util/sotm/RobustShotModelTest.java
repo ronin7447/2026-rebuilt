@@ -160,6 +160,40 @@ class RobustShotModelTest {
     }
 
     @Test
+    void disabledTiltMatchesLevelShotAndRevalidationWhilePreservingYawAndMotion() {
+        Pose2d pose = new Pose2d(0.0, 0.0, Rotation2d.fromDegrees(35));
+        RobustShotRequest tilted = requestFor(pose, new ChassisSpeeds(),
+            new Rotation3d(Math.toRadians(20), Math.toRadians(30), pose.getRotation().getRadians()));
+        ShotMotionState measured = tilted.motionState();
+        ShotMotionState level = measured.withTiltCompensation(false);
+        assertTrue(measured == measured.withTiltCompensation(true));
+        assertEquals(measured.robotPose(), level.robotPose());
+        assertEquals(measured.robotRelativeSpeeds(), level.robotRelativeSpeeds());
+        assertEquals(measured.fieldRelativeSpeeds(), level.fieldRelativeSpeeds());
+        assertEquals(measured.fieldAccelXMps2(), level.fieldAccelXMps2());
+        assertEquals(measured.fieldAccelYMps2(), level.fieldAccelYMps2());
+        assertEquals(measured.angularAccelRadPerSec2(), level.angularAccelRadPerSec2());
+        assertEquals(0, level.robotOrientation().getX(), EPSILON);
+        assertEquals(0, level.robotOrientation().getY(), EPSILON);
+        assertEquals(measured.robotOrientation().getZ(), level.robotOrientation().getZ(), EPSILON);
+        RobustShotRequest corrected = new RobustShotRequest(level, tilted.robotToTurretPivot(),
+            tilted.shooterExitHeightMeters(), tilted.targetFieldPoint(), tilted.turretZeroOffset(),
+            tilted.minHoodPositionRot(), tilted.maxHoodPositionRot(), tilted.maxExitSpeedMps(),
+            tilted.releaseLatencySec(), tilted.targetConstraints());
+        RobustShotSolution expected = RobustShotModel.solve(requestFor(pose, new ChassisSpeeds(),
+            new Rotation3d(0, 0, pose.getRotation().getRadians()))).orElseThrow();
+        RobustShotSolution fresh = RobustShotModel.solve(corrected).orElseThrow();
+        RobustShotSolution reused = RobustShotModel.revalidate(corrected, expected).orElseThrow();
+        assertTrue(fresh.quality().insideTolerance(), fresh.quality().reason());
+        assertTrue(reused.quality().insideTolerance(), reused.quality().reason());
+        assertEquals(expected.hoodPositionRot(), fresh.hoodPositionRot(), EPSILON);
+        assertEquals(expected.desiredTurretYaw().getRadians(), fresh.desiredTurretYaw().getRadians(), EPSILON);
+        assertEquals(expected.rollerRps(), fresh.rollerRps(), EPSILON);
+        assertEquals(expected.hoodPositionRot(), reused.hoodPositionRot(), EPSILON);
+        assertEquals(expected.desiredTurretYaw().getRadians(), reused.desiredTurretYaw().getRadians(), EPSILON);
+    }
+
+    @Test
     void closeRangeHubShotUsesDirectSweepAbovePolynomialDomain() {
         RobustShotSolution close = RobustShotModel.solve(requestFor(
             new Pose2d(3.1, 0.0, Rotation2d.kZero),

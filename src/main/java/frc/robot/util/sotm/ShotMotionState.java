@@ -12,4 +12,12 @@ public record ShotMotionState(
     double fieldAccelYMps2,
     double angularAccelRadPerSec2,
     Rotation3d robotOrientation
-) {}
+) {
+    /** Ignore pitch/roll for shooting without changing measured translation, acceleration or yaw. */
+    public ShotMotionState withTiltCompensation(boolean enabled) {
+        if (enabled) return this;
+        return new ShotMotionState(robotPose, robotRelativeSpeeds, fieldRelativeSpeeds,
+            fieldAccelXMps2, fieldAccelYMps2, angularAccelRadPerSec2,
+            new Rotation3d(0.0, 0.0, robotOrientation.getZ()));
+    }
+}

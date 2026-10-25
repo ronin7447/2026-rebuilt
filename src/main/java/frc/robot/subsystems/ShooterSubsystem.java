@@ -233,6 +233,11 @@ public class ShooterSubsystem extends SubsystemBase {
         
         SmartDashboard.putNumber("HoodPosition", targetPosRot);
         SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
+        double actualRollerRps = getRollerVelocity();
+        SmartDashboard.putNumber("Shooter/TargetRPS", targetRollerVelRps);
+        SmartDashboard.putNumber("Shooter/ActualRPS", actualRollerRps);
+        // Signed motor RPS; error is target minus measured velocity.
+        SmartDashboard.putNumber("Shooter/ErrorRPS", targetRollerVelRps - actualRollerRps);
         SmartDashboard.putBoolean("Turret/Kaden2", hoodEnabled);
 
 
