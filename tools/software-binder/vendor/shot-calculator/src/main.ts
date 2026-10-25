@@ -1565,13 +1565,11 @@ function fastShotQualityForBase(base: BaseMotionState): ShotQualityEstimate {
 function estimateCandidateAccuracy(config: ShotCalculatorConfig, candidate: TrajectoryCandidate): number {
   const marginScore = clamp(candidate.heightMarginMeters / Math.max(config.goalRadiusMeters, 1e-9), 0.0, 1.0);
   const robustnessScore = clamp(candidate.robustnessMargin / 0.30, 0.0, 1.0);
-  const hoodEdgePenalty = edgePressure(candidate.hoodRot, config.minHoodRot, config.maxHoodRot);
   const rollerUse = clamp(Math.abs(candidate.rollerRps) / config.maxRollerRps, 0.0, 1.0);
   return clamp(
     0.84
     + (0.08 * marginScore)
     + (0.04 * robustnessScore)
-    - (0.035 * hoodEdgePenalty)
     - (0.025 * rollerUse),
     0.0,
     0.98,
@@ -1649,13 +1647,11 @@ function estimatePolynomialAccuracy(
 ): number {
   const distanceHeadroom = domainHeadroom(distanceMeters, config.minDistanceMeters, config.maxDistanceMeters);
   const radialHeadroom = domainHeadroom(radialVelocityMps, config.minRadialVelocityMps, config.maxRadialVelocityMps);
-  const hoodEdgePenalty = edgePressure(hoodRot, config.minHoodRot, config.maxHoodRot);
   const rollerUse = clamp(Math.abs(rollerRps) / config.maxRollerRps, 0.0, 1.0);
   const radialUse = clamp(Math.abs(radialVelocityMps) / Math.max(Math.abs(config.minRadialVelocityMps), Math.abs(config.maxRadialVelocityMps)), 0.0, 1.0);
   return clamp(
     0.91
     + (0.08 * Math.min(distanceHeadroom, radialHeadroom))
-    - (0.035 * hoodEdgePenalty)
     - (0.025 * rollerUse)
     - (0.025 * radialUse),
     0.0,
@@ -2509,10 +2505,6 @@ function domainHeadroom(valueToScore: number, min: number, max: number): number 
   const center = (min + max) / 2.0;
   const halfSpan = Math.max((max - min) / 2.0, 1e-9);
   return clamp(1.0 - (Math.abs(valueToScore - center) / halfSpan), 0.0, 1.0);
-}
-
-function edgePressure(valueToScore: number, min: number, max: number): number {
-  return 1.0 - domainHeadroom(valueToScore, min, max);
 }
 
 function clamp(valueToClamp: number, min: number, max: number): number {

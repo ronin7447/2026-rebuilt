@@ -6,12 +6,12 @@ public final class GeneratedShotMapCoefficients {
     public static final double MIN_RADIAL_VELOCITY_MPS = -2.5;
     public static final double MAX_RADIAL_VELOCITY_MPS = 2.5;
 
-    public static final double HOOD_FIT_MAX_ERROR_ROT = 0.553987;
-    public static final double ROLLER_FIT_MAX_ERROR_RPS = 7.620648;
+    public static final double HOOD_FIT_MAX_ERROR_ROT = 0.675985;
+    public static final double ROLLER_FIT_MAX_ERROR_RPS = 5.511947;
     public static final double MIN_ROBUSTNESS_MARGIN = 0.12;
 
-    public static final double[] HOOD_POSITION_COEFFICIENTS = { -1.20204444582, -0.178394209212, 0.253852119698, 0.0110620791692, -0.0118928231451, -0.0162537295643 };
-    public static final double[] ROLLER_RPS_COEFFICIENTS = { -49.5635839465, -7.36966628989, 5.44166110494, 0.224579363282, 0.118172366198, -0.218340841814 };
+    public static final double[] HOOD_POSITION_COEFFICIENTS = { -1.07080103230, -0.476124368729, 0.435120495608, 0.0424294733604, -0.0749464224533, 0.0453523278373 };
+    public static final double[] ROLLER_RPS_COEFFICIENTS = { -49.6312448881, -5.95669842043, 3.68171879411, 0.0910687443129, 0.517550309745, -0.766190774335 };
 
     private GeneratedShotMapCoefficients() {}
 
@@ -24,11 +24,9 @@ public final class GeneratedShotMapCoefficients {
     }
 
     public static double estimateRobustnessMargin(double distanceMeters, double radialVelocityMps) {
-        double normalizedDistance = Math.max(0.0, (distanceMeters - MIN_DISTANCE_METERS)
-            / (MAX_DISTANCE_METERS - MIN_DISTANCE_METERS));
         double normalizedRadialVelocity = Math.abs(radialVelocityMps)
             / Math.max(Math.abs(MIN_RADIAL_VELOCITY_MPS), Math.abs(MAX_RADIAL_VELOCITY_MPS));
-        return Math.max(0.0, 0.35 - (0.18 * normalizedDistance) - (0.08 * normalizedRadialVelocity));
+        return Math.max(0.0, 0.35 - (0.08 * normalizedRadialVelocity));
     }
 
     public static boolean isInsideDomain(double distanceMeters, double radialVelocityMps) {

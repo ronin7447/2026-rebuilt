@@ -277,7 +277,9 @@ class RobustShotModelTest {
             var shot = RobustShotModel.solve(requestFor(
                 new Pose2d(4.0 - distance, 0.0, Rotation2d.kZero), new ChassisSpeeds(), new Rotation3d())).orElseThrow();
             assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
-            if (distance <= 4.9) {
+            double mappedHood = GeneratedShotMapCoefficients.evaluateHoodPositionRot(distance, 0.0);
+            if (distance <= 4.9 && mappedHood >= Constants.Shooter.MIN_HOOD_POSITION_ROT
+                && mappedHood <= Constants.Shooter.MAX_HOOD_POSITION_ROT) {
                 assertEquals(GeneratedShotMapCoefficients.evaluateRollerRps(distance, 0.0), shot.rollerRps(), EPSILON);
                 assertEquals(CommandSource.GENERATED_POLYNOMIAL, shot.commandSource());
             }
@@ -287,6 +289,39 @@ class RobustShotModelTest {
             }
             prior = shot;
         }
+    }
+
+    @Test
+    void mappedHoodLimitRecomputesSpeedForScoringInsteadOfRejectingOrOnlyClamping() {
+        for (double[] bounds : new double[][] {{-2.20, -0.63}, {-2.50, -2.40}}) {
+            for (ChassisSpeeds velocity : new ChassisSpeeds[] {new ChassisSpeeds(), new ChassisSpeeds(.5, .7, 0)}) {
+                var base = requestFor(new Pose2d(), velocity, new Rotation3d());
+                var limited = new RobustShotRequest(base.motionState(), base.robotToTurretPivot(),
+                    base.shooterExitHeightMeters(), base.targetFieldPoint(), base.turretZeroOffset(),
+                    bounds[0], bounds[1], base.maxExitSpeedMps(), base.releaseLatencySec(), base.targetConstraints());
+                var shot = RobustShotModel.solve(limited).orElseThrow();
+                assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
+                assertEquals(CommandSource.DIRECT_CANDIDATE, shot.commandSource());
+                assertTrue(shot.hoodPositionRot() >= bounds[0] && shot.hoodPositionRot() <= bounds[1]);
+                var v = shot.launchVectorField();
+                double t = shot.flightTimeSec();
+                assertEquals(4, (v.getX() + velocity.vxMetersPerSecond) * t, EPSILON);
+                assertEquals(0, (v.getY() + velocity.vyMetersPerSecond) * t, EPSILON);
+                assertEquals(limited.targetFieldPoint().getZ(), limited.shooterExitHeightMeters()
+                    + v.getZ() * t - 4.905 * t * t, EPSILON);
+            }
+        }
+    }
+
+    @Test
+    void hoodLimitRecoveryCannotExceedFlywheelSpeedCap() {
+        var base = requestFor(new Pose2d(), new ChassisSpeeds(), new Rotation3d());
+        var limited = new RobustShotRequest(base.motionState(), base.robotToTurretPivot(),
+            base.shooterExitHeightMeters(), base.targetFieldPoint(), base.turretZeroOffset(),
+            -2.20, -0.63, 4.0, base.releaseLatencySec(), base.targetConstraints());
+        var shot = RobustShotModel.solve(limited).orElseThrow();
+        assertFalse(shot.quality().insideTolerance());
+        assertEquals("hood-limit-shot-unreachable", shot.quality().reason());
     }
 
     private RobustShotRequest requestFor(
