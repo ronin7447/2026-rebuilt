@@ -86,6 +86,7 @@ public class AutoAimTurretCommand extends Command {
         boolean stabilize = Constants.Turret.TARGET_STABILIZATION_ENABLED;
         SmartDashboard.putBoolean("Turret/Stabilization/Enabled", stabilize);
         SmartDashboard.putBoolean("SOTM/TiltCompensationEnabled", Constants.ShotMap.TILT_COMPENSATION_ENABLED);
+        SmartDashboard.putNumber("SOTM/ShotMapTrial", Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL);
         var motionEstimate = drivetrain.getShotMotionEstimate();
         double motionAgeSec = nowSec - motionEstimate.timestampSec();
         if (Constants.ShotMap.USE_ROBUST_SOTM && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK

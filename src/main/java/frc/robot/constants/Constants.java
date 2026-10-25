@@ -394,6 +394,7 @@ public final class Constants {
         public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false; // Explicit legacy mode; rejected robust shots never silently fall back.
         public static final boolean TILT_COMPENSATION_ENABLED = false; // Apply measured pitch/roll to shooting; false assumes level while preserving yaw/motion prediction.
         public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
+        public static final int FAR_HUB_SHOT_MAP_TRIAL = 1; // 1 = generated 63-degree trial, 2 = 61-degree trial, 0 = original map plus optional runtime flattening below.
         public static final boolean FAR_HUB_FLAT_SHOT_ENABLED = true; // Recompute far-Hub shots with a flatter field launch angle; false restores the map.
         public static final double FAR_HUB_FLAT_START_METERS = 4.0; // Start smoothly flattening at this release-to-Hub distance, not a field-X boundary.
         public static final double FAR_HUB_FLAT_FULL_METERS = 5.5; // Reach the requested far angle here; must exceed START_METERS.

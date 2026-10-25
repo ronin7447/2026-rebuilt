@@ -249,21 +249,22 @@ class RobustShotModelTest {
     }
 
     @Test
-    void farFlatShotsReachCenterWithRadialAndSidewaysMotion() {
+    void farFlatShotsReachOpeningWithRadialAndSidewaysMotion() {
         for (ChassisSpeeds speeds : new ChassisSpeeds[] {
             new ChassisSpeeds(), new ChassisSpeeds(1.0, 0.7, 0.0), new ChassisSpeeds(-1.0, -0.7, 0.0)
         }) {
             var request = requestFor(new Pose2d(-2.0, 0.0, Rotation2d.kZero), speeds, new Rotation3d());
             var shot = RobustShotModel.solve(request).orElseThrow();
             assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
-            assertEquals(63.0, shot.recommendedLaunchPitch().getDegrees(), EPSILON);
+            assertEquals(Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL == 2 ? 61.0 : 63.0,
+                shot.recommendedLaunchPitch().getDegrees(), EPSILON);
             Translation3d velocity = shot.launchVectorField().plus(
                 new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0.0));
             double t = shot.flightTimeSec();
             assertEquals(6.0, velocity.getX() * t, EPSILON);
             assertEquals(0.0, velocity.getY() * t, EPSILON);
             assertEquals(request.targetFieldPoint().getZ(), request.shooterExitHeightMeters()
-                + velocity.getZ() * t - 4.905 * t * t, EPSILON);
+                + velocity.getZ() * t - 4.905 * t * t, request.targetConstraints().goalRadiusMeters());
             assertTrue(Math.abs(shot.rollerRps()) <= Constants.Shooter.MAX_ROLLER_RPS);
             assertTrue(RobustShotModel.revalidate(request, shot).orElseThrow().quality().insideTolerance());
         }

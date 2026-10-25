@@ -8,6 +8,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import frc.robot.constants.Constants;
 import frc.robot.constants.GeneratedShotMapCoefficients;
+import frc.robot.constants.GeneratedFarShotTrials;
 import frc.robot.util.AimMath;
 
 public final class RobustShotModel {
@@ -101,7 +102,7 @@ public final class RobustShotModel {
             ));
         }
 
-        if (previous == null && Constants.ShotMap.FAR_HUB_FLAT_SHOT_ENABLED
+        if (previous == null && !farMapTrialEnabled() && Constants.ShotMap.FAR_HUB_FLAT_SHOT_ENABLED
             && request.targetConstraints().targetType() == ShotTargetConstraints.TargetType.HUB
             && distanceMeters > Constants.ShotMap.FAR_HUB_FLAT_START_METERS) {
             shotCommand = flattenFarHubShot(request, shotCommand.get(), distanceMeters,
@@ -314,6 +315,14 @@ public final class RobustShotModel {
                 radialVelocityMps
             );
             double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
+            if (farMapTrialEnabled() && distanceMeters > 4.0) {
+                // Trial coefficients were fitted for 4–8 m. Keep these transition bounds tied to generation.
+                double blend = Math.min(1.0, (distanceMeters - 4.0) / 1.5);
+                blend = blend * blend * (3.0 - 2.0 * blend);
+                int profile = Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL;
+                hoodPositionRot += blend * (GeneratedFarShotTrials.hood(profile) - hoodPositionRot);
+                rollerRps += blend * (GeneratedFarShotTrials.rollerRps(profile, distanceMeters, radialVelocityMps) - rollerRps);
+            }
             if (!Double.isFinite(hoodPositionRot)
                 || hoodPositionRot < request.minHoodPositionRot()
                 || hoodPositionRot > request.maxHoodPositionRot()
@@ -344,6 +353,10 @@ public final class RobustShotModel {
         }
 
         return Optional.empty();
+    }
+
+    private static boolean farMapTrialEnabled() {
+        return Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL == 1 || Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL == 2;
     }
 
     /** Fixed-pitch ballistic intercept, including radial and sideways inherited release velocity. */

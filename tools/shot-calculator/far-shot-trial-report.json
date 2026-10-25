@@ -1,0 +1,125 @@
+{
+  "note": "Experimental gravity-only model validation before global RPS trim; no field accuracy claim. Grid acceptance includes physically unreachable inputs. Sideways motion and tilt require runtime validation.",
+  "profiles": [
+    {
+      "angle": 63,
+      "hood": -2.0895681,
+      "coefficients": [
+        -53.23749886457261,
+        -5.571224025474723,
+        4.622370931811508,
+        0.05704937197339488,
+        0.41731028391023894,
+        -0.7621303558032422
+      ],
+      "samples": 292,
+      "maxRpsFitError": 0.6879595517291364,
+      "accepted": 3442,
+      "checked": 4131,
+      "stationary": [
+        {
+          "distance": 4,
+          "hood": -1.6876286939648,
+          "rpsBeforeTrim": -77.190858879332,
+          "feasible": true
+        },
+        {
+          "distance": 4.5,
+          "hood": -1.8246888844755185,
+          "rpsBeforeTrim": -79.12835119489976,
+          "feasible": true
+        },
+        {
+          "distance": 5,
+          "hood": -2.00651402213463,
+          "rpsBeforeTrim": -80.36661793592877,
+          "feasible": true
+        },
+        {
+          "distance": 5.5,
+          "hood": -2.0895681,
+          "rpsBeforeTrim": -82.15348750248839,
+          "feasible": true
+        },
+        {
+          "distance": 6,
+          "hood": -2.0895681,
+          "rpsBeforeTrim": -84.61106562637872,
+          "feasible": true
+        },
+        {
+          "distance": 7,
+          "hood": -2.0895681,
+          "rpsBeforeTrim": -89.44064781619932,
+          "feasible": true
+        },
+        {
+          "distance": 8,
+          "hood": -2.0895681,
+          "rpsBeforeTrim": -94.15613126207312,
+          "feasible": true
+        }
+      ]
+    },
+    {
+      "angle": 61,
+      "hood": -2.2611507,
+      "coefficients": [
+        -53.11624790197723,
+        -5.452632575858843,
+        4.178818715921665,
+        0.0646108853537255,
+        0.3863173625483336,
+        -0.68174002825294
+      ],
+      "samples": 302,
+      "maxRpsFitError": 0.5173998218410389,
+      "accepted": 3610,
+      "checked": 4131,
+      "stationary": [
+        {
+          "distance": 4,
+          "hood": -1.6876286939648,
+          "rpsBeforeTrim": -77.190858879332,
+          "feasible": true
+        },
+        {
+          "distance": 4.5,
+          "hood": -1.8691732622532962,
+          "rpsBeforeTrim": -78.91886112368755,
+          "feasible": true
+        },
+        {
+          "distance": 5,
+          "hood": -2.133612244356852,
+          "rpsBeforeTrim": -79.69754679134876,
+          "feasible": true
+        },
+        {
+          "distance": 5.5,
+          "hood": -2.2611507,
+          "rpsBeforeTrim": -81.15124778725067,
+          "feasible": true
+        },
+        {
+          "distance": 6,
+          "hood": -2.2611507,
+          "rpsBeforeTrim": -83.50605148439617,
+          "feasible": true
+        },
+        {
+          "distance": 7,
+          "hood": -2.2611507,
+          "rpsBeforeTrim": -88.11874255065658,
+          "feasible": true
+        },
+        {
+          "distance": 8,
+          "hood": -2.2611507,
+          "rpsBeforeTrim": -92.60221184620954,
+          "feasible": true
+        }
+      ]
+    }
+  ]
+}
