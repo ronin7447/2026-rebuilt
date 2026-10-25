@@ -14,6 +14,21 @@ class ShooterSpeedReadinessTest {
     }
 
     @Test
+    void overspeedNeverBlocksForEitherDirectionButUnderspeedAndInvalidFeedbackDo() {
+        for (double sign : new double[] {-1, 1}) {
+            var gate = new ShooterSpeedReadiness(3, .10, 5, .15);
+            assertTrue(gate.update(sign * 40, sign * 25, true));
+            assertTrue(gate.update(sign * 100, sign * 25, true));
+            assertFalse(gate.update(sign * 19, sign * 25, true));
+            assertFalse(gate.update(sign * 21, sign * 25, true));
+            assertTrue(gate.update(sign * 22, sign * 25, true));
+            assertTrue(gate.update(sign * 20, sign * 25, true));
+            assertFalse(gate.update(-sign * 40, sign * 25, true));
+            assertFalse(gate.update(sign * 40, sign * 25, false));
+        }
+    }
+
+    @Test
     void twentyFiveRpsRequestAcceptsFloatingTwentySixPointFiveImmediately() {
         var gate = readiness();
         assertTrue(gate.update(26.5, 25, true));
@@ -21,7 +36,7 @@ class ShooterSpeedReadinessTest {
             assertTrue(gate.update(actual, 25, true), "ordinary variation " + actual);
         }
         assertFalse(gate.update(19.9, 25, true));
-        assertFalse(gate.update(29, 25, true)); // Wider running band cannot start a cold gate.
+        assertFalse(gate.update(21, 25, true)); // Wider running tolerance cannot start a cold gate.
         assertTrue(gate.update(26.5, 25, true));
     }
 
@@ -37,10 +52,10 @@ class ShooterSpeedReadinessTest {
     @Test
     void fractionalBandScalesWithHigherTargets() {
         var gate = readiness();
-        assertFalse(gate.update(56, 50, true));
-        assertTrue(gate.update(55, 50, true));
-        assertTrue(gate.update(57.5, 50, true));
-        assertFalse(gate.update(57.6, 50, true));
+        assertFalse(gate.update(44, 50, true));
+        assertTrue(gate.update(45, 50, true));
+        assertTrue(gate.update(42.5, 50, true));
+        assertFalse(gate.update(42.4, 50, true));
     }
 
     @Test
@@ -48,7 +63,7 @@ class ShooterSpeedReadinessTest {
         var gate = readiness();
         assertTrue(gate.update(26.5, 25, true));
         assertFalse(gate.update(26.5, 25, false));
-        assertFalse(gate.update(29, 25, true));
+        assertFalse(gate.update(21, 25, true));
         assertFalse(gate.update(Double.NaN, 25, true));
         assertFalse(gate.update(25, Double.POSITIVE_INFINITY, true));
         assertFalse(gate.update(0, 0, true));
@@ -62,6 +77,6 @@ class ShooterSpeedReadinessTest {
         assertFalse(gate.update(31, 35, true));
         assertTrue(gate.update(35, 35, true));
         gate.reset();
-        assertFalse(gate.update(39, 35, true));
+        assertFalse(gate.update(31, 35, true));
     }
 }

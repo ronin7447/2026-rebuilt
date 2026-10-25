@@ -364,10 +364,10 @@ public final class Constants {
         public static final double ROLLER_ACCELERATION = 400.0; // Flywheel acceleration cap in motor rot/s^2.
         public static final double ROLLER_JERK = 4000.0; // Flywheel jerk cap in motor rot/s^3; zero removes S-curve smoothing.
 
-        public static final double ROLLER_START_TOLERANCE_RPS = 3.0; // Absolute entry band in motor rot/s; combined with the fraction below.
+        public static final double ROLLER_START_TOLERANCE_RPS = 3.0; // Allowed entry underspeed in motor rot/s; combined with the fraction below.
         public static final double ROLLER_START_TOLERANCE_SCALE = 0.10; // Fractional speed-error entry band; 0.10 = 10% of target magnitude.
         public static final double ROLLER_RUNNING_TOLERANCE_RPS = 5.0; // Absolute running band in motor rot/s; combined with the fraction below.
-        public static final double ROLLER_RUNNING_TOLERANCE_SCALE = 0.15; // Wider running band; 0.15 = 15% of target magnitude.
+        public static final double ROLLER_RUNNING_TOLERANCE_SCALE = 0.15; // Allowed running underspeed; 0.15 = 15% of target magnitude. Overspeed does not block.
         public static final double HOOD_POSITION_TOLERANCE_ROT = 0.08; // Feed alignment tolerance in motor turns; about 0.93 launch degrees.
         public static final double MAX_MECHANISM_FEEDBACK_AGE_SEC = 0.10; // Maximum hood/flywheel sample age accepted for feed readiness.
         public static final double EXIT_HEIGHT_METERS = 0.4064; // Modeled Fuel release height above the floor.
@@ -396,6 +396,10 @@ public final class Constants {
         public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false; // Explicit legacy mode; rejected robust shots never silently fall back.
         public static final boolean TILT_COMPENSATION_ENABLED = false; // Apply measured pitch/roll to shooting; false assumes level while preserving yaw/motion prediction.
         public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
+        public static final boolean FAR_HUB_RPS_TRIM_ENABLED = true; // Empirical correction for the observed near-lip miss; disable for an untrimmed far-shot comparison.
+        public static final double FAR_HUB_RPS_TRIM_MULTIPLIER = 1.012; // Additional 1.2% after global trim: -86.95 becomes -87.9934 RPS at full distance.
+        public static final double FAR_HUB_RPS_TRIM_START_METERS = 4.9; // Start smoothly adding the correction at this predicted release-to-Hub distance.
+        public static final double FAR_HUB_RPS_TRIM_FULL_METERS = 5.5; // Full correction here and farther; hood settings remain independent.
         public static final int FAR_HUB_SHOT_MAP_TRIAL = 1; // 1 = generated 63-degree trial, 2 = 61-degree trial, 0 = original map plus optional runtime flattening below.
         public static final boolean FAR_HUB_FLAT_SHOT_ENABLED = true; // Recompute far-Hub shots with a flatter field launch angle; false restores the map.
         public static final double FAR_HUB_FLAT_START_METERS = 4.9; // Start smoothly flattening at this release-to-Hub distance, not a field-X boundary.

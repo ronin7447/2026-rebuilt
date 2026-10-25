@@ -20,6 +20,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.AimMath;
+import frc.robot.util.FarHubRpsTrim;
 import frc.robot.util.FieldAimSmoother;
 import frc.robot.util.AutoAimTargeting;
 import frc.robot.util.LinearShooterCalibration;
@@ -301,8 +302,20 @@ public class AutoAimTurretCommand extends Command {
 
             // Apply the empirical output trim once, including revalidated shots, without changing the fitted map.
             if (mappedRollerRps.isPresent()) {
+                double distance = robustShotSolution.isPresent()
+                    ? robustShotSolution.get().quality().distanceMeters()
+                    : selectedTargetPoint.getDistance(pivotFieldPosition);
+                double farScale = FarHubRpsTrim.scale(distance,
+                    Constants.ShotMap.FAR_HUB_RPS_TRIM_ENABLED
+                        && targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB,
+                    Constants.ShotMap.FAR_HUB_RPS_TRIM_START_METERS,
+                    Constants.ShotMap.FAR_HUB_RPS_TRIM_FULL_METERS,
+                    Constants.ShotMap.FAR_HUB_RPS_TRIM_MULTIPLIER);
+                SmartDashboard.putNumber("Shooter/FarHubRpsTrimScale", farScale);
+                // Empirical calibration trim, not a new modeled trajectory. Flight time and lead
+                // still describe the nominal solve; field validation is required for moving shots.
                 mappedRollerRps = OptionalDouble.of(MathUtil.clamp(
-                    mappedRollerRps.getAsDouble() * Constants.ShotMap.ROLLER_RPS_OUTPUT_SCALE,
+                    mappedRollerRps.getAsDouble() * Constants.ShotMap.ROLLER_RPS_OUTPUT_SCALE * farScale,
                     -Constants.Shooter.MAX_ROLLER_RPS, Constants.Shooter.MAX_ROLLER_RPS));
             }
 

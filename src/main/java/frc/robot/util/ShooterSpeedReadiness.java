@@ -1,6 +1,6 @@
 package frc.robot.util;
 
-/** Signed flywheel speed readiness with separate entry and running bands. */
+/** Signed flywheel minimum-speed readiness with separate entry and running tolerances. */
 public final class ShooterSpeedReadiness {
     private final double startToleranceRps;
     private final double startToleranceScale;
@@ -28,7 +28,8 @@ public final class ShooterSpeedReadiness {
         if (!Double.isFinite(lastTargetRps) || Math.abs(targetRps - lastTargetRps) > startBand) ready = false;
         double band = ready
             ? Math.max(runningToleranceRps, Math.abs(targetRps) * runningToleranceScale) : startBand;
-        ready = Math.abs(actualRps - targetRps) <= band;
+        // Same-direction overspeed never blocks feed; only insufficient speed does.
+        ready = Math.abs(actualRps) >= Math.max(0.0, Math.abs(targetRps) - band);
         lastTargetRps = targetRps;
         return ready;
     }
