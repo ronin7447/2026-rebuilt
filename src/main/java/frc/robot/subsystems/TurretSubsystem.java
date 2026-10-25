@@ -369,7 +369,7 @@ public class TurretSubsystem extends SubsystemBase {
     public boolean isShotReady() {
         return autoAimActive
             && movingShotSolutionValid
-            && isTurretAtAimGoal()
+            && (!Constants.ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT || isTurretAtAimGoal())
             && !isOnSoftwareLimit()
             && mappedHoodPositionAvailable
             && mappedRollerRpsAvailable

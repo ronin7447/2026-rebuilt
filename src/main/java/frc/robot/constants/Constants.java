@@ -409,6 +409,7 @@ public final class Constants {
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65; // Unused advisory scale; current drive limits use Drivebase settings.
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55; // Unused advisory scale; current yaw limits use Drivebase settings.
         public static final boolean FEED_INTERLOCK_ENABLED = true; // Master feed-readiness switch: true gates normal/autonomous/calibration feed; false bypasses shot readiness. Motor guards and calibration input validation remain.
+        public static final boolean FEED_REQUIRE_TURRET_ALIGNMENT = false; // Require turret angular tolerance before feeding; false allows feeding while tracking. Travel limits still apply.
         public static final boolean CONTINUE_FEED_AFTER_INITIAL_READY = true; // After automatic feed starts, ignore ShotReady fluctuations until release or a hard actuator/operation stop. False restores continuous gating.
         public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
