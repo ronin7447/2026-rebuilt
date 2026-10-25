@@ -248,6 +248,46 @@ class RobustShotModelTest {
         assertTrue(RobustShotModel.solve(request).isEmpty());
     }
 
+    @Test
+    void farFlatShotsReachCenterWithRadialAndSidewaysMotion() {
+        for (ChassisSpeeds speeds : new ChassisSpeeds[] {
+            new ChassisSpeeds(), new ChassisSpeeds(1.0, 0.7, 0.0), new ChassisSpeeds(-1.0, -0.7, 0.0)
+        }) {
+            var request = requestFor(new Pose2d(-2.0, 0.0, Rotation2d.kZero), speeds, new Rotation3d());
+            var shot = RobustShotModel.solve(request).orElseThrow();
+            assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
+            assertEquals(63.0, shot.recommendedLaunchPitch().getDegrees(), EPSILON);
+            Translation3d velocity = shot.launchVectorField().plus(
+                new Translation3d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, 0.0));
+            double t = shot.flightTimeSec();
+            assertEquals(6.0, velocity.getX() * t, EPSILON);
+            assertEquals(0.0, velocity.getY() * t, EPSILON);
+            assertEquals(request.targetFieldPoint().getZ(), request.shooterExitHeightMeters()
+                + velocity.getZ() * t - 4.905 * t * t, EPSILON);
+            assertTrue(Math.abs(shot.rollerRps()) <= Constants.Shooter.MAX_ROLLER_RPS);
+            assertTrue(RobustShotModel.revalidate(request, shot).orElseThrow().quality().insideTolerance());
+        }
+    }
+
+    @Test
+    void farFlatTransitionIsContinuousAndCloseShotsKeepMap() {
+        RobustShotSolution prior = null;
+        for (double distance : new double[] {3.9999, 4.0, 4.0001, 5.4999, 5.5, 5.5001}) {
+            var shot = RobustShotModel.solve(requestFor(
+                new Pose2d(4.0 - distance, 0.0, Rotation2d.kZero), new ChassisSpeeds(), new Rotation3d())).orElseThrow();
+            assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
+            if (distance <= 4.0) {
+                assertEquals(GeneratedShotMapCoefficients.evaluateRollerRps(distance, 0.0), shot.rollerRps(), EPSILON);
+                assertEquals(CommandSource.GENERATED_POLYNOMIAL, shot.commandSource());
+            }
+            if (prior != null && distance != 5.4999) {
+                assertEquals(prior.hoodPositionRot(), shot.hoodPositionRot(), 0.001);
+                assertEquals(prior.rollerRps(), shot.rollerRps(), 0.01);
+            }
+            prior = shot;
+        }
+    }
+
     private RobustShotRequest requestFor(
         Pose2d robotPose,
         ChassisSpeeds robotRelativeSpeeds,

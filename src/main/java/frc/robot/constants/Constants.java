@@ -371,7 +371,7 @@ public final class Constants {
         public static final double EXIT_HEIGHT_METERS = 0.4064; // Modeled Fuel release height above the floor.
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_SLOPE = 0.0857913; // Calibration slope: hood motor rotations per launch degree.
         public static final double HOOD_POSITION_PER_LAUNCH_DEG_INTERCEPT = -7.49442; // Calibration offset: hood motor rotations at zero launch degrees.
-        public static final double MIN_HOOD_POSITION_ROT = -2.266942; // Lower modeled hood-command bound; not a configured hardware soft limit.
+        public static final double MIN_HOOD_POSITION_ROT = -2.346; // Lower modeled hood-command bound; not a configured hardware soft limit.
         public static final double MAX_HOOD_POSITION_ROT = -0.631116; // Upper modeled hood bound; also used by the trench command.
         public static final double FAR_SHOT_DISTANCE_METERS = 4.0; // Distance where the legacy solver applies its far-shot hood floor.
         public static final double FAR_SHOT_MIN_HOOD_POSITION_ROT = -1.40; // Legacy far-Hub hood floor in motor rotations.
@@ -393,7 +393,11 @@ public final class Constants {
         public static final boolean USE_ROBUST_SOTM = true; // Select the release-prediction and final-trajectory evaluator.
         public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false; // Explicit legacy mode; rejected robust shots never silently fall back.
         public static final boolean TILT_COMPENSATION_ENABLED = false; // Apply measured pitch/roll to shooting; false assumes level while preserving yaw/motion prediction.
-        public static final double ROLLER_RPS_OUTPUT_SCALE = 1.03; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
+        public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
+        public static final boolean FAR_HUB_FLAT_SHOT_ENABLED = true; // Recompute far-Hub shots with a flatter field launch angle; false restores the map.
+        public static final double FAR_HUB_FLAT_START_METERS = 4.0; // Start smoothly flattening at this release-to-Hub distance, not a field-X boundary.
+        public static final double FAR_HUB_FLAT_FULL_METERS = 5.5; // Reach the requested far angle here; must exceed START_METERS.
+        public static final double FAR_HUB_FLAT_ANGLE_DEG = 63.0; // Far field launch pitch; RPS is solved together with angle and robot motion.
         public static final double BASE_RELEASE_LATENCY_SEC = 0.14; // Provisional prediction horizon to Fuel departure; measure on hardware.
         public static final double ACCEL_FILTER_ALPHA = 0.25; // Weight of the new acceleration sample; larger values filter less.
         public static final double MAX_ACCEL_SAMPLE_DT_SEC = 0.10; // Reject acceleration derivatives across larger odometry time gaps.

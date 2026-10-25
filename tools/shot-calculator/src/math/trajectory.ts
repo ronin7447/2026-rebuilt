@@ -17,7 +17,7 @@ export const defaultConfig: ShotCalculatorConfig = {
   maxDistanceMeters: 8.0,
   minRadialVelocityMps: -2.5,
   maxRadialVelocityMps: 2.5,
-  minHoodRot: -2.266942,
+  minHoodRot: -2.346,
   maxHoodRot: -0.631116,
   minExitSpeedMps: 4.0,
   maxExitSpeedMps: 11.120291,
