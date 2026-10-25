@@ -7,11 +7,11 @@ public final class GeneratedShotMapCoefficients {
     public static final double MAX_RADIAL_VELOCITY_MPS = 2.5;
 
     public static final double HOOD_FIT_MAX_ERROR_ROT = 0.450818;
-    public static final double ROLLER_FIT_MAX_ERROR_RPS = 7.775055;
+    public static final double ROLLER_FIT_MAX_ERROR_RPS = 7.527006;
     public static final double MIN_ROBUSTNESS_MARGIN = 0.12;
 
     public static final double[] HOOD_POSITION_COEFFICIENTS = { -1.07659815004, -0.209693374494, 0.257855638364, 0.0142339346282, -0.0123618779186, -0.0146389979100 };
-    public static final double[] ROLLER_RPS_COEFFICIENTS = { -52.2213472219, -6.91206337270, 5.21374365988, 0.174222472420, 0.172620017257, -0.242745229749 };
+    public static final double[] ROLLER_RPS_COEFFICIENTS = { -53.1233013215, -6.69154624245, 5.04740840980, 0.168664213248, 0.167112881577, -0.235000873460 };
 
     private GeneratedShotMapCoefficients() {}
 

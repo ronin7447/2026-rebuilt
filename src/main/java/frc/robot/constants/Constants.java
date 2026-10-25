@@ -371,8 +371,8 @@ public final class Constants {
         public static final double PASS_BACK_FAR_SHOT_MIN_HOOD_POSITION_ROT = MIN_HOOD_POSITION_ROT; // Legacy far-passback hood floor in motor rotations.
         public static final double MAX_ROLLER_RPS = 100.0; // Maximum allowed flywheel target magnitude in motor rot/s.
         public static final double MAX_EXIT_SPEED_MPS = 11.120291; // Largest modeled exit speed allowed by shot requests.
-        public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 8.01922; // Calibration slope: motor rot/s per m/s of Fuel exit speed.
-        public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 10.82394; // Calibration speed offset before applying the motor direction sign.
+        public static final double ROLLER_RPS_PER_EXIT_SPEED_SLOPE = 7.763381; // Calibration slope: motor rot/s per m/s of Fuel exit speed.
+        public static final double ROLLER_RPS_PER_EXIT_SPEED_INTERCEPT = 13.046605; // Calibration speed offset before applying the motor direction sign.
     }
 
     /** Manual motor-speed trials; values are motor RPS, not RPM or Fuel exit speed. */

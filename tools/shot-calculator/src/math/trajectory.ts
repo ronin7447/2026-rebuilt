@@ -24,8 +24,8 @@ export const defaultConfig: ShotCalculatorConfig = {
   hoodSlope: 0.0857913,
   hoodIntercept: -7.49442,
   rollerDirectionSign: -1.0,
-  rollerSlope: 8.01922,
-  rollerIntercept: 10.82394,
+  rollerSlope: 7.763381,
+  rollerIntercept: 13.046605,
   maxRollerRps: 100.0,
 };
 
