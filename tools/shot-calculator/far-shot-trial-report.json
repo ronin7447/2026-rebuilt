@@ -16,31 +16,31 @@
       ],
       "samples": 302,
       "maxRpsFitError": 0.6850124385999621,
-      "accepted": 3422,
+      "accepted": 3033,
       "checked": 4131,
       "stationary": [
         {
           "distance": 4,
-          "hood": -1.7386280159607999,
-          "rpsBeforeTrim": -75.44897929354799,
+          "hood": -2.2964269334495997,
+          "rpsBeforeTrim": -72.0009386608136,
           "feasible": true
         },
         {
           "distance": 4.5,
-          "hood": -1.7808112840976997,
-          "rpsBeforeTrim": -78.1793501445445,
+          "hood": -2.3541638560324,
+          "rpsBeforeTrim": -74.59224570769878,
           "feasible": true
         },
         {
           "distance": 4.9,
-          "hood": -1.8105755501063079,
-          "rpsBeforeTrim": -80.28279825456018,
+          "hood": -2.385078783688896,
+          "rpsBeforeTrim": -76.63250659725428,
           "feasible": true
         },
         {
           "distance": 5,
-          "hood": -1.8376194080092592,
-          "rpsBeforeTrim": -80.62319706244257,
+          "hood": -2.3683810091990742,
+          "rpsBeforeTrim": -77.2348517555236,
           "feasible": true
         },
         {
@@ -82,31 +82,31 @@
       ],
       "samples": 315,
       "maxRpsFitError": 0.6603646537781316,
-      "accepted": 3574,
+      "accepted": 3141,
       "checked": 4131,
       "stationary": [
         {
           "distance": 4,
-          "hood": -1.7386280159607999,
-          "rpsBeforeTrim": -75.44897929354799,
+          "hood": -2.2964269334495997,
+          "rpsBeforeTrim": -72.0009386608136,
           "feasible": true
         },
         {
           "distance": 4.5,
-          "hood": -1.7808112840976997,
-          "rpsBeforeTrim": -78.1793501445445,
+          "hood": -2.3541638560324,
+          "rpsBeforeTrim": -74.59224570769878,
           "feasible": true
         },
         {
           "distance": 4.9,
-          "hood": -1.8105755501063079,
-          "rpsBeforeTrim": -80.28279825456018,
+          "hood": -2.385078783688896,
+          "rpsBeforeTrim": -76.63250659725428,
           "feasible": true
         },
         {
           "distance": 5,
-          "hood": -1.8503292302314813,
-          "rpsBeforeTrim": -80.54780034392793,
+          "hood": -2.381090831421296,
+          "rpsBeforeTrim": -77.15945503700894,
           "feasible": true
         },
         {

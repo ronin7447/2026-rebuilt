@@ -75,7 +75,7 @@ export function simulateCandidate(
   const peakHeightMeters = config.shooterExitHeightMeters
     + (verticalLaunchSpeed * timeToPeakSec)
     - (0.5 * config.gravityMps2 * timeToPeakSec * timeToPeakSec);
-  const robustnessMargin = scoreRobustness(config, input, hoodRot, exitSpeedMps, heightMarginMeters, flightTimeSec);
+  const robustnessMargin = scoreRobustness(config, exitSpeedMps, heightMarginMeters, flightTimeSec);
 
   return {
     input,
@@ -186,21 +186,12 @@ function isBetterCandidate(
 
 function scoreRobustness(
   config: ShotCalculatorConfig,
-  input: ShotInput,
-  hoodRot: number,
   exitSpeedMps: number,
   heightMarginMeters: number,
   flightTimeSec: number,
 ): number {
-  const hoodCenter = (config.minHoodRot + config.maxHoodRot) / 2.0;
-  const hoodSpan = (config.maxHoodRot - config.minHoodRot) / 2.0;
-  const hoodEdgePenalty = Math.abs(hoodRot - hoodCenter) / hoodSpan;
   const speedHeadroom = (config.maxExitSpeedMps - exitSpeedMps) / (config.maxExitSpeedMps - config.minExitSpeedMps);
-  const distancePenalty = (input.distanceMeters - config.minDistanceMeters)
-    / (config.maxDistanceMeters - config.minDistanceMeters);
   return heightMarginMeters
     + (0.08 * speedHeadroom)
-    - (0.08 * flightTimeSec)
-    - (0.05 * hoodEdgePenalty)
-    - (0.04 * distancePenalty);
+    - (0.08 * flightTimeSec);
 }

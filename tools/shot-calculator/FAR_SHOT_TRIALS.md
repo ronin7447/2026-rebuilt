@@ -15,3 +15,5 @@ Try profile 1 stationary at the same far location first, then profile 2 for a co
 Regenerate from this directory with `npm run generate:far-trials`. This writes `GeneratedFarShotTrials.java` and `far-shot-trial-report.json` without overwriting the original map. The report checks an intermediate grid at 0.05 m / 0.1 m/s spacing before global output trim; acceptance counts include unreachable combinations. It does not establish field accuracy. Runtime checks also account for sideways motion and tilt. The browser calculator's existing default preview remains the original map; the trial report is the comparison artifact.
 
 Target height is currently **1.83 m**. See the regenerated report for stationary feasibility, fit residuals and setpoints.
+
+Base-map scoring now excludes hood-edge and distance-only penalties. If a mapped hood command exceeds its requested bounds, robot runtime uses the nearest legal angle and recomputes speed with motion compensation before final geometry checks. The calculator preview does not yet implement this recovery path.
