@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.util.VisionTimestampPolicy;
+import frc.robot.util.VisionQualityPolicy;
 
 public class VisionSubsystem extends SubsystemBase {
     private final CommandSwerveDrivetrain drivetrain;
@@ -95,16 +96,30 @@ public class VisionSubsystem extends SubsystemBase {
         Optional<EstimatedRobotPose> estimateOpt = estimateRobotPose(camera.estimator, result);
         if (estimateOpt.isEmpty()) {
             camera.rejectedCount++;
+            camera.lastDecision = "no-pose-estimate";
             return;
         }
 
         EstimatedRobotPose estimatedRobotPose = estimateOpt.get();
         Pose2d visionPose = estimatedRobotPose.estimatedPose.toPose2d();
         double averageDistanceMeters = averageTargetDistanceMeters(estimatedRobotPose.targetsUsed);
+        int usedTags = estimatedRobotPose.targetsUsed.size();
+        camera.lastDistance = averageDistanceMeters;
+        camera.lastTagCount = usedTags;
+        double ambiguity = usedTags == 1 ? estimatedRobotPose.targetsUsed.get(0).getPoseAmbiguity() : 0;
+        String rejection = VisionQualityPolicy.rejectionReason(usedTags, averageDistanceMeters, ambiguity,
+            Constants.Vision.MAX_SINGLE_TAG_DISTANCE_METERS, Constants.Vision.MAX_MULTI_TAG_DISTANCE_METERS,
+            Constants.Vision.MAX_SINGLE_TAG_AMBIGUITY);
+        if (!Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS && !rejection.isEmpty()) {
+            camera.rejectedCount++;
+            camera.lastDecision = rejection;
+            return;
+        }
         Matrix<N3, N1> stdDevs = calculateVisionStdDevs(estimatedRobotPose.targetsUsed.size(), averageDistanceMeters);
 
-        if (!isValidMeasurement(result, estimatedRobotPose, visionPose)) {
+        if (!isValidMeasurement(estimatedRobotPose, visionPose)) {
             camera.rejectedCount++;
+            camera.lastDecision = "pose-or-timestamp";
             return;
         }
 
@@ -119,6 +134,7 @@ public class VisionSubsystem extends SubsystemBase {
         lastVisionTagCount = estimatedRobotPose.targetsUsed.size();
         lastVisionStdDevs = stdDevs;
         camera.acceptedCount++;
+        camera.lastDecision = "accepted";
     }
 
     private Optional<EstimatedRobotPose> estimateRobotPose(
@@ -133,7 +149,6 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     private boolean isValidMeasurement(
-        PhotonPipelineResult result,
         EstimatedRobotPose estimatedRobotPose,
         Pose2d visionPose
     ) {
@@ -159,9 +174,6 @@ public class VisionSubsystem extends SubsystemBase {
         if (Math.abs(estimatedRobotPose.estimatedPose.getZ()) > Constants.Vision.MAX_POSE_Z_METERS) {
             return false;
         }
-        if (result.getTargets().size() == 1 && hasHighSingleTagAmbiguity(result)) {
-            return false;
-        }
         return true;
     }
 
@@ -177,12 +189,6 @@ public class VisionSubsystem extends SubsystemBase {
             && Math.abs(Units.radiansToDegrees(rotation.getY())) <= Constants.Vision.MAX_POSE_ROLL_PITCH_DEG;
     }
 
-    private boolean hasHighSingleTagAmbiguity(PhotonPipelineResult result) {
-        PhotonTrackedTarget target = result.getBestTarget();
-        double ambiguity = target.getPoseAmbiguity();
-        return ambiguity >= 0.0 && ambiguity > Constants.Vision.MAX_SINGLE_TAG_AMBIGUITY;
-    }
-
     private Matrix<N3, N1> calculateVisionStdDevs(int tagCount, double averageDistanceMeters) {
         double xyStdDev = tagCount >= 2
             ? Constants.Vision.MULTI_TAG_BASE_XY_STD_DEV_METERS
@@ -192,7 +198,8 @@ public class VisionSubsystem extends SubsystemBase {
             : Constants.Vision.SINGLE_TAG_BASE_THETA_STD_DEV_RAD;
 
         double distanceScale = 1.0 + (averageDistanceMeters * averageDistanceMeters * Constants.Vision.DISTANCE_STD_DEV_SCALE);
-        return VecBuilder.fill(xyStdDev * distanceScale, xyStdDev * distanceScale, thetaStdDev * distanceScale);
+        return VecBuilder.fill(xyStdDev * distanceScale, xyStdDev * distanceScale,
+            VisionQualityPolicy.headingStdDev(Constants.Vision.USE_VISION_HEADING, thetaStdDev * distanceScale));
     }
 
     private double averageTargetDistanceMeters(List<PhotonTrackedTarget> targets) {
@@ -208,6 +215,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     private void publishTelemetry() {
+        SmartDashboard.putBoolean("Vision/UseVisionHeading", Constants.Vision.USE_VISION_HEADING);
         SmartDashboard.putBoolean("Vision/ForceAcceptMeasurements", Constants.Vision.FORCE_ACCEPT_VISION_MEASUREMENTS);
         SmartDashboard.putBoolean("Vision/Healthy", visionHealthy);
         SmartDashboard.putNumber("Vision/AgeSec", getVisionAgeSec());
@@ -218,6 +226,9 @@ public class VisionSubsystem extends SubsystemBase {
 
         for (VisionCamera camera : cameras) {
             SmartDashboard.putNumber("Vision/" + camera.name + "/AcceptedCount", camera.acceptedCount);
+            SmartDashboard.putNumber("Vision/" + camera.name + "/LastDistanceMeters", camera.lastDistance);
+            SmartDashboard.putNumber("Vision/" + camera.name + "/LastUsedTagCount", camera.lastTagCount);
+            SmartDashboard.putString("Vision/" + camera.name + "/LastDecision", camera.lastDecision);
             SmartDashboard.putNumber("Vision/" + camera.name + "/RejectedCount", camera.rejectedCount);
         }
     }
@@ -226,6 +237,9 @@ public class VisionSubsystem extends SubsystemBase {
         final String name;
         final PhotonCamera camera;
         final PhotonPoseEstimator estimator;
+        double lastDistance = Double.NaN;
+        int lastTagCount = 0;
+        String lastDecision = "no-measurement";
         int acceptedCount = 0;
         int rejectedCount = 0;
 
