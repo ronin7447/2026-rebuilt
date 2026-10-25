@@ -188,7 +188,7 @@ public final class Constants {
     public static final class FieldTargets {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2); // Field length along +X from the blue-wall origin.
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7); // Field width along +Y.
-        private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6); // Alliance-zone depth measured from each alliance wall.
+        private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(170); // Alliance-zone depth measured from each alliance wall.
         public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30; // Modeled Hub target-plane height above the floor.
         public static final double BACK_TARGET_HEIGHT_METERS = 0.5; // Modeled passback target height above the floor.
 
