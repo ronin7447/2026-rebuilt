@@ -15,7 +15,7 @@ class StableAutoAimTargetSelectorTest {
     @Test
     void zoneBoundaryJitterDoesNotSwitchUntilCandidateIsContinuouslySelected() {
         var selector = selector();
-        double boundary = Constants.FieldTargets.BLUE_HUB_AIM_POINT.getX();
+        double boundary = Constants.FieldTargets.BLUE_ALLIANCE_ZONE.get(1).getX();
         assertEquals(TargetMode.HUB, selector.select(Alliance.Blue,
             new Translation2d(boundary - 0.01, 4), 0, true).targetMode());
         for (int i = 1; i <= 10; i++) {

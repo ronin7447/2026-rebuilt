@@ -12,6 +12,14 @@ import {
 import { createDriveSimState, stepDriveSimulator } from '../math/simulator';
 
 describe('field geometry and keyboard simulator', () => {
+  test('aims at the welded Hub centers beyond the alliance-zone boundaries', () => {
+    expect(field.blueHubCenter).toEqual({ x: 4.6255178, y: 4.0346376 });
+    expect(field.redHubCenter).toEqual({ x: 11.915521, y: 4.0346376 });
+    expect(field.blueHubAim).toEqual(field.blueHubCenter);
+    expect(field.redHubAim).toEqual(field.redHubCenter);
+    expect(field.blueHubCenter.x - field.allianceZoneDepthMeters).toBeCloseTo(0.597, 3);
+  });
+
   test('applies the real shooter pivot offset at zero heading', () => {
     const pose: Pose2d = { x: 2.0, y: 4.0, headingRad: 0.0 };
     const shooter = shooterFieldPosition(pose);

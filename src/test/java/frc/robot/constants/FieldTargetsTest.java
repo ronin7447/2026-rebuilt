@@ -12,14 +12,14 @@ class FieldTargetsTest {
 
     @Test
     void hubAimPointsUseActualHubCenters() {
-        assertEquals(158.6 * 0.0254, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getX(), EPSILON);
-        assertEquals(317.7 * 0.0254 / 2.0, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getY(), EPSILON);
-        assertEquals(
-            (651.2 - 158.6) * 0.0254,
-            Constants.FieldTargets.RED_HUB_AIM_POINT.getX(),
-            EPSILON
-        );
-        assertEquals(317.7 * 0.0254 / 2.0, Constants.FieldTargets.RED_HUB_AIM_POINT.getY(), EPSILON);
+        // Midpoints of opposing centerline tags in WPILib's 2026.2.1 welded layout.
+        assertEquals(4.6255178, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getX(), EPSILON);
+        assertEquals(4.0346376, Constants.FieldTargets.BLUE_HUB_AIM_POINT.getY(), EPSILON);
+        assertEquals(11.915521, Constants.FieldTargets.RED_HUB_AIM_POINT.getX(), EPSILON);
+        assertEquals(4.0346376, Constants.FieldTargets.RED_HUB_AIM_POINT.getY(), EPSILON);
+        // Correcting the aim point must not move the Hub/passback zone transition.
+        assertEquals(158.6 * 0.0254,
+            Constants.FieldTargets.BLUE_ALLIANCE_ZONE.get(1).getX(), EPSILON);
     }
 
     @Test

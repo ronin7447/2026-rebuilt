@@ -192,13 +192,12 @@ public final class Constants {
         public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30; // Modeled Hub target-plane height above the floor.
         public static final double BACK_TARGET_HEIGHT_METERS = 0.5; // Modeled passback target height above the floor.
 
-        // 2026 Rebuilt: each ALLIANCE HUB is centered 158.6 in from its alliance wall and centered across field width.
-        // Blue Hub center in field-frame meters.
+        // 158.6 in is the alliance-zone boundary near the Hub face, not the Hub center.
+        // Opposing centerline tags locate each Hub in the same field layout used by localization.
         public static final Translation2d BLUE_HUB_AIM_POINT =
-            new Translation2d(ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
-        // Red Hub center in field-frame meters.
+            hubCenterBetweenTags(26, 20);
         public static final Translation2d RED_HUB_AIM_POINT =
-            new Translation2d(FIELD_LENGTH_METERS - ALLIANCE_ZONE_DEPTH_METERS, FIELD_WIDTH_METERS / 2.0);
+            hubCenterBetweenTags(4, 10);
         public static final Translation2d BLUE_BACK_TARGET_UPPER = new Translation2d(0.48, 6.00); // Blue passback target on the higher-Y side, in meters.
         public static final Translation2d BLUE_BACK_TARGET_LOWER = new Translation2d(0.48, 2.50); // Blue passback target on the lower-Y side, in meters.
         public static final Translation2d RED_BACK_TARGET_UPPER = new Translation2d(16.1, 6.00); // Red passback target on the higher-Y side, in meters.
@@ -223,6 +222,14 @@ public final class Constants {
         );
 
         private FieldTargets() {}
+
+        private static Translation2d hubCenterBetweenTags(int firstId, int oppositeId) {
+            Translation2d first = Vision.FIELD_LAYOUT_OBJECT.getTagPose(firstId).orElseThrow()
+                .toPose2d().getTranslation();
+            Translation2d opposite = Vision.FIELD_LAYOUT_OBJECT.getTagPose(oppositeId).orElseThrow()
+                .toPose2d().getTranslation();
+            return first.plus(opposite).div(2.0);
+        }
 
         public static Translation2d getHubForAlliance(DriverStation.Alliance alliance) {
             return alliance == DriverStation.Alliance.Red ? RED_HUB_AIM_POINT : BLUE_HUB_AIM_POINT;
