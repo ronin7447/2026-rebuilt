@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
-        public static final double MAX_SPEED = 0.5 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Normal full-stick translation cap in m/s; 50% of configured 12 V speed.
+        public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Normal full-stick translation cap in m/s; 50% of configured 12 V speed.
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // Normal full-stick yaw cap in rad/s; 0.90 turns per second.
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // Translation deadband in m/s; 15% of normal speed cap.
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // Yaw deadband in rad/s; 15% of normal yaw cap.
@@ -91,8 +91,8 @@ public final class Constants {
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0; // Aim tolerance in turret turns; currently unused.
 
         // motor soft limits relative to the calibrated forward reference position
-        public static final double TALON_SOFT_LIMIT_LOW = -1.90; // Lower motor-rotation bound relative to the forward reference.
-        public static final double TALON_SOFT_LIMIT_HIGH = 4.235; // Upper motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_LOW = -0.74; // Lower motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_HIGH = 4.019; // Upper motor-rotation bound relative to the forward reference.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_LOW = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_LOW; // Lower controller soft limit in encoder motor rotations.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_HIGH = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_HIGH; // Upper controller soft limit in encoder motor rotations.
 
