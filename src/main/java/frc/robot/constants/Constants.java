@@ -175,10 +175,10 @@ public final class Constants {
         /* Field layout, CA district is welded */
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded; // Welded-field layout selector; current loader uses the enum directly.
 
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.50; // Largest accepted reported single-tag ambiguity.
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // Largest accepted reported single-tag ambiguity.
         public static final double MAX_POSE_Z_METERS = 2.05; // Largest accepted absolute robot height from vision.
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0; // Largest accepted absolute vision roll or pitch.
-        public static final double MAX_MEASUREMENT_AGE_SEC = 1.00; // Reject captured vision older than this many seconds.
+        public static final double MAX_MEASUREMENT_AGE_SEC = 0.6; // Reject captured vision older than this many seconds.
         public static final double VISION_HEALTHY_AGE_SEC = 0.70; // Accepted-vision age threshold for the health indicator.
         public static final double MULTI_TAG_BASE_XY_STD_DEV_METERS = 0.20; // Base translation uncertainty for multi-tag measurements.
         public static final double SINGLE_TAG_BASE_XY_STD_DEV_METERS = 0.50; // Base translation uncertainty for single-tag measurements.
