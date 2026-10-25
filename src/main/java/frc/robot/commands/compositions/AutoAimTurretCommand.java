@@ -20,6 +20,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.util.AimMath;
+import frc.robot.util.FieldAimSmoother;
 import frc.robot.util.AutoAimTargeting;
 import frc.robot.util.LinearShooterCalibration;
 import frc.robot.util.ShooterCalibration;
@@ -49,6 +50,7 @@ public class AutoAimTurretCommand extends Command {
         Constants.Turret.SOFT_LIMIT_LOW, Constants.Turret.SOFT_LIMIT_HIGH);
     private final StableShotSolutionSelector solutionSelector = new StableShotSolutionSelector(
         Constants.Turret.PREVIOUS_SOLUTION_MAX_AGE_SEC);
+    private final FieldAimSmoother aimSmoother = new FieldAimSmoother();
     private AutoAimTargeting.TargetSelection lastTarget;
     private DriverStation.Alliance lastAlliance;
 
@@ -73,6 +75,7 @@ public class AutoAimTurretCommand extends Command {
     private void resetStabilization() {
         targetSelector.reset();
         goalStabilizer.reset();
+        aimSmoother.reset();
         solutionSelector.reset();
         lastTarget = null;
         lastAlliance = null;
@@ -167,6 +170,7 @@ public class AutoAimTurretCommand extends Command {
             alliance, robotPose.getTranslation(), nowSec, stabilize);
         if (lastAlliance != alliance || !targetSelection.equals(lastTarget)) {
             goalStabilizer.reset();
+            aimSmoother.reset();
             solutionSelector.reset();
         }
         lastAlliance = alliance;
@@ -314,6 +318,20 @@ public class AutoAimTurretCommand extends Command {
             commandedTurretAngle = turret.getTurretGoal();
             desiredFieldYaw = commandedTurretAngle.plus(robotPose.getRotation());
         }
+        Rotation2d unfilteredGoal = commandedTurretAngle;
+        if (movingShotSolution.isPresent()) {
+            Rotation2d filteredFieldYaw = aimSmoother.calculate(desiredFieldYaw, nowSec,
+                Constants.Turret.AIM_SMOOTHING_ENABLED, Constants.Turret.AIM_SMOOTHING_TIME_CONSTANT_SEC,
+                Constants.Turret.STABILIZATION_MAX_SAMPLE_GAP_SEC);
+            // Apply only the field-aim correction: preserve the solver's immediate chassis
+            // counterrotation, predicted release heading, and local-frame conversion.
+            commandedTurretAngle = commandedTurretAngle.plus(filteredFieldYaw.minus(desiredFieldYaw));
+        } else {
+            aimSmoother.reset();
+        }
+        SmartDashboard.putBoolean("Turret/Smoothing/Enabled", Constants.Turret.AIM_SMOOTHING_ENABLED);
+        SmartDashboard.putNumber("Turret/Smoothing/TimeConstantSec", Constants.Turret.AIM_SMOOTHING_TIME_CONSTANT_SEC);
+        SmartDashboard.putNumber("Turret/Smoothing/CorrectionDeg", commandedTurretAngle.minus(unfilteredGoal).getDegrees());
         Rotation2d rawGoal = commandedTurretAngle;
         Rotation2d stableGoal = goalStabilizer.calculate(rawGoal, turret.getTurretPositionRotations(), nowSec, stabilize);
         if (stabilize) turret.setTurretGoal(stableGoal, stableGoal.getRotations());

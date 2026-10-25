@@ -198,6 +198,44 @@ class FeedSequencerTest {
         assertTrue(sequencer.update(0.095, blocked(), false, false).indexerEnabled());
     }
 
+    @Test
+    void continuousFeedWaitsForInitialReadinessThenIgnoresRepeatedRecovery() {
+        var sequencer = new FeedSequencer(0.05, 0.05, 0.025, true);
+        assertFalse(sequencer.update(0, blocked(), false, true).indexerEnabled());
+        sequencer.update(0.02, ready(), false, true);
+        assertTrue(sequencer.update(0.095, ready(), false, true).indexerEnabled());
+        var fluctuating = blocked().withMotionBlockers(List.of("robot-acceleration"));
+        for (int i = 0; i < 50; i++) {
+            var state = sequencer.update(0.1 + i * 0.02, i % 2 == 0 ? fluctuating : ready(), false, true);
+            assertTrue(state.indexerEnabled());
+            assertTrue(state.outtakeEnabled());
+        }
+        sequencer.reset(); // Trigger release/repress begins a new shot request.
+        assertFalse(sequencer.update(2, blocked(), false, true).permitted());
+    }
+
+    @Test
+    void continuousFeedHardStopsClearLatchAndRequireReadinessAgain() {
+        for (int guard = 0; guard < 6; guard++) {
+            var sequencer = new FeedSequencer(0.05, 0.05, 0.025, true);
+            sequencer.update(0, ready(), false, true);
+            assertTrue(sequencer.update(0.075, ready(), false, true).indexerEnabled());
+            var unsafe = ShotReadinessSnapshot.evaluate(0.1, guard != 0, true, 0,
+                guard != 1, true, guard != 2, true, guard != 3, true, guard != 4, guard != 5, 0, 0.1);
+            var stopped = sequencer.update(0.1, unsafe, false, true);
+            assertFalse(stopped.indexerEnabled());
+            assertFalse(stopped.outtakeEnabled());
+            assertFalse(sequencer.update(0.12, blocked(), false, true).permitted());
+        }
+    }
+
+    @Test
+    void manualOverrideAloneDoesNotLatchAutomaticContinuousFeeding() {
+        var sequencer = new FeedSequencer(0.05, 0.05, 0.025, true);
+        assertTrue(sequencer.update(0, blocked(), true, true).indexerEnabled());
+        assertFalse(sequencer.update(0.02, blocked(), false, true).indexerEnabled());
+    }
+
     private static ShotReadinessSnapshot ready() {
         return new ShotReadinessSnapshot(0, true, true, 0, true, true, true, true, true, true, true, true,
             Double.POSITIVE_INFINITY, List.of());

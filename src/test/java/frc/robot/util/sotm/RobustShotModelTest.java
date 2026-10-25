@@ -273,15 +273,15 @@ class RobustShotModelTest {
     @Test
     void farFlatTransitionIsContinuousAndCloseShotsKeepMap() {
         RobustShotSolution prior = null;
-        for (double distance : new double[] {3.9999, 4.0, 4.0001, 5.4999, 5.5, 5.5001}) {
+        for (double distance : new double[] {4.0, 4.8999, 4.9, 4.9001, 5.4999, 5.5, 5.5001}) {
             var shot = RobustShotModel.solve(requestFor(
                 new Pose2d(4.0 - distance, 0.0, Rotation2d.kZero), new ChassisSpeeds(), new Rotation3d())).orElseThrow();
             assertTrue(shot.quality().insideTolerance(), shot.quality().reason());
-            if (distance <= 4.0) {
+            if (distance <= 4.9) {
                 assertEquals(GeneratedShotMapCoefficients.evaluateRollerRps(distance, 0.0), shot.rollerRps(), EPSILON);
                 assertEquals(CommandSource.GENERATED_POLYNOMIAL, shot.commandSource());
             }
-            if (prior != null && distance != 5.4999) {
+            if (prior != null && distance != 5.4999 && distance != 4.8999) {
                 assertEquals(prior.hoodPositionRot(), shot.hoodPositionRot(), 0.001);
                 assertEquals(prior.rollerRps(), shot.rollerRps(), 0.01);
             }

@@ -24,7 +24,8 @@ public class ShootCommand extends Command {
     private final FeedSequencer sequencer = new FeedSequencer(
         Constants.ShotMap.FEED_RECOVERY_READY_TIME_SEC,
         Constants.ShotMap.OUTTAKE_DELAY_AFTER_READY_SEC,
-        Constants.ShotMap.INDEXER_DELAY_AFTER_OUTTAKE_SEC
+        Constants.ShotMap.INDEXER_DELAY_AFTER_OUTTAKE_SEC,
+        Constants.ShotMap.CONTINUE_FEED_AFTER_INITIAL_READY
     );
 
     public ShootCommand(

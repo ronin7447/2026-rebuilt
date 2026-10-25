@@ -74,7 +74,7 @@ public final class Constants {
         public static final Rotation2d TURRET_ZERO_OFFSET = Rotation2d.fromDegrees(0.0); // Unused legacy yaw offset; current aim uses the forward reference.
         public static final Rotation2d PARK_ANGLE = Rotation2d.fromDegrees(0.0); // Logical turret angle used for parking.
         
-        public static final double AIM_TOLERANCE_DEG = 2.0; // Final turret alignment error allowed for automatic feeding.
+        public static final double AIM_TOLERANCE_DEG = 4.0; // Final turret alignment error allowed for automatic feeding; loosened for moving-shot throughput.
         public static final double DIAGNOSTIC_TOLERANCE_DEG = 0.5; // Bench diagnostic tolerance, independent of feed alignment.
         public static final double MAX_VISION_AGE_FOR_SHOT_SEC = 0.25; // Accepted-vision age warning threshold; does not block feed.
         public static final double TRACKING_WINDOW_SEC = 1.0; // Rolling window for turret tracking-error metrics.
@@ -85,6 +85,8 @@ public final class Constants {
         public static final double TARGET_SWITCH_CONFIRM_SEC = 0.10; // A different target must remain selected this long before switching.
         public static final double PASSBACK_SWITCH_ADVANTAGE_METERS = 0.15; // New passback target must be this much nearer in Y before switching.
         public static final double PREVIOUS_SOLUTION_MAX_AGE_SEC = 0.10; // Maximum time since a fresh solution for reuse; every reused shot is fully revalidated.
+        public static final boolean AIM_SMOOTHING_ENABLED = true; // Smooth field-relative aim corrections independently of target stabilization.
+        public static final double AIM_SMOOTHING_TIME_CONSTANT_SEC = 0.060; // Larger = smoother but more tracking delay; zero bypasses smoothing.
         public static final double GOAL_DEADBAND_DEG = 0.15; // Ignore smaller accumulated goal changes; zero disables the deadband without delaying normal tracking.
         public static final double STABILIZATION_MAX_SAMPLE_GAP_SEC = 0.10; // Reset goal/target history after a larger sample gap or clock reversal.
         
@@ -189,7 +191,7 @@ public final class Constants {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2); // Field length along +X from the blue-wall origin.
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7); // Field width along +Y.
         private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(158.6); // Alliance-zone depth measured from each alliance wall.
-        public static final double HUB_TARGET_HEIGHT_METERS = 1.83 + 0.30; // Modeled Hub target-plane height above the floor.
+        public static final double HUB_TARGET_HEIGHT_METERS = 1.83; // Modeled Hub target-plane height above the floor.
         public static final double BACK_TARGET_HEIGHT_METERS = 0.5; // Modeled passback target height above the floor.
 
         // 158.6 in is the alliance-zone boundary near the Hub face, not the Hub center.
@@ -396,7 +398,7 @@ public final class Constants {
         public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
         public static final int FAR_HUB_SHOT_MAP_TRIAL = 1; // 1 = generated 63-degree trial, 2 = 61-degree trial, 0 = original map plus optional runtime flattening below.
         public static final boolean FAR_HUB_FLAT_SHOT_ENABLED = true; // Recompute far-Hub shots with a flatter field launch angle; false restores the map.
-        public static final double FAR_HUB_FLAT_START_METERS = 4.0; // Start smoothly flattening at this release-to-Hub distance, not a field-X boundary.
+        public static final double FAR_HUB_FLAT_START_METERS = 4.9; // Start smoothly flattening at this release-to-Hub distance, not a field-X boundary.
         public static final double FAR_HUB_FLAT_FULL_METERS = 5.5; // Reach the requested far angle here; must exceed START_METERS.
         public static final double FAR_HUB_FLAT_ANGLE_DEG = 63.0; // Far field launch pitch; RPS is solved together with angle and robot motion.
         public static final double BASE_RELEASE_LATENCY_SEC = 0.14; // Provisional prediction horizon to Fuel departure; measure on hardware.
@@ -407,6 +409,7 @@ public final class Constants {
         public static final double MIN_TRANSLATION_SCALE_WHEN_NOT_READY = 0.65; // Unused advisory scale; current drive limits use Drivebase settings.
         public static final double MIN_ROTATION_SCALE_WHEN_NOT_READY = 0.55; // Unused advisory scale; current yaw limits use Drivebase settings.
         public static final boolean FEED_INTERLOCK_ENABLED = true; // Master feed-readiness switch: true gates normal/autonomous/calibration feed; false bypasses shot readiness. Motor guards and calibration input validation remain.
+        public static final boolean CONTINUE_FEED_AFTER_INITIAL_READY = true; // After automatic feed starts, ignore ShotReady fluctuations until release or a hard actuator/operation stop. False restores continuous gating.
         public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
         public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
         public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025; // Extra delay before spindexer start; force feed skips it.

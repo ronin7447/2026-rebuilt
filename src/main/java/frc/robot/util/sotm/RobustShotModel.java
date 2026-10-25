@@ -315,9 +315,10 @@ public final class RobustShotModel {
                 radialVelocityMps
             );
             double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
-            if (farMapTrialEnabled() && distanceMeters > 4.0) {
-                // Trial coefficients were fitted for 4–8 m. Keep these transition bounds tied to generation.
-                double blend = Math.min(1.0, (distanceMeters - 4.0) / 1.5);
+            if (farMapTrialEnabled() && distanceMeters > GeneratedFarShotTrials.TRANSITION_START_METERS) {
+                // Transition bounds are emitted by the same generator as the trial coefficients.
+                double blend = Math.min(1.0, (distanceMeters - GeneratedFarShotTrials.TRANSITION_START_METERS)
+                    / (GeneratedFarShotTrials.TRANSITION_FULL_METERS - GeneratedFarShotTrials.TRANSITION_START_METERS));
                 blend = blend * blend * (3.0 - 2.0 * blend);
                 int profile = Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL;
                 hoodPositionRot += blend * (GeneratedFarShotTrials.hood(profile) - hoodPositionRot);

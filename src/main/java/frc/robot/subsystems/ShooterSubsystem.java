@@ -30,6 +30,7 @@ public class ShooterSubsystem extends SubsystemBase {
         Constants.Shooter.ROLLER_RUNNING_TOLERANCE_RPS, Constants.Shooter.ROLLER_RUNNING_TOLERANCE_SCALE);
 
     private boolean hoodEnabled = true;
+    private boolean hoodLowerOverride = false;
     private final boolean hoodConfigured;
     private final boolean rollerConfigured;
 
@@ -132,6 +133,12 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
 
+    /** Temporary driver override; auto aim may keep updating the target restored on release. */
+    public void setHoodLowerOverride(boolean active) {
+        hoodLowerOverride = active;
+        if (active) setHoodEnabled(true);
+    }
+
     public void setTargetPositionRotation(double pos) {
         if (!Double.isFinite(pos)) {
             return;
@@ -198,11 +205,11 @@ public class ShooterSubsystem extends SubsystemBase {
             && isSignalFresh(hoodKraken.getPosition())
             && Double.isFinite(position)
             && Double.isFinite(targetPosRot)
-            && Math.abs(position - targetPosRot) <= Constants.Shooter.HOOD_POSITION_TOLERANCE_ROT;
+            && Math.abs(position - getTargetHoodPositionRot()) <= Constants.Shooter.HOOD_POSITION_TOLERANCE_ROT;
     }
 
     public double getTargetHoodPositionRot() {
-        return targetPosRot;
+        return hoodLowerOverride ? 0.0 : targetPosRot;
     }
 
     public double getTargetRollerVelocityRps() {
@@ -210,7 +217,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean hasFiniteBoundedSetpoints() {
-        return Double.isFinite(targetPosRot)
+        return !hoodLowerOverride && Double.isFinite(targetPosRot)
             && targetPosRot >= Constants.Shooter.MIN_HOOD_POSITION_ROT
             && targetPosRot <= Constants.Shooter.MAX_HOOD_POSITION_ROT
             && Double.isFinite(targetRollerVelRps)
@@ -226,12 +233,13 @@ public class ShooterSubsystem extends SubsystemBase {
     @Override
     public void periodic() {
         if (hoodEnabled && hoodConfigured) {
-            hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+            hoodKraken.setControl(mmPos.withPosition(getTargetHoodPositionRot()));
         } else {
             hoodKraken.setControl(new VoltageOut(0)); 
         }
         
-        SmartDashboard.putNumber("HoodPosition", targetPosRot);
+        SmartDashboard.putNumber("HoodPosition", getTargetHoodPositionRot());
+        SmartDashboard.putBoolean("Shooter/HoodLowerOverride", hoodLowerOverride);
         SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
         double actualRollerRps = getRollerVelocity();
         SmartDashboard.putNumber("Shooter/TargetRPS", targetRollerVelRps);

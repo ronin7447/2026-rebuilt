@@ -314,12 +314,12 @@ public class RobotContainer {
                 () -> m_IntakeSubsystem.setRollerReverseRequested(false)
             ));
 
-        // Sample speed only on a fresh A press. Holding/re-pressing A never restarts a trial.
-        // joystick.a().onTrue(Commands.runOnce(() -> {
-        //     if (DriverStation.isTeleopEnabled() && calibrationControlsIdle()) {
-        //         CommandScheduler.getInstance().schedule(launchSpeedCalibration);
-        //     }
-        // }));
+        // Temporary hood-only override; no shooter requirement so it does not cancel the held shoot command.
+        joystick.a().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
+            .whileTrue(Commands.startEnd(
+                () -> m_ShooterSubsystem.setHoodLowerOverride(true),
+                () -> m_ShooterSubsystem.setHoodLowerOverride(false)
+            ));
         // Continuous stop while held gives B priority over simultaneous mechanism inputs.
         // joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
 

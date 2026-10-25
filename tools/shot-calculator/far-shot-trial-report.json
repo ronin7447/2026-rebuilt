@@ -1,62 +1,70 @@
 {
   "note": "Experimental gravity-only model validation before global RPS trim; no field accuracy claim. Grid acceptance includes physically unreachable inputs. Sideways motion and tilt require runtime validation.",
+  "transitionStartMeters": 4.9,
+  "transitionFullMeters": 5.5,
   "profiles": [
     {
       "angle": 63,
       "hood": -2.0895681,
       "coefficients": [
-        -53.23749886457261,
-        -5.571224025474723,
-        4.622370931811508,
-        0.05704937197339488,
-        0.41731028391023894,
-        -0.7621303558032422
+        -50.267146427347484,
+        -6.07498892194252,
+        5.351084769574834,
+        0.08787288471341803,
+        0.3442794294265563,
+        -0.734750481737055
       ],
-      "samples": 292,
-      "maxRpsFitError": 0.6879595517291364,
-      "accepted": 3442,
+      "samples": 302,
+      "maxRpsFitError": 0.6850124385999621,
+      "accepted": 3422,
       "checked": 4131,
       "stationary": [
         {
           "distance": 4,
-          "hood": -1.6876286939648,
-          "rpsBeforeTrim": -77.190858879332,
+          "hood": -1.7386280159607999,
+          "rpsBeforeTrim": -75.44897929354799,
           "feasible": true
         },
         {
           "distance": 4.5,
-          "hood": -1.8246888844755185,
-          "rpsBeforeTrim": -79.12835119489976,
+          "hood": -1.7808112840976997,
+          "rpsBeforeTrim": -78.1793501445445,
+          "feasible": true
+        },
+        {
+          "distance": 4.9,
+          "hood": -1.8105755501063079,
+          "rpsBeforeTrim": -80.28279825456018,
           "feasible": true
         },
         {
           "distance": 5,
-          "hood": -2.00651402213463,
-          "rpsBeforeTrim": -80.36661793592877,
+          "hood": -1.8376194080092592,
+          "rpsBeforeTrim": -80.62319706244257,
           "feasible": true
         },
         {
           "distance": 5.5,
           "hood": -2.0895681,
-          "rpsBeforeTrim": -82.15348750248839,
+          "rpsBeforeTrim": -81.02143073545045,
           "feasible": true
         },
         {
           "distance": 6,
           "hood": -2.0895681,
-          "rpsBeforeTrim": -84.61106562637872,
+          "rpsBeforeTrim": -83.55365610931955,
           "feasible": true
         },
         {
           "distance": 7,
           "hood": -2.0895681,
-          "rpsBeforeTrim": -89.44064781619932,
+          "rpsBeforeTrim": -88.48629752998764,
           "feasible": true
         },
         {
           "distance": 8,
           "hood": -2.0895681,
-          "rpsBeforeTrim": -94.15613126207312,
+          "rpsBeforeTrim": -93.24319318122889,
           "feasible": true
         }
       ]
@@ -65,58 +73,64 @@
       "angle": 61,
       "hood": -2.2611507,
       "coefficients": [
-        -53.11624790197723,
-        -5.452632575858843,
-        4.178818715921665,
-        0.0646108853537255,
-        0.3863173625483336,
-        -0.68174002825294
+        -50.28819423150594,
+        -5.855924198407089,
+        4.833769553171521,
+        0.08561608017057976,
+        0.3281078352853273,
+        -0.6627733163495165
       ],
-      "samples": 302,
-      "maxRpsFitError": 0.5173998218410389,
-      "accepted": 3610,
+      "samples": 315,
+      "maxRpsFitError": 0.6603646537781316,
+      "accepted": 3574,
       "checked": 4131,
       "stationary": [
         {
           "distance": 4,
-          "hood": -1.6876286939648,
-          "rpsBeforeTrim": -77.190858879332,
+          "hood": -1.7386280159607999,
+          "rpsBeforeTrim": -75.44897929354799,
           "feasible": true
         },
         {
           "distance": 4.5,
-          "hood": -1.8691732622532962,
-          "rpsBeforeTrim": -78.91886112368755,
+          "hood": -1.7808112840976997,
+          "rpsBeforeTrim": -78.1793501445445,
+          "feasible": true
+        },
+        {
+          "distance": 4.9,
+          "hood": -1.8105755501063079,
+          "rpsBeforeTrim": -80.28279825456018,
           "feasible": true
         },
         {
           "distance": 5,
-          "hood": -2.133612244356852,
-          "rpsBeforeTrim": -79.69754679134876,
+          "hood": -1.8503292302314813,
+          "rpsBeforeTrim": -80.54780034392793,
           "feasible": true
         },
         {
           "distance": 5.5,
           "hood": -2.2611507,
-          "rpsBeforeTrim": -81.15124778725067,
+          "rpsBeforeTrim": -79.9058908975849,
           "feasible": true
         },
         {
           "distance": 6,
           "hood": -2.2611507,
-          "rpsBeforeTrim": -83.50605148439617,
+          "rpsBeforeTrim": -82.34156053580762,
           "feasible": true
         },
         {
           "distance": 7,
           "hood": -2.2611507,
-          "rpsBeforeTrim": -88.11874255065658,
+          "rpsBeforeTrim": -87.08447569199716,
           "feasible": true
         },
         {
           "distance": 8,
           "hood": -2.2611507,
-          "rpsBeforeTrim": -92.60221184620954,
+          "rpsBeforeTrim": -91.65615868784553,
           "feasible": true
         }
       ]

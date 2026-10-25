@@ -5,7 +5,7 @@ export type CandidateSelection = 'robust' | 'flattest' | 'flat-fast';
 export const defaultConfig: ShotCalculatorConfig = {
   gravityMps2: 9.81,
   shooterExitHeightMeters: 0.4064,
-  targetHeightMeters: 2.13,
+  targetHeightMeters: 1.83,
   goalRadiusMeters: 0.28,
   fuelRadiusMeters: (5.91 * 0.0254) / 2.0,
   hubOpeningDepthMeters: 41.7 * 0.0254,
