@@ -386,6 +386,7 @@ public final class Constants {
         public static final boolean USE_ROBUST_SOTM = true; // Select the release-prediction and final-trajectory evaluator.
         public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false; // Explicit legacy mode; rejected robust shots never silently fall back.
         public static final boolean TILT_COMPENSATION_ENABLED = false; // Apply measured pitch/roll to shooting; false assumes level while preserving yaw/motion prediction.
+        public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
         public static final double BASE_RELEASE_LATENCY_SEC = 0.14; // Provisional prediction horizon to Fuel departure; measure on hardware.
         public static final double ACCEL_FILTER_ALPHA = 0.25; // Weight of the new acceleration sample; larger values filter less.
         public static final double MAX_ACCEL_SAMPLE_DT_SEC = 0.10; // Reject acceleration derivatives across larger odometry time gaps.

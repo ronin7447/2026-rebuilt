@@ -5,6 +5,7 @@ import java.util.OptionalDouble;
 
 import com.ctre.phoenix6.Utils;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -262,8 +263,6 @@ public class AutoAimTurretCommand extends Command {
                 desiredFieldYaw = solution.desiredFieldYaw();
                 mappedHoodPosition = OptionalDouble.of(solution.hoodPositionRot());
                 mappedRollerRps = OptionalDouble.of(solution.rollerRps());
-                mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
-                mappedRollerRps.ifPresent(shooter::setRollerTargetVelocity);
                 movingShotSolution = Optional.of(new ShooterKinematics.MovingShotSolution(
                     solution.desiredFieldYaw(),
                     solution.desiredTurretYaw(),
@@ -293,6 +292,13 @@ public class AutoAimTurretCommand extends Command {
             }
             if (mappedRollerRps.isEmpty()) {
                 mappedRollerRps = shooterCalibration.rollerRpsForExitSpeedMps(solution.requiredExitSpeedMps());
+            }
+
+            // Apply the empirical output trim once, including revalidated shots, without changing the fitted map.
+            if (mappedRollerRps.isPresent()) {
+                mappedRollerRps = OptionalDouble.of(MathUtil.clamp(
+                    mappedRollerRps.getAsDouble() * Constants.ShotMap.ROLLER_RPS_OUTPUT_SCALE,
+                    -Constants.Shooter.MAX_ROLLER_RPS, Constants.Shooter.MAX_ROLLER_RPS));
             }
 
             mappedHoodPosition.ifPresent(shooter::setTargetPositionRotation);
