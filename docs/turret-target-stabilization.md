@@ -25,3 +25,7 @@ Observe `Turret/Smoothing/CorrectionDeg`, `Turret/Stabilization/Status`, raw/com
 - Holding A commands hood zero and blocks normal feeding through the bounded-setpoint guard. Release restores the latest normal hood target.
 
 `Feed/Reason`, `Feed/ReadinessWarnings`, `Feed/MotionBlockers`, and `Turret/RobustShotReason` distinguish actual feed permission from diagnostic ShotReady changes. Turret PID and Motion Magic settings are separate from these policies.
+
+## Hood parking
+
+The hood parks at 0.0 while idle. Right-trigger shooting and autonomous `ShootSequence` request the latest stored aiming target until the command ends. Auto aim can update that stored target while parked. The explicit manual calibration command also requests its hood target. Holding A overrides an active shooting request back to zero. Disabled mechanism output is still respected. Hub feeding remains speed-gated, so it does not wait for the hood to finish moving.

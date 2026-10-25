@@ -31,6 +31,7 @@ public final class LaunchSpeedCalibrationCommand extends Command {
                 turret.setAutoAimSuppressed(true);
                 turret.invalidateAimState("launch-speed-calibration");
                 turret.setTurretGoal(Rotation2d.kZero);
+                shooter.setShootingHoodRequested(true);
                 shooter.setHoodEnabled(true);
                 shooter.setTargetPositionRotation(hoodPositionRot);
                 shooter.runRoller(signedRps);

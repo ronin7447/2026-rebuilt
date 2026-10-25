@@ -79,6 +79,7 @@ public class ShootCommand extends Command {
     @Override
     public void initialize() {
         sequencer.reset();
+        shooterSubsystem.setShootingHoodRequested(true);
         SmartDashboard.putBoolean("Feed/ShootRequested", true);
 
         shooterSubsystem.enableRoller();
@@ -117,6 +118,7 @@ public class ShootCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        shooterSubsystem.setShootingHoodRequested(false);
         shooterSubsystem.disableRoller();
         outtakeSubsystem.disableRoller();
         indexerSubsystem.disableRoller();

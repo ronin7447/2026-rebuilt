@@ -31,6 +31,7 @@ public class ShooterSubsystem extends SubsystemBase {
 
     private boolean hoodEnabled = true;
     private boolean hoodLowerOverride = false;
+    private boolean shootingHoodRequested = false;
     private final boolean hoodConfigured;
     private final boolean rollerConfigured;
 
@@ -139,12 +140,18 @@ public class ShooterSubsystem extends SubsystemBase {
         if (active) setHoodEnabled(true);
     }
 
+    /** Shoot commands request the latest aiming target; idle operation parks at zero. */
+    public void setShootingHoodRequested(boolean requested) {
+        shootingHoodRequested = requested;
+        if (requested) setHoodEnabled(true);
+    }
+
     public void setTargetPositionRotation(double pos) {
         if (!Double.isFinite(pos)) {
             return;
         }
         targetPosRot = pos;
-        SmartDashboard.putNumber("HoodPosition", pos);
+        SmartDashboard.putNumber("HoodPosition", getTargetHoodPositionRot());
     }
 
     public void setRollerTargetVelocity(double velRps) {
@@ -165,6 +172,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void disableRoller() {
+        shootingHoodRequested = false;
         rollerEnabled = false;
         speedReadiness.reset();
         if (rollerKraken != null) {
@@ -209,7 +217,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public double getTargetHoodPositionRot() {
-        return hoodLowerOverride ? 0.0 : targetPosRot;
+        return shootingHoodRequested && !hoodLowerOverride ? targetPosRot : 0.0;
     }
 
     public double getTargetRollerVelocityRps() {
@@ -217,7 +225,7 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean hasFiniteBoundedSetpoints() {
-        return !hoodLowerOverride && Double.isFinite(targetPosRot)
+        return shootingHoodRequested && !hoodLowerOverride && Double.isFinite(targetPosRot)
             && targetPosRot >= Constants.Shooter.MIN_HOOD_POSITION_ROT
             && targetPosRot <= Constants.Shooter.MAX_HOOD_POSITION_ROT
             && Double.isFinite(targetRollerVelRps)
@@ -240,6 +248,8 @@ public class ShooterSubsystem extends SubsystemBase {
         
         SmartDashboard.putNumber("HoodPosition", getTargetHoodPositionRot());
         SmartDashboard.putBoolean("Shooter/HoodLowerOverride", hoodLowerOverride);
+        SmartDashboard.putBoolean("Shooter/ShootingHoodRequested", shootingHoodRequested);
+        SmartDashboard.putNumber("Shooter/AimHoodTargetRot", targetPosRot);
         SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
         double actualRollerRps = getRollerVelocity();
         SmartDashboard.putNumber("Shooter/TargetRPS", targetRollerVelRps);
