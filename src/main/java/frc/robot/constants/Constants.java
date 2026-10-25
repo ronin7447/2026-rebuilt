@@ -418,9 +418,9 @@ public final class Constants {
         public static final boolean FEED_INTERLOCK_ENABLED = true; // Master feed-readiness switch: true gates normal/autonomous/calibration feed; false bypasses shot readiness. Motor guards and calibration input validation remain.
         public static final boolean FEED_REQUIRE_TURRET_ALIGNMENT = false; // Require turret angular tolerance before feeding; false allows feeding while tracking. Travel limits still apply.
         public static final boolean CONTINUE_FEED_AFTER_INITIAL_READY = true; // After automatic feed starts, ignore ShotReady fluctuations until release or a hard actuator/operation stop. False restores continuous gating.
-        public static final double FEED_RECOVERY_READY_TIME_SEC = 0.05; // Continuous readiness dwell after an automatic feed interruption.
-        public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.05; // Delay from readiness to final-feed start; force feed skips it.
-        public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.025; // Extra delay before spindexer start; force feed skips it.
+        public static final double FEED_RECOVERY_READY_TIME_SEC = 0.0; // No recovery dwell: restart immediately when startup requirements pass.
+        public static final double OUTTAKE_DELAY_AFTER_READY_SEC = 0.0; // Enable final feed on the first ready scheduler cycle.
+        public static final double INDEXER_DELAY_AFTER_OUTTAKE_SEC = 0.0; // Enable spindexer together with final feed; no staging window.
         public static final double MAX_SOLUTION_AGE_SEC = 0.10; // Maximum aim-evaluation age allowed for automatic feeding.
         public static final double SHOOT_MEASURED_SPEED_HEADROOM_SCALE = 1.20; // Measured speed allowance above shooting command caps; 1.20 = +20%.
         public static final double SHOOT_MEASURED_ACCEL_HEADROOM_SCALE = 1.50; // Measured acceleration allowance above command ramps; 1.50 = +50%.

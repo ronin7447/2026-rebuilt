@@ -85,6 +85,31 @@ public record ShotReadinessSnapshot(
             turretAtGoal, turretGoalLegal, setpointsFiniteAndBounded, acceptedVisionAgeSec, combined);
     }
 
+    /** Passback prioritizes throughput using existing commands; retain operation/actuator guards. */
+    public ShotReadinessSnapshot forPassbackFeed() {
+        List<String> hardBlockers = new ArrayList<>();
+        if (!enabledOperation) hardBlockers.add("robot-not-enabled");
+        if (!shooterRollerEnabled) hardBlockers.add("shooter-disabled");
+        if (!hoodEnabled) hardBlockers.add("hood-disabled");
+        if (!turretAutoAimActive) hardBlockers.add("auto-aim-inactive");
+        if (!turretGoalLegal) hardBlockers.add("turret-software-limit");
+        if (!setpointsFiniteAndBounded) hardBlockers.add("invalid-setpoint");
+        return new ShotReadinessSnapshot(timestampSec, enabledOperation, solutionValid, solutionAgeSec,
+            shooterRollerEnabled, shooterAtTarget, hoodEnabled, hoodAtTarget, turretAutoAimActive,
+            turretAtGoal, turretGoalLegal, setpointsFiniteAndBounded, acceptedVisionAgeSec, hardBlockers);
+    }
+
+    /** Hub startup waits only for roller speed plus the common operation/actuator guards. */
+    public ShotReadinessSnapshot forHubFeed(boolean requireTurretAlignment) {
+        ShotReadinessSnapshot hardGuarded = forPassbackFeed();
+        List<String> hubBlockers = new ArrayList<>(hardGuarded.blockers());
+        if (!shooterAtTarget) hubBlockers.add("shooter-speed");
+        if (requireTurretAlignment && !turretAtGoal) hubBlockers.add("turret-alignment");
+        return new ShotReadinessSnapshot(timestampSec, enabledOperation, solutionValid, solutionAgeSec,
+            shooterRollerEnabled, shooterAtTarget, hoodEnabled, hoodAtTarget, turretAutoAimActive,
+            turretAtGoal, turretGoalLegal, setpointsFiniteAndBounded, acceptedVisionAgeSec, hubBlockers);
+    }
+
     /** Force feed uses existing bounded commands; it does not require an auto-aim solution. */
     public boolean overrideSafe() {
         return enabledOperation && shooterRollerEnabled && setpointsFiniteAndBounded;

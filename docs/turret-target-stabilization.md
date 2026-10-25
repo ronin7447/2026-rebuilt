@@ -15,13 +15,13 @@ Observe `Turret/Smoothing/CorrectionDeg`, `Turret/Stabilization/Status`, raw/com
 
 ## Feed policy
 
-- `ShotMap.FEED_INTERLOCK_ENABLED=true`: normal feeding initially checks the readiness snapshot and current motion.
+- `ShotMap.FEED_INTERLOCK_ENABLED=true`: normal feeding uses target-specific startup policy: Hub waits for shooter minimum speed plus operation/actuator guards; passback requires only the operation/actuator guards.
 - `ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT=false`: angular alignment does not block feeding. The turret still tracks, its travel limits remain enforced, and `Turret/AtAimGoal` reports the actual 4-degree tolerance check.
 - `ShotMap.CONTINUE_FEED_AFTER_INITIAL_READY=true`: after automatic staging completes, speed/alignment/solution/motion readiness fluctuations do not stop sustained feeding. Disable, disabled mechanisms, inactive auto aim, illegal turret goals, and invalid bounded setpoints still stop it. Release/repress resets the sequencer.
-- Initial staging starts the outtake after 50 ms and the spindexer after another 25 ms. Recovery after a hard stop requires readiness again. Setting the continuation flag false restores continuous readiness gating and recovery staging.
+- Startup and recovery delays are zero. Both feed motors are enabled and automatic continuation latches on the first permitted scheduler update. Recovery after a hard stop requires the startup checks again, without a dwell. Setting the continuation flag false continuously applies the target-specific startup policy.
 - With the interlock false, enabled operation is sufficient for staged feed; local subsystem guards remain active.
 - Hold right trigger plus right-stick click for immediate manual force feed. With the interlock enabled, robot enable, enabled shooter roller, and finite bounded actuator commands remain required. Manual override alone does not latch automatic continuation.
-- Hub shots use reduced teleop drive limits. Passback uses normal drive limits and bypasses shooting-specific measured speed/acceleration gates; motion freshness and trajectory validity still matter for initial automatic readiness.
+- Hub shots use reduced teleop drive limits. Passback uses normal drive limits and bypasses initial shot-quality readiness (trajectory validity/age, measured motion, speed, hood position and angular alignment). It feeds using existing bounded commands; robot/mechanism enable, active auto aim and turret travel guards remain. There is no startup staging delay. `Feed/PassbackBypassedWarnings` retains the raw diagnostic reasons.
 - Holding A commands hood zero and blocks normal feeding through the bounded-setpoint guard. Release restores the latest normal hood target.
 
 `Feed/Reason`, `Feed/ReadinessWarnings`, `Feed/MotionBlockers`, and `Turret/RobustShotReason` distinguish actual feed permission from diagnostic ShotReady changes. Turret PID and Motion Magic settings are separate from these policies.

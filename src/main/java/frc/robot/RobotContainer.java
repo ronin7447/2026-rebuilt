@@ -448,7 +448,7 @@ public class RobotContainer {
             SmartDashboard.putNumber("SOTM/FilteredAccelerationYMps2", motion.motion().fieldAccelYMps2());
             SmartDashboard.putNumber("SOTM/FilteredAngularAccelerationRadPerSec2", motion.motion().angularAccelRadPerSec2());
         }
-        return ShotReadinessSnapshot.evaluate(
+        ShotReadinessSnapshot rawReadiness = ShotReadinessSnapshot.evaluate(
             nowSec,
             DriverStation.isEnabled(),
             m_TurretSubsystem.isShotSolutionValid() && m_TurretSubsystem.hasFiniteMappedSetpoints(),
@@ -464,6 +464,11 @@ public class RobotContainer {
             m_vision.getVisionAgeSec(),
             Constants.ShotMap.MAX_SOLUTION_AGE_SEC
         ).withMotionBlockers(motionBlockers);
+        SmartDashboard.putBoolean("Feed/PassbackReadinessBypassed", passback);
+        SmartDashboard.putString("Feed/PassbackBypassedWarnings", passback ? rawReadiness.blockerSummary() : "");
+        boolean hub = "HUB".equals(m_TurretSubsystem.getTargetModeName());
+        SmartDashboard.putString("Feed/HubReadinessWarnings", hub ? rawReadiness.blockerSummary() : "");
+        return passback ? rawReadiness.forPassbackFeed() : (hub ? rawReadiness.forHubFeed(Constants.ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT) : rawReadiness);
     }
 
     private Command createAutopilotCommand(Pose2d goal) {
