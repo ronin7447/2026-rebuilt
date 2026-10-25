@@ -84,6 +84,7 @@ public class AutoAimTurretCommand extends Command {
         double nowSec = Utils.getCurrentTimeSeconds();
         boolean stabilize = Constants.Turret.TARGET_STABILIZATION_ENABLED;
         SmartDashboard.putBoolean("Turret/Stabilization/Enabled", stabilize);
+        SmartDashboard.putBoolean("SOTM/TiltCompensationEnabled", Constants.ShotMap.TILT_COMPENSATION_ENABLED);
         var motionEstimate = drivetrain.getShotMotionEstimate();
         double motionAgeSec = nowSec - motionEstimate.timestampSec();
         if (Constants.ShotMap.USE_ROBUST_SOTM && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK
@@ -235,7 +236,8 @@ public class AutoAimTurretCommand extends Command {
             && !Constants.ShotMap.USE_LEGACY_SOLVER_ROLLBACK) {
             shotModelName = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
                 ? "RobustShotMap" : "ReferencePassback";
-            ShotMotionState motionState = motionEstimate.motion();
+            ShotMotionState motionState = motionEstimate.motion()
+                .withTiltCompensation(Constants.ShotMap.TILT_COMPENSATION_ENABLED);
             ShotTargetConstraints targetConstraints = targetSelection.targetMode() == AutoAimTargeting.TargetMode.HUB
                 ? ShotTargetConstraints.hub(selectedTargetPoint3d.getZ())
                 : ShotTargetConstraints.passback(selectedTargetPoint3d.getZ());
