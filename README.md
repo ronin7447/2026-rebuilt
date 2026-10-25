@@ -1,11 +1,13 @@
 # 2026-rebuilt
 Code repository for the FRC 2026 season, REBUILT, for Team 7447 Rōnin Robotics.
 
-For the A/B manual shooter trials on this branch, see the
-[launch-speed calibration guide](docs/launch-speed-calibration.md).
+## References
 
-## Field readiness
+- [Turret smoothing and feed readiness](docs/turret-target-stabilization.md)
+- [Turret tuning field guide](docs/qualification/turret-tuning-field-guide.md)
+- [Power and health log signals](docs/implementation/power-signal-dictionary.md)
+- [Camera mount visibility analysis](docs/vision/camera-mount-analysis/README.md)
+- [Shot-map trial profiles](tools/shot-calculator/FAR_SHOT_TRIALS.md)
 
-Start with the [human step-by-step guide](docs/field-readiness/HUMAN-GUIDE.md). It links the [AI implementation handoffs](docs/field-readiness/ai-handoffs/README.md) and measurement forms for bring-up, new-flywheel calibration, controller qualification, power trials, and release checks.
-
-The roadmap distinguishes implemented software from measured practice and field qualification. All documents use repository-relative links for work across computers.
+Current settings live in `src/main/java/frc/robot/constants/Constants.java`.
+A is a hold-to-zero hood override; the former A/B calibration bindings are not active.

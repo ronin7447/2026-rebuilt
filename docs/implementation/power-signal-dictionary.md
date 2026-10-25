@@ -2,7 +2,7 @@
 
 The single `PowerHealthRecorder` starts WPILib DataLog once, retains Phoenix `.hoot` logging, and writes cached signals without scheduler-thread waits. WPILib selects an attached USB log location when supported and otherwise uses its internal fallback. `PowerLogger/Healthy`, `PowerLogger/Status`, and `PowerLogger/PDHAvailable` expose failure without blocking control.
 
-These indicators are not proof of disk persistence or live PDH communication: the current adapters report availability after initialization, and `LastWriteSec` is the sampling timestamp. Retrieve a real log and verify changing values/identity before relying on it. General NetworkTables logging is disabled. Full feed blockers and shot-motion derivatives are explicitly recorded; turret profile/trial metrics still need explicit recording through [packet 02](../field-readiness/ai-handoffs/02-session-recording-and-preflight.md).
+These indicators are not proof of disk persistence or live PDH communication: the current adapters report availability after initialization, and `LastWriteSec` is the sampling timestamp. Retrieve a real log and verify changing values/identity before relying on it. General NetworkTables logging is disabled. Full feed blockers and shot-motion derivatives are explicitly recorded; turret profile/trial dashboard metrics are not automatically persisted.
 
 All `Power/` records use FPGA-relative seconds at recorder write time. Every motor measurement also has `/Valid` and `/AgeSec`; age is the Phoenix source timestamp latency, not the recorder loop age.
 

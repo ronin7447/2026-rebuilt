@@ -113,6 +113,18 @@ public final class RobustShotModel {
             }
         }
 
+        if (shotCommand.get().hoodPositionRot() < request.minHoodPositionRot()
+            || shotCommand.get().hoodPositionRot() > request.maxHoodPositionRot()) {
+            double boundedHood = Math.max(request.minHoodPositionRot(),
+                Math.min(request.maxHoodPositionRot(), shotCommand.get().hoodPositionRot()));
+            shotCommand = solveAtHoodLimit(request, boundedHood, distanceMeters,
+                radialVelocityMps, tangentialVelocityMps);
+            if (shotCommand.isEmpty()) {
+                return Optional.of(invalidSolution("hood-limit-shot-unreachable", releaseState, request,
+                    shooterFieldPosition, target2d, distanceMeters, radialVelocityMps, tangentialVelocityMps));
+            }
+        }
+
         double baseHoodPositionRot = shotCommand.get().hoodPositionRot();
         double rollerRps = shotCommand.get().rollerRps();
         if (Math.abs(rollerRps) > Constants.Shooter.MAX_ROLLER_RPS) {
@@ -190,8 +202,8 @@ public final class RobustShotModel {
             releaseState.robotOrientation()
         );
         double tiltCorrectedHoodPositionRot = hoodPositionForLaunchAngleDeg(localPitch.getDegrees());
-        if (tiltCorrectedHoodPositionRot < request.minHoodPositionRot()
-            || tiltCorrectedHoodPositionRot > request.maxHoodPositionRot()) {
+        if (tiltCorrectedHoodPositionRot < request.minHoodPositionRot() - EPSILON
+            || tiltCorrectedHoodPositionRot > request.maxHoodPositionRot() + EPSILON) {
             return Optional.of(invalidSolution(
                 "tilt-corrected-hood-out-of-range",
                 releaseState,
@@ -203,6 +215,9 @@ public final class RobustShotModel {
                 tangentialVelocityMps
             ));
         }
+
+        tiltCorrectedHoodPositionRot = Math.max(request.minHoodPositionRot(),
+            Math.min(request.maxHoodPositionRot(), tiltCorrectedHoodPositionRot));
 
         Rotation2d desiredFieldYaw = new Rotation2d(
             relativeHorizontalLaunchVelocity.getX(),
@@ -315,17 +330,16 @@ public final class RobustShotModel {
                 radialVelocityMps
             );
             double rollerRps = GeneratedShotMapCoefficients.evaluateRollerRps(distanceMeters, radialVelocityMps);
-            if (farMapTrialEnabled() && distanceMeters > 4.0) {
-                // Trial coefficients were fitted for 4–8 m. Keep these transition bounds tied to generation.
-                double blend = Math.min(1.0, (distanceMeters - 4.0) / 1.5);
+            if (farMapTrialEnabled() && distanceMeters > GeneratedFarShotTrials.TRANSITION_START_METERS) {
+                // Transition bounds are emitted by the same generator as the trial coefficients.
+                double blend = Math.min(1.0, (distanceMeters - GeneratedFarShotTrials.TRANSITION_START_METERS)
+                    / (GeneratedFarShotTrials.TRANSITION_FULL_METERS - GeneratedFarShotTrials.TRANSITION_START_METERS));
                 blend = blend * blend * (3.0 - 2.0 * blend);
                 int profile = Constants.ShotMap.FAR_HUB_SHOT_MAP_TRIAL;
                 hoodPositionRot += blend * (GeneratedFarShotTrials.hood(profile) - hoodPositionRot);
                 rollerRps += blend * (GeneratedFarShotTrials.rollerRps(profile, distanceMeters, radialVelocityMps) - rollerRps);
             }
             if (!Double.isFinite(hoodPositionRot)
-                || hoodPositionRot < request.minHoodPositionRot()
-                || hoodPositionRot > request.maxHoodPositionRot()
                 || !Double.isFinite(rollerRps)) {
                 return Optional.empty();
             }
@@ -399,6 +413,32 @@ public final class RobustShotModel {
         // Common solve path still applies tilt, hood bounds, lip clearance and descending-entry checks.
         return Optional.of(new ShotCommand(hood, rps, speed, mapped.directRobustnessMargin(),
             CommandSource.DIRECT_CANDIDATE));
+    }
+
+    /** Replaces an out-of-range mapped command with a coupled hood/speed intercept. */
+    private static Optional<ShotCommand> solveAtHoodLimit(RobustShotRequest request, double hood,
+        double distance, double radial, double tangential) {
+        double pitch = Math.toRadians(launchAngleDegForHoodPosition(hood));
+        if (!Double.isFinite(pitch) || pitch <= 0.0 || pitch >= Math.PI / 2) return Optional.empty();
+        double tangent = Math.tan(pitch);
+        double height = request.targetConstraints().targetHeightMeters() - request.shooterExitHeightMeters();
+        double low = 0, high = 3.0;
+        if (flatInterceptResidual(low, distance, radial, tangential, tangent, height) <= 0
+            || flatInterceptResidual(high, distance, radial, tangential, tangent, height) >= 0)
+            return Optional.empty();
+        for (int i = 0; i < 48; i++) {
+            double mid = (low + high) / 2;
+            if (flatInterceptResidual(mid, distance, radial, tangential, tangent, height) > 0) low = mid;
+            else high = mid;
+        }
+        double time = (low + high) / 2;
+        double radialLaunch = distance / time - radial;
+        double speed = Math.hypot(radialLaunch, tangential) / Math.cos(pitch);
+        double rps = exitSpeedMpsToRollerRps(speed);
+        if (radialLaunch <= 0 || !Double.isFinite(speed) || speed > request.maxExitSpeedMps()
+            || Math.abs(rps) > Constants.Shooter.MAX_ROLLER_RPS) return Optional.empty();
+        return Optional.of(new ShotCommand(hood, rps, speed,
+            GeneratedShotMapCoefficients.estimateRobustnessMargin(distance, radial), CommandSource.DIRECT_CANDIDATE));
     }
 
     private static double flatInterceptResidual(double time, double distance, double radial,
@@ -603,21 +643,11 @@ public final class RobustShotModel {
         double heightMarginMeters,
         double flightTimeSec
     ) {
-        double hoodCenter = (request.minHoodPositionRot() + request.maxHoodPositionRot()) / 2.0;
-        double hoodSpan = Math.max((request.maxHoodPositionRot() - request.minHoodPositionRot()) / 2.0, EPSILON);
-        double hoodEdgePenalty = Math.abs(hoodPositionRot - hoodCenter) / hoodSpan;
         double speedHeadroom = (request.maxExitSpeedMps() - exitSpeedMps)
             / Math.max(request.maxExitSpeedMps() - DIRECT_MIN_EXIT_SPEED_MPS, EPSILON);
-        double scoreMaxDistance = request.targetConstraints().targetType() == ShotTargetConstraints.TargetType.HUB
-            ? GeneratedShotMapCoefficients.MIN_DISTANCE_METERS
-            : request.targetConstraints().maxDistanceMeters();
-        double distancePenalty = (distanceMeters - request.targetConstraints().minDistanceMeters())
-            / Math.max(scoreMaxDistance - request.targetConstraints().minDistanceMeters(), EPSILON);
         return heightMarginMeters
             + (0.08 * speedHeadroom)
-            - (0.08 * flightTimeSec)
-            - (0.05 * hoodEdgePenalty)
-            - (0.04 * distancePenalty);
+            - (0.08 * flightTimeSec);
     }
 
     private static double exitSpeedMpsToRollerRps(double exitSpeedMps) {

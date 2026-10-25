@@ -245,7 +245,7 @@ public class RobotContainer {
                 double currentMaxSpeed = getTeleopLinearSpeedLimit();
                 double currentMaxAngularRate = getTeleopAngularSpeedLimit();
 
-                boolean shooting = DriverStation.isTeleopEnabled() && shootDriveLimitActive;
+                boolean shooting = hubShootingDriveLimitsActive();
                 ChassisSpeeds requested = new ChassisSpeeds(-joystick.getLeftY() * currentMaxSpeed,
                     -joystick.getLeftX() * currentMaxSpeed, -joystick.getRightX() * currentMaxAngularRate);
                 if (!shooting) {
@@ -314,12 +314,12 @@ public class RobotContainer {
                 () -> m_IntakeSubsystem.setRollerReverseRequested(false)
             ));
 
-        // Sample speed only on a fresh A press. Holding/re-pressing A never restarts a trial.
-        // joystick.a().onTrue(Commands.runOnce(() -> {
-        //     if (DriverStation.isTeleopEnabled() && calibrationControlsIdle()) {
-        //         CommandScheduler.getInstance().schedule(launchSpeedCalibration);
-        //     }
-        // }));
+        // Temporary hood-only override; no shooter requirement so it does not cancel the held shoot command.
+        joystick.a().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
+            .whileTrue(Commands.startEnd(
+                () -> m_ShooterSubsystem.setHoodLowerOverride(true),
+                () -> m_ShooterSubsystem.setHoodLowerOverride(false)
+            ));
         // Continuous stop while held gives B priority over simultaneous mechanism inputs.
         // joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
 
@@ -392,8 +392,13 @@ public class RobotContainer {
             .finallyDo(interrupted -> shootDriveLimitActive = false);
     }
 
+    private boolean hubShootingDriveLimitsActive() {
+        return DriverStation.isTeleopEnabled() && shootDriveLimitActive
+            && "HUB".equals(m_TurretSubsystem.getTargetModeName());
+    }
+
     private double getTeleopLinearSpeedLimit() {
-        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+        if (hubShootingDriveLimitsActive()) {
             return MaxSpeed * Constants.Drivebase.SHOOT_LINEAR_SPEED_LIMIT_SCALE;
         }
         return MaxSpeed;
@@ -409,7 +414,7 @@ public class RobotContainer {
     }
 
     private double getTeleopAngularSpeedLimit() {
-        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+        if (hubShootingDriveLimitsActive()) {
             return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
         }
         return MaxAngularRate;
@@ -424,10 +429,15 @@ public class RobotContainer {
         boolean boundedSetpoints = m_TurretSubsystem.hasFiniteBoundedSetpoint()
             && m_ShooterSubsystem.hasFiniteBoundedSetpoints();
         var motion = drivetrain.getShotMotionEstimate();
+        boolean passback = "NEUTRAL_BACK".equals(m_TurretSubsystem.getTargetModeName())
+            || "OPPONENT_PASS_BACK".equals(m_TurretSubsystem.getTargetModeName());
+        // Passback has no shooting-specific speed/acceleration gate; motion freshness is still checked.
         var motionBlockers = motion.shootingBlockers(Utils.getCurrentTimeSeconds(),
             Constants.ShotMap.MAX_MOTION_AGE_SEC, Constants.ShotMap.BASE_RELEASE_LATENCY_SEC,
-            Constants.ShotMap.MAX_SHOOT_SPEED_MPS, Constants.ShotMap.MAX_SHOOT_ACCEL_MPS2,
-            Constants.ShotMap.MAX_SHOOT_OMEGA_RAD_PER_SEC, Constants.ShotMap.MAX_SHOOT_ALPHA_RAD_PER_SEC2);
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_SPEED_MPS,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_ACCEL_MPS2,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_OMEGA_RAD_PER_SEC,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_ALPHA_RAD_PER_SEC2);
         SmartDashboard.putBoolean("Feed/MotionWithinLimits", motionBlockers.isEmpty());
         SmartDashboard.putString("Feed/MotionBlockers", String.join(",", motionBlockers));
         SmartDashboard.putNumber("SOTM/MotionAgeSec", Utils.getCurrentTimeSeconds() - motion.timestampSec());
@@ -448,7 +458,7 @@ public class RobotContainer {
             m_ShooterSubsystem.isHoodEnabled(),
             m_ShooterSubsystem.isHoodAtTarget(),
             m_TurretSubsystem.isAutoAimActive(),
-            m_TurretSubsystem.isTurretAtAimGoal(),
+            !Constants.ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT || m_TurretSubsystem.isTurretAtAimGoal(),
             !m_TurretSubsystem.isOnSoftwareLimit(),
             boundedSetpoints,
             m_vision.getVisionAgeSec(),

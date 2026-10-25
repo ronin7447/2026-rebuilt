@@ -32,11 +32,9 @@ public final class GeneratedShotMapCoefficients {
     }
 
     public static double estimateRobustnessMargin(double distanceMeters, double radialVelocityMps) {
-        double normalizedDistance = Math.max(0.0, (distanceMeters - MIN_DISTANCE_METERS)
-            / (MAX_DISTANCE_METERS - MIN_DISTANCE_METERS));
         double normalizedRadialVelocity = Math.abs(radialVelocityMps)
             / Math.max(Math.abs(MIN_RADIAL_VELOCITY_MPS), Math.abs(MAX_RADIAL_VELOCITY_MPS));
-        return Math.max(0.0, 0.35 - (0.18 * normalizedDistance) - (0.08 * normalizedRadialVelocity));
+        return Math.max(0.0, 0.35 - (0.08 * normalizedRadialVelocity));
     }
 
     public static boolean isInsideDomain(double distanceMeters, double radialVelocityMps) {

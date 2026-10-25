@@ -9,6 +9,17 @@ import {
 import { evaluatePolynomial, fitShotMap } from '../math/polynomial';
 
 describe('trajectory solver', () => {
+  test('does not penalize a feasible shot for proximity to the hood bound', () => {
+    const input = { distanceMeters: 4, radialVelocityMps: 0 };
+    const best = findBestCandidate(defaultConfig, input)!;
+    expect(best).not.toBeNull();
+    const atEdge = simulateCandidate({ ...defaultConfig, minHoodRot: best.hoodRot }, input,
+      best.hoodRot, best.exitSpeedMps)!;
+    const centered = simulateCandidate({ ...defaultConfig, minHoodRot: best.hoodRot - 1,
+      maxHoodRot: best.hoodRot + 1 }, input, best.hoodRot, best.exitSpeedMps)!;
+    expect(atEdge.robustnessMargin).toBeCloseTo(centered.robustnessMargin, 12);
+  });
+
   test('validates a scoring candidate through the goal band', () => {
     const candidate = findBestCandidate(defaultConfig, { distanceMeters: 4, radialVelocityMps: 0 });
     expect(candidate).not.toBeNull();
