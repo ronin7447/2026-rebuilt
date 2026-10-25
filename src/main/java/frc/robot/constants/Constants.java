@@ -356,7 +356,7 @@ public final class Constants {
         public static final double ROLLER_KS = 0.25; // Static-friction feedforward in volts.
         public static final double ROLLER_KV = 0.12; // Velocity feedforward in V/(motor rot/s).
         public static final double ROLLER_KA = 0.01; // Acceleration feedforward in V/(motor rot/s^2).
-        public static final double ROLLER_KP = 0.11; // Velocity feedback gain in V/(motor rot/s).
+        public static final double ROLLER_KP = 0.20; // Velocity feedback gain in V/(motor rot/s).
         public static final double ROLLER_KI = 0.00; // Integral velocity gain in V/motor rotation.
         public static final double ROLLER_KD = 0.00; // Derivative velocity gain in V/(motor rot/s^2).
         public static final double ROLLER_DIRECTION_SIGN = -1.0; // Sign converting positive exit speed into motor velocity.
