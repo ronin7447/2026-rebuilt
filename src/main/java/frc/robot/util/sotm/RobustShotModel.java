@@ -101,6 +101,17 @@ public final class RobustShotModel {
             ));
         }
 
+        if (previous == null && Constants.ShotMap.FAR_HUB_FLAT_SHOT_ENABLED
+            && request.targetConstraints().targetType() == ShotTargetConstraints.TargetType.HUB
+            && distanceMeters > Constants.ShotMap.FAR_HUB_FLAT_START_METERS) {
+            shotCommand = flattenFarHubShot(request, shotCommand.get(), distanceMeters,
+                radialVelocityMps, tangentialVelocityMps);
+            if (shotCommand.isEmpty()) {
+                return Optional.of(invalidSolution("far-flat-shot-unreachable", releaseState, request,
+                    shooterFieldPosition, target2d, distanceMeters, radialVelocityMps, tangentialVelocityMps));
+            }
+        }
+
         double baseHoodPositionRot = shotCommand.get().hoodPositionRot();
         double rollerRps = shotCommand.get().rollerRps();
         if (Math.abs(rollerRps) > Constants.Shooter.MAX_ROLLER_RPS) {
@@ -333,6 +344,54 @@ public final class RobustShotModel {
         }
 
         return Optional.empty();
+    }
+
+    /** Fixed-pitch ballistic intercept, including radial and sideways inherited release velocity. */
+    private static Optional<ShotCommand> flattenFarHubShot(RobustShotRequest request, ShotCommand mapped,
+        double distance, double radial, double tangential) {
+        double range = Constants.ShotMap.FAR_HUB_FLAT_FULL_METERS - Constants.ShotMap.FAR_HUB_FLAT_START_METERS;
+        if (range <= 0.0) return Optional.of(mapped);
+        double blend = Math.min(1.0, Math.max(0.0,
+            (distance - Constants.ShotMap.FAR_HUB_FLAT_START_METERS) / range));
+        blend = blend * blend * (3.0 - 2.0 * blend); // Smooth slope at both transition boundaries.
+        double mappedPitch = launchAngleDegForHoodPosition(mapped.hoodPositionRot());
+        double pitch = mappedPitch + blend * (Math.min(mappedPitch, Constants.ShotMap.FAR_HUB_FLAT_ANGLE_DEG) - mappedPitch);
+        double hood = hoodPositionForLaunchAngleDeg(pitch);
+        if (!Double.isFinite(hood) || hood < request.minHoodPositionRot() || hood > request.maxHoodPositionRot()
+            || pitch <= 0.0 || pitch >= 90.0) return Optional.empty();
+        double tangent = Math.tan(Math.toRadians(pitch));
+        double height = request.targetConstraints().targetHeightMeters() - request.shooterExitHeightMeters();
+        // Multiply the vertical intercept equation by t to avoid division at t=0.
+        // tan(pitch)*hypot(distance-radial*t, tangential*t) = height + g*t*t/2.
+        double low = 0.0;
+        double high = 3.0;
+        if (flatInterceptResidual(low, distance, radial, tangential, tangent, height) <= 0.0
+            || flatInterceptResidual(high, distance, radial, tangential, tangent, height) >= 0.0)
+            return Optional.empty();
+        for (int i = 0; i < 48; i++) {
+            double mid = (low + high) * 0.5;
+            if (flatInterceptResidual(mid, distance, radial, tangential, tangent, height) > 0.0) low = mid;
+            else high = mid;
+        }
+        double time = (low + high) * 0.5;
+        double radialLaunch = distance / time - radial;
+        if (radialLaunch <= 0.0) return Optional.empty();
+        double speed = Math.hypot(radialLaunch, tangential) / Math.cos(Math.toRadians(pitch));
+        // Blend speed too: the polynomial may not hit the exact center, so replacing it abruptly
+        // at the start distance would otherwise introduce a step in flywheel command.
+        speed = mapped.exitSpeedMps() + blend * (speed - mapped.exitSpeedMps());
+        double rps = exitSpeedMpsToRollerRps(speed);
+        if (!Double.isFinite(speed) || speed > request.maxExitSpeedMps()
+            || Math.abs(rps) > Constants.Shooter.MAX_ROLLER_RPS) return Optional.empty();
+        // Common solve path still applies tilt, hood bounds, lip clearance and descending-entry checks.
+        return Optional.of(new ShotCommand(hood, rps, speed, mapped.directRobustnessMargin(),
+            CommandSource.DIRECT_CANDIDATE));
+    }
+
+    private static double flatInterceptResidual(double time, double distance, double radial,
+        double tangential, double tangent, double height) {
+        return tangent * Math.hypot(distance - radial * time, tangential * time)
+            - height - 0.5 * GRAVITY_MPS2 * time * time;
     }
 
     private static Optional<ShotCommand> previousShotCommand(RobustShotRequest request,
