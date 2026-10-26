@@ -176,9 +176,9 @@ public final class Constants {
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded; // Welded-field layout selector; current loader uses the enum directly.
 
         public static final double MAX_SINGLE_TAG_DISTANCE_METERS = 4.0; // Maximum average camera-to-tag range for single-tag fallback.
-        public static final double MAX_MULTI_TAG_DISTANCE_METERS = 2.0; // Maximum average range of tags used by a MultiTag estimate.
+        public static final double MAX_MULTI_TAG_DISTANCE_METERS = 2.5; // Maximum average range of tags used by a MultiTag estimate.
         public static final boolean USE_VISION_HEADING = false; // False fuses vision XY only; heading follows gyro/odometry and deliberate field resets.
-        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.15; // Largest accepted reported single-tag ambiguity.
+        public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // Largest accepted reported single-tag ambiguity.
         public static final double MAX_POSE_Z_METERS = 2.05; // Largest accepted absolute robot height from vision.
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0; // Largest accepted absolute vision roll or pitch.
         public static final double MAX_MEASUREMENT_AGE_SEC = 0.6; // Reject captured vision older than this many seconds.
@@ -193,7 +193,7 @@ public final class Constants {
     public static final class FieldTargets {
         private static final double FIELD_LENGTH_METERS = Units.inchesToMeters(651.2); // Field length along +X from the blue-wall origin.
         private static final double FIELD_WIDTH_METERS = Units.inchesToMeters(317.7); // Field width along +Y.
-        private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(170); // Alliance-zone depth measured from each alliance wall.
+        private static final double ALLIANCE_ZONE_DEPTH_METERS = Units.inchesToMeters(180); // Alliance-zone depth measured from each alliance wall.
         public static final double HUB_TARGET_HEIGHT_METERS = 1.83; // Modeled Hub target-plane height above the floor.
         public static final double BACK_TARGET_HEIGHT_METERS = 0.5; // Modeled passback target height above the floor.
 
@@ -398,7 +398,7 @@ public final class Constants {
         public static final boolean USE_ROBUST_SOTM = true; // Select the release-prediction and final-trajectory evaluator.
         public static final boolean USE_LEGACY_SOLVER_ROLLBACK = false; // Explicit legacy mode; rejected robust shots never silently fall back.
         public static final boolean TILT_COMPENSATION_ENABLED = false; // Apply measured pitch/roll to shooting; false assumes level while preserving yaw/motion prediction.
-        public static final double ROLLER_RPS_OUTPUT_SCALE = 1.05; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
+        public static final double ROLLER_RPS_OUTPUT_SCALE = 1.01; // Final auto-aim motor RPS multiplier; 1.0 disables trim. Manual calibration is unscaled.
         public static final boolean FAR_HUB_RPS_TRIM_ENABLED = true; // Empirical correction for the observed near-lip miss; disable for an untrimmed far-shot comparison.
         public static final double FAR_HUB_RPS_TRIM_MULTIPLIER = 1.04; // Additional 1.2% after global trim: -86.95 becomes -87.9934 RPS at full distance.
         public static final double FAR_HUB_RPS_TRIM_START_METERS = 4.9; // Start smoothly adding the correction at this predicted release-to-Hub distance.
