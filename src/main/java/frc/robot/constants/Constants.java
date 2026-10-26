@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
+        public static final double BUMP_AUTOPILOT_MAX_SPEED_MPS = 4.5; // Pathfinding speed cap for AutopilotToBumpExit.
+        public static final double BUMP_AUTOPILOT_MAX_ACCEL_MPS2 = 5.0; // Pathfinding acceleration cap for AutopilotToBumpExit.
         public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Normal full-stick translation cap in m/s; 50% of configured 12 V speed.
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // Normal full-stick yaw cap in rad/s; 0.90 turns per second.
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // Translation deadband in m/s; 15% of normal speed cap.
@@ -176,8 +178,8 @@ public final class Constants {
         public static final AprilTagFields FIELD_LAYOUT = AprilTagFields.k2026RebuiltWelded; // Welded-field layout selector; current loader uses the enum directly.
 
         public static final double MAX_SINGLE_TAG_DISTANCE_METERS = 4.0; // Maximum average camera-to-tag range for single-tag fallback.
-        public static final double MAX_MULTI_TAG_DISTANCE_METERS = 2.5; // Maximum average range of tags used by a MultiTag estimate.
-        public static final boolean USE_VISION_HEADING = false; // False fuses vision XY only; heading follows gyro/odometry and deliberate field resets.
+        public static final double MAX_MULTI_TAG_DISTANCE_METERS = 4.0; // Maximum average range of tags used by a MultiTag estimate.
+        public static final boolean USE_VISION_HEADING = true; // False fuses vision XY only; heading follows gyro/odometry and deliberate field resets.
         public static final double MAX_SINGLE_TAG_AMBIGUITY = 0.20; // Largest accepted reported single-tag ambiguity.
         public static final double MAX_POSE_Z_METERS = 2.05; // Largest accepted absolute robot height from vision.
         public static final double MAX_POSE_ROLL_PITCH_DEG = 45.0; // Largest accepted absolute vision roll or pitch.

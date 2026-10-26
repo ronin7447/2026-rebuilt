@@ -10,6 +10,8 @@ import frc.robot.commands.autopilot.FieldDestination;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.path.PathConstraints;
+import com.ctre.phoenix6.swerve.SwerveRequest;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
 import frc.robot.constants.Constants;
@@ -65,6 +67,32 @@ public class Autopilot extends Command {
             SmartDashboard.putBoolean("Autopilot/AtHeadingTolerance", false);
             return createPathfindCommand(goal);
         }, Set.of(drivetrain));
+    }
+
+    /** Fixed-field bump-exit move, usable as a sequential PathPlanner named command. */
+    public Command goToBumpExit() {
+        // Deferred because NamedCommands are registered before AutoBuilder is configured.
+        return Commands.defer(() -> {
+            if (!AutoBuilder.isPathfindingConfigured()) {
+                SmartDashboard.putString("Autopilot/Mode", "ERROR");
+                DriverStation.reportError("AutopilotToBumpExit: PathPlanner pathfinding is not configured.", false);
+                return Commands.none();
+            }
+            Pose2d goal = FieldDestinationConstants.BUMP_EXIT_TARGET;
+            PathConstraints constraints = new PathConstraints(
+                Constants.Drivebase.BUMP_AUTOPILOT_MAX_SPEED_MPS,
+                Constants.Drivebase.BUMP_AUTOPILOT_MAX_ACCEL_MPS2,
+                DEFAULT_CONSTRAINTS.maxAngularVelocityRadPerSec(),
+                DEFAULT_CONSTRAINTS.maxAngularAccelerationRadPerSecSq());
+            publishGoalTelemetry(goal, drivetrain.getState().Pose);
+            SmartDashboard.putString("Autopilot/Mode", "BUMP_PATHFIND");
+            // pathfindToPose uses this exact pose on either alliance and stops at the goal.
+            // Do not switch to short-range alignment with different motion constraints.
+            return AutoBuilder.pathfindToPose(goal, constraints, 0.0);
+        }, Set.of(drivetrain)).finallyDo(interrupted -> {
+            drivetrain.setControl(new SwerveRequest.ApplyRobotSpeeds().withSpeeds(new ChassisSpeeds()));
+            SmartDashboard.putString("Autopilot/Mode", "IDLE");
+        });
     }
 
     static boolean shouldUseShortRangeAlign(Pose2d goal, Pose2d currentPose, double thresholdMeters) {
