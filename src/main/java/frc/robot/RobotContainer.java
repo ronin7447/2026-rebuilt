@@ -113,6 +113,7 @@ public class RobotContainer {
     }
 
     private void registerNamedCommands() {
+        NamedCommands.registerCommand("AutopilotToBumpExit", autopilot.goToBumpExit());
         // NamedCommands.registerCommand("RunShooter", Commands.runOnce(() -> {
         //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
         //     m_ShooterSubsystem.enableRoller();

@@ -19,6 +19,8 @@ import edu.wpi.first.wpilibj.DriverStation;
 public final class Constants {
     /* Drivebase Constants */
     public static final class Drivebase {
+        public static final double BUMP_AUTOPILOT_MAX_SPEED_MPS = 4.5; // Pathfinding speed cap for AutopilotToBumpExit.
+        public static final double BUMP_AUTOPILOT_MAX_ACCEL_MPS2 = 5.0; // Pathfinding acceleration cap for AutopilotToBumpExit.
         public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Normal full-stick translation cap in m/s; 50% of configured 12 V speed.
         public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // Normal full-stick yaw cap in rad/s; 0.90 turns per second.
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // Translation deadband in m/s; 15% of normal speed cap.
