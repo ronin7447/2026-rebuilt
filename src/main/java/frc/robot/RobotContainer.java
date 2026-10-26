@@ -280,7 +280,7 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        joystick.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // X is reserved for the held intake reverse below.
         // joystick.x().whileTrue(drivetrain.applyRequest(() ->
         //     point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
         // ));
@@ -298,8 +298,8 @@ public class RobotContainer {
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
         joystick.povRight().onTrue(Commands.runOnce(m_TurretSubsystem::zeroEncoder)
             .onlyIf(this::calibrationControlsIdle));
-        /* Right Bumper: Enable Intake */
-        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
+        /* Right Bumper: Extend pivot only; roller remains independently controlled. */
+        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem, false));
 
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
@@ -308,12 +308,19 @@ public class RobotContainer {
         SmartDashboard.putString("Feed/OverrideControl", "Hold right trigger + right-stick click to force feed immediately");
 
         // Roller-only override deliberately shares no pivot requirement with intake/shoot commands.
-        joystick.leftTrigger().and(() -> DriverStation.isTeleopEnabled()
+        joystick.x().and(() -> DriverStation.isTeleopEnabled()
             && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean())
             .whileTrue(Commands.startEnd(
                 () -> m_IntakeSubsystem.setRollerReverseRequested(true),
                 () -> m_IntakeSubsystem.setRollerReverseRequested(false)
             ));
+
+        // Held forward request owns no pivot requirement; X reverse takes precedence in periodic.
+        joystick.leftTrigger().and(() -> DriverStation.isTeleopEnabled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean())
+            .whileTrue(Commands.runEnd(m_IntakeSubsystem::enableRoller, m_IntakeSubsystem::disableRoller));
+        // Do not carry a latched autonomous intake-roller request into hold-to-run teleop controls.
+        RobotModeTriggers.teleop().onTrue(Commands.runOnce(m_IntakeSubsystem::disableRoller));
 
         // Temporary hood-only override; no shooter requirement so it does not cancel the held shoot command.
         joystick.a().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
@@ -373,9 +380,9 @@ public class RobotContainer {
     private Command createDriverShootCommand() {
         Command antiJamCommand = Constants.Intake.ANTI_JAM_PULSE_CYCLES > 0
             ? Commands.sequence(
-                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
+                Commands.waitUntil(() -> !joystick.x().getAsBoolean()),
                 new AntiJamPulse(m_IntakeSubsystem)
-                    .until(() -> joystick.leftTrigger().getAsBoolean())
+                    .until(() -> joystick.x().getAsBoolean())
             ).repeatedly()
             : Commands.none();
 

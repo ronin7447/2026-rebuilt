@@ -340,7 +340,7 @@ public final class Constants {
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
 
         public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
-        public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while left trigger is held.
+        public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while X is held; reverse takes priority over LT forward.
     }
 
     public static final class Shooter {
