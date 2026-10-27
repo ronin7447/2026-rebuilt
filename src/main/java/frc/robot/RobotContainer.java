@@ -125,7 +125,13 @@ public class RobotContainer {
         // }, m_ShooterSubsystem));
 
         NamedCommands.registerCommand("EnableIntake", new ManipulateIntake(true, m_IntakeSubsystem));
-        NamedCommands.registerCommand("DisableIntake", new ManipulateIntake(false, m_IntakeSubsystem));
+        NamedCommands.registerCommand("DisableIntake",
+            Commands.runOnce(() -> {
+                m_IntakeSubsystem.disableRoller();
+                m_IntakeSubsystem.setRollerReverseRequested(false);
+                m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
+                m_IntakeSubsystem.enableExtension();
+            }, m_IntakeSubsystem));
 
         // NamedCommands.registerCommand("RunOuttake", Commands.runOnce(() -> {
         //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
@@ -341,13 +347,12 @@ public class RobotContainer {
         joystick.y().whileTrue(createAutopilotCommand(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))));
 
 
-        // Encoder resets and normal aiming controls must not change a running trial.
-        joystick.start().onTrue(Commands.runOnce(() -> {
-            m_TurretSubsystem.zeroEncoder();
-            m_ShooterSubsystem.zeroEncoder();
-            m_TurretSubsystem.setPositionMode(true);
-            m_ShooterSubsystem.setHoodEnabled(true);
-        }).onlyIf(this::calibrationControlsIdle));
+        // Roller-only override: do not cancel the shoot command or reset aiming encoders.
+        joystick.start().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
+            .whileTrue(Commands.startEnd(
+                () -> m_IndexerSubsystem.setManualHoldRequested(true),
+                () -> m_IndexerSubsystem.setManualHoldRequested(false)
+            ));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }

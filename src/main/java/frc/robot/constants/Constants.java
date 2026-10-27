@@ -478,6 +478,7 @@ public final class Constants {
         public static final double ROLLER_KI = 0.00; // Integral velocity gain in V/motor rotation.
         public static final double ROLLER_KD = 0.00; // Derivative velocity gain in V/(motor rot/s^2).
         public static final double ROLLER_VELOCITY = -100.0; // Target motor rot/s; actual spinner speed depends on the unverified pulley ratio.
+        public static final double MANUAL_HOLD_VELOCITY_RPS = 30.0; // Held Start-button reverse, opposite normal -100 RPS feeding.
         public static final double ROLLER_ACCELERATION = 800.0; // Spindexer acceleration cap in motor rot/s^2.
         public static final double ROLLER_JERK = 0.0; // Motor rot/s^3; zero disables S-curve smoothing.
         public static final int ROLLER_KRAKEN_ID = 36; // Spindexer motor CAN ID on CANivore1.
