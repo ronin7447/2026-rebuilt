@@ -138,20 +138,37 @@ public final class ShooterKinematics {
             return true;
         }
 
-        if (selectionPreference == SelectionPreference.FLATTEST_SHOT) {
+        if (selectionPreference == SelectionPreference.FLATTEST_SHOT
+            || selectionPreference == SelectionPreference.FLAT_FAST_SHOT) {
             double candidatePitchDeg = candidate.recommendedLaunchPitch().getDegrees();
             double bestPitchDeg = bestSolution.recommendedLaunchPitch().getDegrees();
-            if (candidatePitchDeg + EPSILON < bestPitchDeg) {
-                return true;
-            }
-            if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
-                && candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec()) {
-                return true;
-            }
-            if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
-                && Math.abs(candidate.flightTimeSec() - bestSolution.flightTimeSec()) <= EPSILON
-                && candidate.requiredExitSpeedMps() + EPSILON < bestSolution.requiredExitSpeedMps()) {
-                return true;
+
+            if (selectionPreference == SelectionPreference.FLAT_FAST_SHOT) {
+                if (candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec()) {
+                    return true;
+                }
+                if (Math.abs(candidate.flightTimeSec() - bestSolution.flightTimeSec()) <= EPSILON
+                    && candidatePitchDeg + EPSILON < bestPitchDeg) {
+                    return true;
+                }
+                if (Math.abs(candidate.flightTimeSec() - bestSolution.flightTimeSec()) <= EPSILON
+                    && Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
+                    && candidate.requiredExitSpeedMps() > bestSolution.requiredExitSpeedMps() + EPSILON) {
+                    return true;
+                }
+            } else {
+                if (candidatePitchDeg + EPSILON < bestPitchDeg) {
+                    return true;
+                }
+                if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
+                    && candidate.flightTimeSec() + EPSILON < bestSolution.flightTimeSec()) {
+                    return true;
+                }
+                if (Math.abs(candidatePitchDeg - bestPitchDeg) <= EPSILON
+                    && Math.abs(candidate.flightTimeSec() - bestSolution.flightTimeSec()) <= EPSILON
+                    && candidate.requiredExitSpeedMps() + EPSILON < bestSolution.requiredExitSpeedMps()) {
+                    return true;
+                }
             }
             return false;
         }
@@ -197,6 +214,7 @@ public final class ShooterKinematics {
 
     public enum SelectionPreference {
         MIN_EXIT_SPEED,
-        FLATTEST_SHOT
+        FLATTEST_SHOT,
+        FLAT_FAST_SHOT
     }
 }

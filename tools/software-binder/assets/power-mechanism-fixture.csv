@@ -1,0 +1,3 @@
+Power/TimestampSec,Power/PDHVoltageV,Power/PDHTotalCurrentA,Power/Motor/turret/SupplyCurrentA,Power/Motor/shooter-roller/VelocityRps,Power/Motor/intake-extension-master/PositionRot
+0,12.4,30,4,20,0
+0.02,12.1,45,8,40,1

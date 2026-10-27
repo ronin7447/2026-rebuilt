@@ -1,0 +1,933 @@
+- generic [ref=e1]:
+  - link "Skip to technical binder" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e4]:
+    - link "Rōnin Robotics 7447, back to top" [ref=e5] [cursor=pointer]:
+      - /url: "#overview"
+      - generic [aria-hidden] [ref=e6]:
+        - text: r
+        - generic [ref=e7]: ↗
+      - generic [ref=e8]: Rōnin 7447
+    - navigation "Chapters" [ref=e9]:
+      - link "ShotMap" [ref=e10] [cursor=pointer]:
+        - /url: "#shotmap"
+      - link "Live lab" [ref=e11] [cursor=pointer]:
+        - /url: "#calculator"
+      - link "Turret" [ref=e12] [cursor=pointer]:
+        - /url: "#turret"
+      - link "Auton" [ref=e13] [cursor=pointer]:
+        - /url: "#autonomous-detail"
+      - link "Power" [ref=e14] [cursor=pointer]:
+        - /url: "#power"
+    - button "Print binder" [ref=e15] [cursor=pointer]: Print binder ↗
+  - main [ref=e16]:
+    - region [ref=e17]:
+      - generic [ref=e18]:
+        - paragraph [ref=e19]: Team 7447 · 2026 REBUILT
+        - heading [level=1] [ref=e21]:
+          - text: Stay in motion.
+          - emphasis [ref=e22]: Own the shot.
+        - paragraph [ref=e23]: "Physics becomes a ShotMap. A ShotMap becomes a moving shot. Explore the software behind Rōnin: predictive aiming, profiled turret control, autonomous orchestration, and tools that make the entire robot observable."
+        - link "Enter the live shot laboratory" [ref=e24] [cursor=pointer]:
+          - /url: "#calculator"
+          - text: Enter the live shot laboratory
+          - generic [aria-hidden] [ref=e25]: ↗
+        - generic [ref=e26]:
+          - generic [ref=e27]: Software technical binder
+          - generic [ref=e28]: Built to move the game.
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Predict. Aim. Release.
+          - generic [ref=e33]: 01 / Shot intelligence
+        - img "The robot moves while the turret leads the shot A conceptual plan view shows a swerve robot, its future release position, and a compensated trajectory toward the Hub." [ref=e34]:
+          - generic [ref=e51]: "7447"
+          - generic [ref=e68]:
+            - generic [ref=e69]: Hub
+            - generic [ref=e70]: Predicted release
+            - generic [ref=e71]: Independent drive + aim
+        - generic [ref=e73]:
+          - generic [ref=e74]:
+            - text: Motion is an input.
+            - strong [ref=e75]: Prediction is the advantage.
+          - generic [ref=e76]: x · y · θv · a · ω
+    - generic [ref=e77]:
+      - paragraph [ref=e78]:
+        - generic [ref=e79]: "01"
+        - text: Predict the release
+      - paragraph [ref=e80]:
+        - generic [ref=e81]: "02"
+        - text: Coordinate every mechanism
+      - paragraph [ref=e82]:
+        - generic [ref=e83]: "03"
+        - text: Make every decision explainable
+    - navigation "Full binder contents" [ref=e84]:
+      - generic [ref=e85]: Explore the software
+      - link "Physics & ShotMap" [ref=e86] [cursor=pointer]:
+        - /url: "#shotmap"
+      - link "Shot calculator" [ref=e87] [cursor=pointer]:
+        - /url: "#calculator"
+      - link "Release prediction" [ref=e88] [cursor=pointer]:
+        - /url: "#prediction"
+      - link "Turret control" [ref=e89] [cursor=pointer]:
+        - /url: "#turret"
+      - link "Vision" [ref=e90] [cursor=pointer]:
+        - /url: "#perception"
+      - link "Fuel sequencing" [ref=e91] [cursor=pointer]:
+        - /url: "#control"
+      - link "Autonomous" [ref=e92] [cursor=pointer]:
+        - /url: "#autonomous-detail"
+      - link "Mechanisms" [ref=e93] [cursor=pointer]:
+        - /url: "#mechanisms"
+      - link "Power analysis" [ref=e94] [cursor=pointer]:
+        - /url: "#power"
+      - link "Engineering tools" [ref=e95] [cursor=pointer]:
+        - /url: "#engineering"
+    - region [ref=e96]:
+      - generic [ref=e97]:
+        - paragraph [ref=e98]: 01 / The system
+        - generic [ref=e99]:
+          - heading "One robot. One coordinated decision." [level=2] [ref=e100]: One robot.One coordinated decision.
+          - paragraph [ref=e101]: Every moving shot is a shared decision across perception, trajectory planning, and mechanism control. A single motion estimate keeps aiming and feeding in sync.
+      - generic "Software pipeline" [ref=e102]:
+        - article [ref=e103]:
+          - generic [ref=e104]: 01 · Observe
+          - generic [ref=e105]: ⌖
+          - heading "Know the state" [level=3] [ref=e106]
+          - paragraph [ref=e107]: Swerve odometry, gyro orientation, and two AprilTag cameras establish the robot’s position and motion.
+          - generic [ref=e108]: Pose · Velocity · Acceleration
+        - article [ref=e109]:
+          - text: →
+          - generic [ref=e110]: 02 · Predict
+          - generic [ref=e111]: ↗
+          - heading "Lead the release" [level=3] [ref=e112]
+          - paragraph [ref=e113]: Project position, heading, and velocity to the instant Fuel leaves the shooter.
+          - generic [ref=e114]: Future launch state
+        - article [ref=e115]:
+          - text: →
+          - generic [ref=e116]: 03 · Solve
+          - generic [ref=e117]: ⌁
+          - heading "Shape the shot" [level=3] [ref=e118]
+          - paragraph [ref=e119]: Compensate for chassis motion and orientation. Solve turret yaw, hood elevation, and flywheel speed together.
+          - generic [ref=e120]: A feasible trajectory
+        - article [ref=e121]:
+          - text: →
+          - generic [ref=e122]: 04 · Execute
+          - generic [ref=e123]: →
+          - heading "Command the cycle" [level=3] [ref=e124]
+          - paragraph [ref=e125]: Combine the shot solution with measured mechanism readiness, then sequence the Fuel path.
+          - generic [ref=e126]: Aim · Spin · Feed
+      - generic [ref=e127]:
+        - generic [ref=e128]: Shared state
+        - paragraph [ref=e129]: The same timestamped motion estimate drives the shot solver and automatic feed decisions. Every layer works from the same picture of the robot.
+    - region [ref=e130]:
+      - generic [ref=e131]:
+        - paragraph [ref=e132]: 02 / Physics → ShotMap
+        - generic [ref=e133]:
+          - heading "Simulate the physics. Distill the intelligence." [level=2] [ref=e134]: Simulate the physics.Distill the intelligence.
+          - paragraph [ref=e135]:
+            - text: Behind every moving shot is our physics-based
+            - strong [ref=e136]: ShotMap
+            - text: . We do the expensive trajectory search ahead of time, fit the results into compact polynomials, and evaluate those equations on the robot.
+      - generic [ref=e137]:
+        - text: Our runtime launch model
+        - generic [ref=e138]: f(d, vᵣ) = c₀ + c₁d + c₂vᵣ + c₃d² + c₄dvᵣ + c₅vᵣ²
+        - paragraph [ref=e139]: Two fitted surfaces. Six terms each. Coordinated hood and flywheel commands.
+      - generic [ref=e140]:
+        - article [ref=e141]:
+          - text: 01 · Model
+          - heading "Define the physics" [level=3] [ref=e142]
+          - paragraph [ref=e143]: Gravity, launch height, Fuel radius, Hub geometry, hood calibration, and flywheel-to-exit-speed mapping establish the search space.
+        - article [ref=e144]:
+          - text: 02 · Search
+          - heading "Sweep the launch space" [level=3] [ref=e145]
+          - paragraph [ref=e146]: Sample distance and radial velocity. At each state, sweep hood position and exit speed, then evaluate the resulting ballistic flight.
+        - article [ref=e147]:
+          - text: 03 · Select
+          - heading "Choose useful trajectories" [level=3] [ref=e148]
+          - paragraph [ref=e149]: Opening intersection, lip clearance, and descending entry angle establish feasibility. Margin, speed headroom, flight time, and hood travel shape candidate ranking.
+        - article [ref=e150]:
+          - text: 04 · Compress
+          - heading "Fit and generate" [level=3] [ref=e151]
+          - paragraph [ref=e152]: Least-squares fitting produces two quadratic surfaces. One generator writes matching Java and TypeScript coefficients and records maximum fit residuals.
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - strong [ref=e155]: "567"
+          - generic [ref=e156]: Distance–velocity grid statesin the configured generation sweep
+        - generic [ref=e157]:
+          - strong [ref=e158]: "12"
+          - generic [ref=e159]: Coefficients acrosstwo six-term polynomials
+        - generic [ref=e160]:
+          - strong [ref=e161]: 2 languages
+          - generic [ref=e162]: Java robot control +TypeScript engineering tools
+      - generic [ref=e163]:
+        - generic [ref=e164]:
+          - paragraph [ref=e165]: Explore the generated polynomial
+          - heading "Motion changes the launch." [level=3] [ref=e166]
+          - paragraph [ref=e167]: Move through the model’s distance and radial-velocity domain. These curves use the coefficients generated for this branch.
+          - generic [ref=e168]:
+            - text: Distance to target
+            - status [ref=e169]: 4.00 m
+          - slider "Distance to target" [ref=e170] [cursor=pointer]: "4"
+          - generic [ref=e171]:
+            - text: Radial velocity
+            - status [ref=e172]: 0.00 m/s
+          - slider "Radial velocity" [ref=e173] [cursor=pointer]: "0"
+          - paragraph [ref=e174]: Positive radial velocity approaches the target. The curves show polynomial outputs; the live solver below evaluates the compensated trajectory.
+        - generic [ref=e175]:
+          - img "Generated hood and flywheel polynomial outputs across target distance" [ref=e176]:
+            - generic [ref=e177]: Hood position · motor rotations
+            - generic [ref=e178]: "-3"
+            - generic [ref=e179]: "-2"
+            - generic [ref=e180]: "-1"
+            - generic [ref=e181]: "0"
+            - generic [ref=e184]: "1.5"
+            - generic [ref=e185]: "3"
+            - generic [ref=e186]: "4.5"
+            - generic [ref=e187]: "6"
+            - generic [ref=e188]: "8"
+            - generic [ref=e189]: Flywheel speed · RPS magnitude
+            - generic [ref=e190]: "0"
+            - generic [ref=e191]: "50"
+            - generic [ref=e192]: "100"
+            - generic [ref=e193]: "125"
+            - generic [ref=e196]: "1.5"
+            - generic [ref=e197]: "3"
+            - generic [ref=e198]: "4.5"
+            - generic [ref=e199]: "6"
+            - generic [ref=e200]: "8"
+            - generic [ref=e201]: Target distance (m)
+          - generic [ref=e202]:
+            - generic [ref=e203]:
+              - text: Hood command
+              - generic [ref=e204]: "-1.688 rot"
+            - generic [ref=e205]:
+              - text: Launch elevation
+              - generic [ref=e206]: 67.7°
+            - generic [ref=e207]:
+              - text: Flywheel magnitude
+              - generic [ref=e208]: 77.1 RPS
+      - group [ref=e209]:
+        - generic "From simulated sample to robot command +" [ref=e210] [cursor=pointer]:
+          - text: From simulated sample to robot command
+          - generic [ref=e211]: +
+    - region [ref=e212]:
+      - generic [ref=e213]:
+        - paragraph [ref=e214]: 03 / The live shot laboratory
+        - generic [ref=e215]:
+          - heading "Put the entire shot model in your hands." [level=2] [ref=e216]: Put the entireshot model in your hands.
+          - paragraph [ref=e217]:
+            - text: This is our
+            - strong [ref=e218]: shot-calculator
+            - text: ": the field renderer, trajectory evaluator, generated ShotMap, drive simulator, and turret tracker from the engineering tool. Explore the mathematics as the robot moves."
+      - generic [ref=e219]:
+        - paragraph [ref=e220]:
+          - generic [ref=e221]: Inspect
+          - text: Drag the robot. Change radial and lateral velocity, pitch, or roll.
+        - paragraph [ref=e222]:
+          - generic [ref=e223]: Drive
+          - text: Choose Keyboard Sim. Use WASD to translate and Q/E to rotate.
+        - paragraph [ref=e224]:
+          - generic [ref=e225]: Replay
+          - text: Load a repository path or your own PathPlanner / Choreo file.
+      - iframe [ref=e227]:
+        - main [ref=f1e2]:
+          - generic [ref=f1e3]:
+            - generic [ref=f1e4]: Original shot-calculator engine
+            - button "Show engineering controls" [ref=f1e5] [cursor=pointer]
+          - generic [ref=f1e6]:
+            - generic [ref=f1e7]:
+              - paragraph [ref=f1e8]: Rōnin · Physics in motion
+              - heading "Explore the shot." [level=1] [ref=f1e9]
+              - paragraph [ref=f1e10]: Place the robot on the field. Change its motion. Watch the turret, flight path, and launch settings respond.
+            - generic [ref=f1e11]:
+              - generic [ref=f1e12]:
+                - generic [ref=f1e13]: Visualizer Page
+                - generic "Visualizer page selector" [ref=f1e14]:
+                  - button "Drag Inspector" [ref=f1e15] [cursor=pointer]
+                  - button "Keyboard Sim" [ref=f1e16] [cursor=pointer]
+                  - button "Path Playback" [ref=f1e17] [cursor=pointer]
+              - generic [ref=f1e18]:
+                - generic [ref=f1e19]: Alliance
+                - generic "Alliance selector" [ref=f1e20]:
+                  - button "Blue" [ref=f1e21] [cursor=pointer]
+                  - button "Red" [ref=f1e22] [cursor=pointer]
+              - generic [ref=f1e23]:
+                - generic [ref=f1e24]: Target mode
+                - generic "Target selector" [ref=f1e25]:
+                  - button "Auto" [ref=f1e26] [cursor=pointer]
+                  - button "Hub" [ref=f1e27] [cursor=pointer]
+                  - button "Neutral Back" [ref=f1e28] [cursor=pointer]
+                  - button "Opponent Pass" [ref=f1e29] [cursor=pointer]
+              - generic [ref=f1e87]:
+                - generic [ref=f1e88]:
+                  - generic [ref=f1e89]: PathPlanner/Choreo file
+                  - button "PathPlanner/Choreo file" [ref=f1e90]
+                - generic [ref=f1e91]:
+                  - button "Pause" [ref=f1e92] [cursor=pointer]
+                  - generic [ref=f1e93]: Loaded 4 waypoints with 4.5 m/s, 4.5 m/s^2 constraints.
+                - generic [ref=f1e94]:
+                  - generic [ref=f1e95]: Path time (s)
+                  - slider "Path time (s)" [ref=f1e96]: "1.62"
+                  - status [ref=f1e97]: "1.62"
+              - generic [ref=f1e43]:
+                - generic [ref=f1e44]:
+                  - generic [ref=f1e45]: Robot pitch (deg)
+                  - slider "Robot pitch (deg)" [ref=f1e46]: "0"
+                  - status [ref=f1e47]: "0.00"
+                - generic [ref=f1e48]:
+                  - generic [ref=f1e49]: Robot roll (deg)
+                  - slider "Robot roll (deg)" [ref=f1e50]: "0"
+                  - status [ref=f1e51]: "0.00"
+          - generic [ref=f1e52]:
+            - generic [ref=f1e53]: Replay a repository path
+            - button "Moving shot" [ref=f1e54] [cursor=pointer]
+            - button "Fuel sweep" [ref=f1e55] [cursor=pointer]
+            - button "Wide sweep" [ref=f1e56] [cursor=pointer]
+            - status [ref=f1e98]: BlueLeftSOTM loaded. Press Play to run.
+          - generic [ref=f1e57]:
+            - 'generic "Interactive REBUILT field: drag to place the robot. Use Keyboard Sim for keyboard driving." [ref=f1e59]'
+            - generic "Calculated side-view trajectory, Hub opening, front lip, and entry geometry." [ref=f1e61]
+            - generic "Live calculated shot values" [ref=f1e62]:
+              - generic [ref=f1e99]:
+                - generic [ref=f1e100]: Target
+                - strong [ref=f1e101]: HUB
+              - generic [ref=f1e102]:
+                - generic [ref=f1e103]: Release distance
+                - strong [ref=f1e104]: 3.16 m
+              - generic [ref=f1e105]:
+                - generic [ref=f1e106]: Radial / lateral
+                - strong [ref=f1e107]: 0.12 / 1.47 m/s
+              - generic [ref=f1e108]:
+                - generic [ref=f1e109]: Polynomial hood
+                - strong [ref=f1e110]: "-1.570 rot"
+              - generic [ref=f1e111]:
+                - generic [ref=f1e112]: Polynomial flywheel
+                - strong [ref=f1e113]: 71.6 RPS
+              - generic [ref=f1e114]:
+                - generic [ref=f1e115]: Turret goal
+                - strong [ref=f1e116]: "-104.4°"
+              - generic [ref=f1e117]:
+                - generic [ref=f1e118]: Flight time
+                - strong [ref=f1e119]: 1.32 s
+              - generic [ref=f1e120]:
+                - generic [ref=f1e121]: Trajectory geometry
+                - strong [ref=f1e122]: Feasible
+      - generic [ref=e228]:
+        - paragraph [ref=e229]: Live simulation · field geometry, predicted release, turret tracking, and final trajectory
+        - link "Open full shot laboratory ↗" [ref=e230] [cursor=pointer]:
+          - /url: calculator/index.html
+      - generic [ref=e231]:
+        - generic [ref=e232]: Alliance-aware targets
+        - generic [ref=e233]: Hub + passback
+        - generic [ref=e234]: 3D launch transforms
+        - generic [ref=e235]: Turret PID exploration
+        - generic [ref=e236]: Motion-envelope scoring
+        - generic [ref=e237]: Path playback
+    - region [ref=e238]:
+      - generic [ref=e239]:
+        - paragraph [ref=e240]: 04 / Release-state prediction
+        - generic [ref=e241]:
+          - heading "Aim for the moment that matters." [level=2] [ref=e242]: Aim for the momentthat matters.
+          - paragraph [ref=e243]: Fuel inherits the shooter’s motion at release. Our solver accounts for that motion before the shot, including acceleration, chassis rotation, and the turret’s offset from the robot center.
+      - generic [ref=e244]:
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - generic [ref=e247]: Explore the prediction
+            - generic [ref=e249]: Plan view · Interactive model
+          - img "Release prediction and motion compensation Adjust motion to see the robot’s predicted release position and the shooter-relative launch direction change while the resultant path points at the Hub." [ref=e250]:
+            - generic [ref=e260]: "7447"
+            - generic [ref=e274]:
+              - generic [ref=e275]: Robot now
+              - generic [ref=e276]: Hub
+              - generic [ref=e277]: Release
+              - generic [ref=e278]: Field coordinates / x → · y ↑
+          - generic [ref=e279]:
+            - generic [ref=e280]: Compensated launch
+            - generic [ref=e282]: Inherited motion
+            - generic [ref=e284]: Resulting flight
+        - generic [ref=e286]:
+          - paragraph [ref=e287]: Put motion into the equation
+          - group "Motion scenarios" [ref=e288]:
+            - button "Strafe" [pressed] [ref=e289] [cursor=pointer]
+            - button "Approach" [ref=e290] [cursor=pointer]
+            - button "Turn + move" [ref=e291] [cursor=pointer]
+          - generic [ref=e292]:
+            - generic [ref=e293]: Travel speed
+            - status [ref=e294]: 1.2 m/s
+          - slider "Travel speed" [ref=e295] [cursor=pointer]: "1.2"
+          - generic [ref=e296]:
+            - generic [ref=e297]: Acceleration
+            - status [ref=e298]: 0.0 m/s²
+          - slider "Acceleration" [ref=e299] [cursor=pointer]: "0"
+          - generic [ref=e300]:
+            - generic [ref=e301]: Chassis rotation
+            - status [ref=e302]: 0°/s
+          - slider "Chassis rotation" [ref=e303] [cursor=pointer]: "0"
+          - generic [ref=e304]:
+            - text: Predicted center displacement
+            - strong [ref=e305]: 16.8 cm
+            - paragraph [ref=e306]: As the robot strafes, the turret aims against lateral motion to cancel the velocity Fuel inherits.
+          - generic [ref=e307]:
+            - button "Play motion" [ref=e308] [cursor=pointer]: Play motion ▶
+            - button "Reset" [ref=e309] [cursor=pointer]
+      - paragraph [ref=e310]: Interactive explanation of release prediction and horizontal velocity compensation. Uses a 140 ms configured release horizon and an illustrative 0.8 s flight time.
+      - generic [ref=e311]:
+        - article [ref=e312]:
+          - generic [ref=e313]: "01"
+          - heading "Predict departure" [level=3] [ref=e314]
+          - paragraph [ref=e315]: The prediction horizon includes the age of the motion sample and the configured release latency. Acceleration shifts both release position and release velocity.
+          - generic [ref=e316]:
+            - text: p
+            - subscript [ref=e317]: release
+            - text: = p + vτ + ½aτ²
+        - article [ref=e318]:
+          - generic [ref=e319]: "02"
+          - heading "Inherit the full motion" [level=3] [ref=e320]
+          - paragraph [ref=e321]: The turret sits away from the chassis center. Rotation adds a tangential velocity at that offset, so the solver uses the shooter’s velocity at its actual pivot.
+          - generic [ref=e322]:
+            - text: v
+            - subscript [ref=e323]: pivot
+            - text: = v
+            - subscript [ref=e324]: robot
+            - text: + ω × r
+        - article [ref=e325]:
+          - generic [ref=e326]: "03"
+          - heading "Solve in three dimensions" [level=3] [ref=e327]
+          - paragraph [ref=e328]: Field-frame launch vectors transform through robot roll, pitch, and predicted yaw to produce coordinated turret and hood commands.
+          - generic [ref=e329]:
+            - text: u
+            - subscript [ref=e330]: robot
+            - text: = R
+            - superscript [ref=e331]: −1
+            - text: u
+            - subscript [ref=e332]: field
+      - group [ref=e333]:
+        - generic "Inside the trajectory evaluator" [ref=e334] [cursor=pointer]:
+          - text: Inside the trajectory evaluator
+          - generic [aria-hidden] [ref=e335]: +
+    - region [ref=e336]:
+      - generic [ref=e337]:
+        - paragraph [ref=e338]: 05 / Turret & launcher control
+        - generic [ref=e339]:
+          - heading "Aiming is a complete control system." [level=2] [ref=e340]: Aiming is a completecontrol system.
+          - paragraph [ref=e341]: The field-space solution becomes a legal mechanical target, a shaped motion profile, and a closed-loop motor command. Turret yaw, hood elevation, and flywheel velocity each have a clear role in delivering the launch.
+      - generic [ref=e342]:
+        - generic [ref=e343]:
+          - paragraph [ref=e344]: Field target → physical motion
+          - generic [ref=e345]:
+            - generic [ref=e346]: Field-space launch vector
+            - generic [ref=e347]: Predicted pose · roll · pitch · yaw
+          - generic [ref=e348]: ↓
+          - generic [ref=e349]:
+            - generic [ref=e350]: Nearest legal turret angle
+            - generic [ref=e351]: Equivalent turns · software travel bounds
+          - generic [ref=e352]: ↓
+          - generic [ref=e353]:
+            - generic [ref=e354]: Motion Magic + PID/feedforward
+            - generic [ref=e355]: Velocity · acceleration · jerk
+          - generic [ref=e356]: ↓
+          - generic [ref=e357]:
+            - generic [ref=e358]: TalonFX → turret mechanism
+            - generic [ref=e359]: Encoder position and velocity close the loop ↺
+        - generic [ref=e360]:
+          - paragraph [ref=e361]: Explore equivalent-angle selection
+          - heading "Same aim. Smarter travel." [level=3] [ref=e362]
+          - paragraph [ref=e363]: A field direction can map to multiple equivalent turret rotations. Our angle selector chooses the closest legal representation to the current position.
+          - generic [ref=e364]:
+            - text: Current turret angle
+            - status [ref=e365]: "-340°"
+          - slider "Current turret angle" [ref=e366] [cursor=pointer]: "-340"
+          - generic [ref=e367]:
+            - text: Requested direction
+            - status [ref=e368]: 30°
+          - slider "Requested direction" [ref=e369] [cursor=pointer]: "30"
+          - img "Legal turret travel range, current angle, and selected equivalent goal" [ref=e370]:
+            - generic [ref=e372]: "-381.2°"
+            - generic [ref=e373]: "-180°"
+            - generic [ref=e374]: 0°
+            - generic [ref=e375]: 171°
+            - generic [ref=e378]: ● Current angle
+            - generic [ref=e379]: ● Selected legal goal
+            - generic [ref=e380]: Configured logical turret travel
+          - generic [ref=e381]:
+            - generic [ref=e382]:
+              - text: Selected legal goal
+              - generic [ref=e383]: "-330.0°"
+            - generic [ref=e384]:
+              - text: Commanded travel
+              - generic [ref=e385]: +10.0°
+      - generic [ref=e386]:
+        - article [ref=e387]:
+          - heading "Shape the move" [level=3] [ref=e388]
+          - paragraph [ref=e389]: Motion Magic constrains cruise velocity, acceleration, and jerk. Feedforward terms kS, kV, and kA address friction and motion demand; kP, kI, and kD act on feedback error.
+        - article [ref=e390]:
+          - heading "Separate the coordinates" [level=3] [ref=e391]
+          - paragraph [ref=e392]: Motor rotations, logical turret rotations, positive-yaw sign, and the forward reference are explicitly converted. The same legal-angle model is represented in the browser tracker.
+        - article [ref=e393]:
+          - heading "Measure the response" [level=3] [ref=e394]
+          - paragraph [ref=e395]: Turret diagnostics record settling time, overshoot, final bias, error sign changes, and rolling RMS/peak tracking error. Dedicated step commands and tuning controls expose the response.
+      - group [ref=e396]:
+        - generic "Three axes of the launch, three closed loops +" [ref=e397] [cursor=pointer]:
+          - text: Three axes of the launch, three closed loops
+          - generic [ref=e398]: +
+    - region [ref=e399]:
+      - generic [ref=e400]:
+        - paragraph [ref=e401]: 06 / Perception
+        - heading "See the field. Keep the picture." [level=2] [ref=e402]: See the field.Keep the picture.
+        - paragraph [ref=e403]: Two AprilTag cameras feed a common drivetrain pose estimate. Odometry carries motion forward between camera observations, giving the shooter a continuous field reference.
+        - link "Follow the implementation" [ref=e404] [cursor=pointer]:
+          - /url: "#source"
+          - text: Follow the implementation ↗
+      - generic [ref=e405]:
+        - generic [ref=e406]:
+          - generic [ref=e407]:
+            - generic [aria-hidden] [ref=e408]: ◉
+            - strong [ref=e409]: Left camera
+            - generic [ref=e410]: AprilTag observations
+          - generic [ref=e411]:
+            - generic [aria-hidden] [ref=e412]: ◉
+            - strong [ref=e413]: Right camera
+            - generic [ref=e414]: AprilTag observations
+        - generic [ref=e416]:
+          - text: PhotonVision + swerve odometry
+          - strong [ref=e417]: A continuous field pose
+          - generic [ref=e418]:
+            - generic [ref=e419]:
+              - text: x
+              - generic [ref=e420]: Position
+            - generic [ref=e421]:
+              - text: "y"
+              - generic [ref=e422]: Position
+            - generic [ref=e423]:
+              - text: θ
+              - generic [ref=e424]: Heading
+        - generic [ref=e425]:
+          - paragraph [ref=e426]:
+            - text: +
+            - generic [ref=e427]: Timestamp-aware fusion
+            - text: Capture time stays attached to each observation, including out-of-order camera arrivals.
+          - paragraph [ref=e428]:
+            - text: +
+            - generic [ref=e429]: Geometry-aware weighting
+            - text: Tag count and viewing distance set measurement uncertainty.
+          - paragraph [ref=e430]:
+            - text: +
+            - generic [ref=e431]: Continuous aiming
+            - text: Vision age is tracked explicitly while odometry maintains the field reference.
+    - region [ref=e432]:
+      - generic [ref=e433]:
+        - paragraph [ref=e434]: 07 / Coordinated control
+        - generic [ref=e435]:
+          - heading "Own the entire Fuel cycle." [level=2] [ref=e436]: Own the entireFuel cycle.
+          - paragraph [ref=e437]: A good trajectory becomes a shot through coordinated hardware. Rōnin connects mechanism feedback to a staged feed controller that makes the launch decision explicit.
+      - generic [ref=e438]:
+        - generic [ref=e439]:
+          - generic [ref=e440]:
+            - generic [ref=e441]: Automatic feed sequence
+            - generic [ref=e442]: Select a stage
+          - group "Explore feed stages" [ref=e443]:
+            - button "01 Ready" [pressed] [ref=e444] [cursor=pointer]:
+              - generic [ref=e445]: "01"
+              - text: Ready
+            - generic [aria-hidden] [ref=e446]: →
+            - button "02 Final feed" [ref=e447] [cursor=pointer]:
+              - generic [ref=e448]: "02"
+              - text: Final feed
+            - generic [aria-hidden] [ref=e449]: →
+            - button "03 Spindexer" [ref=e450] [cursor=pointer]:
+              - generic [ref=e451]: "03"
+              - text: Spindexer
+          - generic [ref=e452]:
+            - text: t = 0 ms · Readiness established
+            - heading "The whole shot gets the green light." [level=3] [ref=e453]
+            - paragraph [ref=e454]: The solution is fresh and feasible. The flywheel, hood, and turret meet their targets. Measured and predicted motion fit the configured shooting envelope.
+          - generic [ref=e455]:
+            - generic [ref=e456]:
+              - text: Final feed
+              - generic [ref=e458]: Staging
+            - generic [ref=e459]:
+              - text: Spindexer
+              - generic [ref=e461]: Staging
+        - generic [ref=e462]:
+          - article [ref=e463]:
+            - text: Keep the stream moving
+            - heading "Readiness with hysteresis" [level=3] [ref=e464]
+            - paragraph [ref=e465]: The flywheel enters readiness through a tighter speed band and holds it through a wider running band. Normal speed variation keeps the feed sequence moving.
+          - article [ref=e466]:
+            - text: Match command to motion
+            - heading "A shooting-aware drivetrain" [level=3] [ref=e467]
+            - paragraph [ref=e468]: Vector speed limits and acceleration ramps shape driver commands while shooting. Measured speed and acceleration feed back into the release decision.
+          - article [ref=e469]:
+            - text: Put the driver in command
+            - heading "Immediate manual feed" [level=3] [ref=e470]
+            - paragraph [ref=e471]: A deliberate driver input starts both feed motors immediately using the current bounded actuator commands. Releasing it returns control to automatic sequencing.
+      - group [ref=e472]:
+        - generic "The control decisions behind the sequence" [ref=e473] [cursor=pointer]:
+          - text: The control decisions behind the sequence
+          - generic [aria-hidden] [ref=e474]: +
+    - region [ref=e475]:
+      - generic [ref=e476]:
+        - paragraph [ref=e477]: Driver + software
+        - heading "The driver chooses the play. The robot handles the details." [level=2] [ref=e478]: The driver chooses the play.The robot handles the details.
+        - paragraph [ref=e479]: Field-centric swerve, independent turret aiming, and destination-based autopilot turn driver intent into coordinated action.
+      - generic [ref=e480]:
+        - article [ref=e481]:
+          - text: Navigate
+          - heading "Destination-based autopilot" [level=3] [ref=e482]
+          - paragraph [ref=e483]: PathPlanner routes to field goals. Near the destination, a dedicated alignment controller closes position and heading error.
+        - article [ref=e484]:
+          - text: Coordinate
+          - heading "Composable autonomous" [level=3] [ref=e485]
+          - paragraph [ref=e486]: Named commands connect intake, shooting, and aiming to autonomous routines. Alliance-aware configuration mirrors field strategy.
+        - article [ref=e487]:
+          - text: Adapt
+          - heading "Hub shot or passback" [level=3] [ref=e488]
+          - paragraph [ref=e489]: Target selection changes with field context, giving the same launch system a scoring role and a Fuel-transfer role.
+    - region [ref=e490]:
+      - generic [ref=e491]:
+        - paragraph [ref=e492]: 08 / Autonomous orchestration
+        - generic [ref=e493]:
+          - heading "Paths and mechanisms. Choreographed as one." [level=2] [ref=e494]: Paths and mechanisms.Choreographed as one.
+          - paragraph [ref=e495]: Autonomous routines are composed from sequential, parallel, and deadline commands. The route and mechanism actions share one command architecture, including the same automatic shot-readiness sequence used throughout the robot.
+      - generic [ref=e496]:
+        - generic [ref=e497]:
+          - generic [ref=e498]: Inside a real routine
+          - code [ref=e499]: BlueLeft2SweepCycleSOTM.auto
+        - list [ref=e500]:
+          - listitem [ref=e501]:
+            - generic [ref=e502]:
+              - text: 01 · Parallel
+              - heading "Sweep while collecting" [level=3] [ref=e503]
+              - paragraph [ref=e504]:
+                - code [ref=e505]: BlueLeftSweepLoop
+                - text: runs alongside
+                - code [ref=e506]: EnableIntake
+                - text: .
+          - listitem [ref=e507]:
+            - generic [ref=e508]:
+              - text: 02 · Path deadline
+              - heading "Move and shoot" [level=3] [ref=e509]
+              - paragraph [ref=e510]:
+                - code [ref=e511]: BlueLeftSOTM
+                - text: drives the route. A 0.6 s delay precedes
+                - code [ref=e512]: ShootSequence
+                - text: ; path completion ends this group.
+              - link "Explore the moving-shot path ↗" [ref=e513] [cursor=pointer]:
+                - /url: "#calculator"
+          - listitem [ref=e514]:
+            - generic [ref=e515]:
+              - text: 03 · Parallel
+              - heading "Expand the collection sweep" [level=3] [ref=e516]
+              - paragraph [ref=e517]:
+                - code [ref=e518]: BlueLeftWideSweepLoop
+                - text: and
+                - code [ref=e519]: EnableIntake
+                - text: execute together.
+          - listitem [ref=e520]:
+            - generic [ref=e521]:
+              - text: 04 · Time deadline
+              - heading "Finish with a shooting window" [level=3] [ref=e522]
+              - paragraph [ref=e523]:
+                - text: An 8 s deadline bounds
+                - code [ref=e524]: ShootSequence
+                - text: ", keeping the routine’s timing explicit."
+      - generic [ref=e525]:
+        - article [ref=e526]:
+          - heading "Holonomic path following" [level=3] [ref=e527]
+          - paragraph [ref=e528]: PathPlanner’s holonomic controller closes translation and rotation error using the drivetrain pose and chassis speeds. A dashboard chooser selects composed autonomous routines.
+        - article [ref=e529]:
+          - heading "Alliance-aware execution" [level=3] [ref=e530]
+          - paragraph [ref=e531]: AutoBuilder uses alliance information for mirroring. Named commands expose intake, shot sequence, auto-aim enable, and sequence end actions to the route author.
+        - article [ref=e532]:
+          - heading "Destination-based autopilot" [level=3] [ref=e533]
+          - paragraph [ref=e534]: At command start, a goal within 0.75 m selects direct alignment; farther goals select pathfinding. Alignment uses X/Y PID and a profiled continuous-input heading controller.
+      - generic [ref=e535]:
+        - generic [ref=e536]: Deliberate completion
+        - paragraph [ref=e537]: The short-range alignment controller requires position and heading tolerances together for a settling interval. Command completion stops the requested chassis motion.
+    - region [ref=e538]:
+      - generic [ref=e539]:
+        - paragraph [ref=e540]: 09 / The rest of the robot
+        - generic [ref=e541]:
+          - heading "Sophistication reaches every mechanism." [level=2] [ref=e542]: Sophistication reachesevery mechanism.
+          - paragraph [ref=e543]: The launch system is one part of a command-based robot. Driver input, swerve, intake deployment, Fuel transport, and lifecycle management all contribute to the same coordinated machine.
+      - generic [ref=e544]:
+        - article [ref=e545]:
+          - text: 01 / Swerve
+          - heading "Motion with intent" [level=3] [ref=e546]
+          - paragraph [ref=e547]: Field-centric teleop translates driver input into field motion. Alliance perspective, brake requests, shooting speed caps, vector acceleration ramps, and measured-motion estimation connect driving to shot planning.
+          - group [ref=e548]:
+            - generic "Engineering underneath +" [ref=e549] [cursor=pointer]:
+              - text: Engineering underneath
+              - generic [ref=e550]: +
+        - article [ref=e551]:
+          - text: 02 / Intake
+          - heading "Controlled deployment" [level=3] [ref=e552]
+          - paragraph [ref=e553]: A leader/follower extension mechanism uses profiled positioning while an independently controlled roller collects Fuel. The extension and roller have explicit configuration and enabled states.
+          - group [ref=e554]:
+            - generic "Homing and active recovery +" [ref=e555] [cursor=pointer]:
+              - text: Homing and active recovery
+              - generic [ref=e556]: +
+        - article [ref=e557]:
+          - text: 03 / Fuel transport
+          - heading "Two stages, one stream" [level=3] [ref=e558]
+          - paragraph [ref=e559]: The spindexer supplies the final feed, and both use commanded velocity control. The feed sequencer starts the downstream stage first, adds upstream transport, and continuously reevaluates shot readiness.
+          - group [ref=e560]:
+            - generic "Explicit transitions +" [ref=e561] [cursor=pointer]:
+              - text: Explicit transitions
+              - generic [ref=e562]: +
+        - article [ref=e563]:
+          - text: 04 / Command architecture
+          - heading "Clear ownership" [level=3] [ref=e564]
+          - paragraph [ref=e565]: WPILib subsystem requirements define who controls each mechanism. Default drive and auto-aim commands run continuously; composed commands coordinate higher-level actions.
+          - group [ref=e566]:
+            - generic "Lifecycle and configuration +" [ref=e567] [cursor=pointer]:
+              - text: Lifecycle and configuration
+              - generic [ref=e568]: +
+    - region [ref=e569]:
+      - generic [ref=e570]:
+        - paragraph [ref=e571]: 10 / Power analysis
+        - generic [ref=e572]:
+          - heading "See the electrical story behind every action." [level=2] [ref=e573]: See the electrical storybehind every action.
+          - paragraph [ref=e574]:
+            - text: Our
+            - strong [ref=e575]: power-analysis
+            - text: tool connects battery behavior, motor demand, and mechanism events on a shared timeline. It turns exported robot telemetry into a structured report and per-mechanism plots.
+      - generic [ref=e576]:
+        - generic [ref=e577]: 01 WPILib / Phoenix recording
+        - generic [ref=e578]: →
+        - generic [ref=e579]: 02 AdvantageScope CSV export
+        - generic [ref=e580]: →
+        - generic [ref=e581]: 03 Analyzer
+        - generic [ref=e582]: →
+        - generic [ref=e583]: 04 JSON report + SVG plot
+      - generic [ref=e584]:
+        - generic [ref=e585]:
+          - generic [ref=e586]:
+            - heading "Explore the analyzer" [level=3] [ref=e587]
+            - paragraph [ref=e588]: Repository example · voltage-event fixture
+          - generic [ref=e589] [cursor=pointer]:
+            - text: Open telemetry CSV
+            - button "Open telemetry CSV" [ref=e590]
+        - generic [ref=e591]:
+          - group "Repository power examples" [ref=e592]:
+            - button "Mechanism signals" [ref=e593] [cursor=pointer]
+            - button "Voltage event" [active] [pressed] [ref=e594] [cursor=pointer]
+          - generic [ref=e595]: Files are analyzed locally in your browser.
+        - generic [ref=e596]:
+          - generic [ref=e773]:
+            - text: Samples
+            - strong [ref=e774]: "4"
+          - generic [ref=e775]:
+            - text: Minimum voltage
+            - strong [ref=e776]: 6.80 V
+          - generic [ref=e777]:
+            - text: Voltage-dip events
+            - strong [ref=e778]: "1"
+          - generic [ref=e779]:
+            - text: Time span
+            - strong [ref=e780]: 0.150 s
+        - img "Power analyzer timeline with voltage and supply-current series" [ref=e605]:
+          - generic [ref=e781]: PDH voltage (V)
+          - generic [ref=e782]: "0.0"
+          - generic [ref=e783]: "4.0"
+          - generic [ref=e784]: "8.0"
+          - generic [ref=e785]: "12.0"
+          - generic [ref=e786]: "16.0"
+          - 'generic "0 s: 12.5" [ref=e788]'
+          - 'generic "0.05 s: 7.2" [ref=e789]'
+          - 'generic "0.1 s: 6.8" [ref=e790]'
+          - 'generic "0.15 s: 8" [ref=e791]'
+          - generic [ref=e792]: "0.000"
+          - generic [ref=e793]: "0.037"
+          - generic [ref=e794]: "0.075"
+          - generic [ref=e795]: "0.112"
+          - generic [ref=e796]: "0.150"
+          - generic [ref=e797]: Supply current (A)
+          - generic [ref=e798]: "0.0"
+          - generic [ref=e799]: "27.5"
+          - generic [ref=e800]: "55.0"
+          - generic [ref=e801]: "82.5"
+          - generic [ref=e802]: "110.0"
+          - 'generic "0 s: 0" [ref=e804]'
+          - 'generic "0.05 s: 80" [ref=e805]'
+          - 'generic "0.1 s: 100" [ref=e806]'
+          - 'generic "0.15 s: 20" [ref=e807]'
+          - generic [ref=e808]: "0.000"
+          - generic [ref=e809]: "0.037"
+          - generic [ref=e810]: "0.075"
+          - generic [ref=e811]: "0.112"
+          - generic [ref=e812]: "0.150"
+          - generic [ref=e813]: Time from log timestamp (s)
+        - generic "Toggle supply-current series" [ref=e638]:
+          - button "PDH total" [pressed] [ref=e814] [cursor=pointer]
+        - generic [ref=e643]:
+          - paragraph [ref=e644]: Example inputs from tools/power-analysis/test/analyze.test.mjs. The displayed values describe that repository fixture.
+          - button "Download analysis JSON ↗" [ref=e645] [cursor=pointer]
+      - generic [ref=e646]:
+        - article [ref=e647]:
+          - heading "Event-centered analysis" [level=3] [ref=e648]
+          - paragraph [ref=e649]: The analyzer extracts minimum voltage, voltage-dip intervals, recorded brownout events, shooter recovery intervals, and intake movement windows. Event windows bring neighboring samples into view.
+        - article [ref=e650]:
+          - heading "Per-mechanism demand" [level=3] [ref=e651]
+          - paragraph [ref=e652]: Supply-current streams identify motor demand on the battery. PDH aggregate current and summed motor supply current remain distinct, while stator current describes torque-producing motor current.
+        - article [ref=e653]:
+          - heading "Time-aware data handling" [level=3] [ref=e654]
+          - paragraph [ref=e655]: The parser accepts direct recorder names, sorts timestamps, and preserves missing samples. Timestamp gaps keep separate events separate, and duplicate timestamps are reported explicitly.
+      - group [ref=e656]:
+        - generic "The recorder behind the analysis +" [ref=e657] [cursor=pointer]:
+          - text: The recorder behind the analysis
+          - generic [ref=e658]: +
+    - region [ref=e659]:
+      - generic [ref=e660]:
+        - paragraph [ref=e661]: 11 / Engineering ecosystem
+        - generic [ref=e662]:
+          - heading "Every decision leaves a trace." [level=2] [ref=e663]: Every decisionleaves a trace.
+          - paragraph [ref=e664]: We built the tools around the robot, too. Shot evaluation, mechanism tuning, and synchronized logging form an engineering workflow that connects software decisions to physical behavior.
+      - generic [ref=e665]:
+        - article [ref=e666]:
+          - generic [aria-hidden] [ref=e667]:
+            - generic [ref=e668]: One evaluator contract
+            - paragraph [ref=e673]:
+              - generic [ref=e674]: Robot · Java
+              - generic [ref=e675]: ↘
+            - strong [ref=e676]: Trajectory & target constraints
+            - paragraph [ref=e677]:
+              - generic [ref=e678]: Calculator · TypeScript
+              - generic [ref=e679]: ↗
+            - text: Shared inputs. Shared expected results.
+          - heading "A shot model you can inspect" [level=3] [ref=e680]
+          - paragraph [ref=e681]: The browser shot calculator and robot evaluator share fixture data and target conventions. Engineers can explore a launch, trace its math, and connect it directly to the robot implementation.
+        - generic [ref=e682]:
+          - article [ref=e683]:
+            - generic [ref=e684]: "01"
+            - generic [ref=e685]:
+              - heading "Synchronized system recording" [level=3] [ref=e686]
+              - paragraph [ref=e687]: Shot decisions, feed transitions, mechanism signals, battery voltage, current, and CAN health are recorded with timestamps and configuration identity.
+          - article [ref=e688]:
+            - generic [ref=e689]: "02"
+            - generic [ref=e690]:
+              - heading "Dedicated turret diagnostics" [level=3] [ref=e691]
+              - paragraph [ref=e692]: Step-response metrics expose settling behavior and oscillation. Position and velocity signals connect controller tuning to the motion it produces.
+          - article [ref=e693]:
+            - generic [ref=e694]: "03"
+            - generic [ref=e695]:
+              - heading "Power analysis by mechanism" [level=3] [ref=e696]
+              - paragraph [ref=e697]: Offline analysis turns robot logs into per-mechanism power views, linking electrical demand with the actions happening at that instant.
+      - generic [ref=e698]:
+        - generic [ref=e699]: Built with
+        - generic [ref=e700]: Java
+        - generic [ref=e701]: WPILib
+        - generic [ref=e702]: CTRE Phoenix 6
+        - generic [ref=e703]: PhotonVision
+        - generic [ref=e704]: PathPlanner
+        - generic [ref=e705]: TypeScript
+    - region [ref=e706]:
+      - generic [ref=e707]:
+        - paragraph [ref=e708]: 12 / Go deeper
+        - generic [ref=e709]:
+          - heading "Ask us about the decisions." [level=2] [ref=e710]
+          - paragraph [ref=e711]: The interesting engineering is in how the pieces work together.
+      - generic [ref=e712]:
+        - group [ref=e713]:
+          - generic "What makes your moving-shot approach distinctive?" [ref=e714] [cursor=pointer]:
+            - text: What makes your moving-shot approach distinctive?
+            - generic [aria-hidden] [ref=e715]: +
+        - group [ref=e716]:
+          - generic "How do you balance motion freedom and shooting?" [ref=e717] [cursor=pointer]:
+            - text: How do you balance motion freedom and shooting?
+            - generic [aria-hidden] [ref=e718]: +
+        - group [ref=e719]:
+          - generic "How does the system handle changing camera visibility?" [ref=e720] [cursor=pointer]:
+            - text: How does the system handle changing camera visibility?
+            - generic [aria-hidden] [ref=e721]: +
+        - group [ref=e722]:
+          - generic "How do you explain a shot after it happens?" [ref=e723] [cursor=pointer]:
+            - text: How do you explain a shot after it happens?
+            - generic [aria-hidden] [ref=e724]: +
+    - region [ref=e725]:
+      - generic [ref=e726]:
+        - paragraph [ref=e727]: 13 / Technical reference
+        - heading "Follow the engineering." [level=2] [ref=e728]
+        - paragraph [ref=e729]:
+          - text: This binder follows the
+          - code [ref=e730]: ultimate-sotm
+          - text: software architecture.
+      - generic [ref=e731]:
+        - link "ShotMap generator source code (opens in new tab)" [ref=e732] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/tools/shot-calculator/src/cli/generate.ts
+          - text: ShotMap generator
+          - generic [ref=e733]: ↗
+        - link "Polynomial fitting source code (opens in new tab)" [ref=e734] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/tools/shot-calculator/src/math/polynomial.ts
+          - text: Polynomial fitting
+          - generic [ref=e735]: ↗
+        - link "Shot calculator source code (opens in new tab)" [ref=e736] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/tools/shot-calculator/src/main.ts
+          - text: Shot calculator
+          - generic [ref=e737]: ↗
+        - link "Turret control source code (opens in new tab)" [ref=e738] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/subsystems/TurretSubsystem.java
+          - text: Turret control
+          - generic [ref=e739]: ↗
+        - link "Legal-angle selection source code (opens in new tab)" [ref=e740] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/util/TurretMath.java
+          - text: Legal-angle selection
+          - generic [ref=e741]: ↗
+        - link "Moving-shot autonomous source code (opens in new tab)" [ref=e742] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/deploy/pathplanner/autos/BlueLeft2SweepCycleSOTM.auto
+          - text: Moving-shot autonomous
+          - generic [ref=e743]: ↗
+        - link "Final alignment source code (opens in new tab)" [ref=e744] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/commands/autopilot/ShortRangeAutoAlignCommand.java
+          - text: Final alignment
+          - generic [ref=e745]: ↗
+        - link "Power analyzer source code (opens in new tab)" [ref=e746] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/tools/power-analysis/analyze.mjs
+          - text: Power analyzer
+          - generic [ref=e747]: ↗
+        - link "Intake recovery source code (opens in new tab)" [ref=e748] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/commands/intake/AntiJamPulse.java
+          - text: Intake recovery
+          - generic [ref=e749]: ↗
+        - link "Swerve & SysId source code (opens in new tab)" [ref=e750] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/subsystems/CommandSwerveDrivetrain.java
+          - text: Swerve & SysId
+          - generic [ref=e751]: ↗
+        - link "Device configuration source code (opens in new tab)" [ref=e752] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/util/ConfigurationHealth.java
+          - text: Device configuration
+          - generic [ref=e753]: ↗
+        - link "Shot solver source code (opens in new tab)" [ref=e754] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/util/sotm/RobustShotModel.java
+          - text: Shot solver
+          - generic [ref=e755]: ↗
+        - link "Release prediction source code (opens in new tab)" [ref=e756] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/util/sotm/ReleaseStatePredictor.java
+          - text: Release prediction
+          - generic [ref=e757]: ↗
+        - link "Vision fusion source code (opens in new tab)" [ref=e758] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/subsystems/VisionSubsystem.java
+          - text: Vision fusion
+          - generic [ref=e759]: ↗
+        - link "Feed sequencing source code (opens in new tab)" [ref=e760] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/commands/compositions/FeedSequencer.java
+          - text: Feed sequencing
+          - generic [ref=e761]: ↗
+        - link "Autopilot source code (opens in new tab)" [ref=e762] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/commands/autopilot/Autopilot.java
+          - text: Autopilot
+          - generic [ref=e763]: ↗
+        - link "System recording source code (opens in new tab)" [ref=e764] [cursor=pointer]:
+          - /url: https://github.com/ronin7447/2026-rebuilt/blob/3323e73/src/main/java/frc/robot/PowerHealthRecorder.java
+          - text: System recording
+          - generic [ref=e765]: ↗
+    - generic [ref=e766]:
+      - link "Rōnin 7447" [ref=e767] [cursor=pointer]:
+        - /url: "#overview"
+        - text: Rōnin
+        - generic [ref=e768]: "7447"
+      - paragraph [ref=e769]: Software that moves the game.
+      - generic [ref=e770]: 2026 · Software technical binder
+      - link "Back to top" [ref=e771] [cursor=pointer]:
+        - /url: "#overview"
+        - text: ↑

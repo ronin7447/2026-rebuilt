@@ -12,6 +12,8 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.ConfigurationHealth;
+import frc.robot.util.ShooterSpeedReadiness;
 import static edu.wpi.first.units.Units.*;
 
 public class ShooterSubsystem extends SubsystemBase {
@@ -23,8 +25,15 @@ public class ShooterSubsystem extends SubsystemBase {
     private double targetPosRot = getHoodPosition(); 
     private double targetRollerVelRps = Constants.Shooter.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+    private final ShooterSpeedReadiness speedReadiness = new ShooterSpeedReadiness(
+        Constants.Shooter.ROLLER_START_TOLERANCE_RPS, Constants.Shooter.ROLLER_START_TOLERANCE_SCALE,
+        Constants.Shooter.ROLLER_RUNNING_TOLERANCE_RPS, Constants.Shooter.ROLLER_RUNNING_TOLERANCE_SCALE);
 
     private boolean hoodEnabled = true;
+    private boolean hoodLowerOverride = false;
+    private boolean shootingHoodRequested = false;
+    private final boolean hoodConfigured;
+    private final boolean rollerConfigured;
 
 
     public ShooterSubsystem() {
@@ -38,9 +47,9 @@ public class ShooterSubsystem extends SubsystemBase {
         TalonFXConfiguration cfg = new TalonFXConfiguration()
         .withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(40))
+                .withStatorCurrentLimit(Amps.of(Constants.Shooter.HOOD_STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(25))
+                .withSupplyCurrentLimit(Amps.of(Constants.Shooter.HOOD_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true));
         cfg.MotorOutput.NeutralMode = NeutralModeValue.Brake; // brake for default?
         // set slot 0 gains
@@ -58,7 +67,10 @@ public class ShooterSubsystem extends SubsystemBase {
         motionMagicConfigs.MotionMagicAcceleration = Constants.Turret.ACCELERATION;
         motionMagicConfigs.MotionMagicJerk = Constants.Turret.JERK;
 
-        hoodKraken.getConfigurator().apply(cfg);
+        hoodConfigured = ConfigurationHealth.apply(
+            "shooter-hood-" + Constants.Shooter.HOOD_KRAKEN_ID,
+            () -> hoodKraken.getConfigurator().apply(cfg)
+        );
         // hoodKraken.getPosition().setUpdateFrequency(100);
         // hoodKraken.getVelocity().setUpdateFrequency(100);
         // hoodKraken.optimizeBusUtilization();
@@ -67,9 +79,9 @@ public class ShooterSubsystem extends SubsystemBase {
 
         TalonFXConfiguration rollerCfg = new TalonFXConfiguration().withCurrentLimits(
             new CurrentLimitsConfigs()
-                .withStatorCurrentLimit(Amps.of(70))
+                .withStatorCurrentLimit(Amps.of(Constants.Shooter.ROLLER_STATOR_CURRENT_LIMIT_A))
                 .withStatorCurrentLimitEnable(true)
-                .withSupplyCurrentLimit(Amps.of(55))
+                .withSupplyCurrentLimit(Amps.of(Constants.Shooter.ROLLER_SUPPLY_CURRENT_LIMIT_A))
                 .withSupplyCurrentLimitEnable(true));
 
         var rollerSlot0Configs = rollerCfg.Slot0;
@@ -84,10 +96,12 @@ public class ShooterSubsystem extends SubsystemBase {
         rollerMotionMagicConfigs.MotionMagicAcceleration = Constants.Shooter.ROLLER_ACCELERATION;
         rollerMotionMagicConfigs.MotionMagicJerk = Constants.Shooter.ROLLER_JERK;
 
-        rollerKraken.getConfigurator().apply(rollerCfg);
-        rollerKraken.getVelocity().setUpdateFrequency(100);
-        rollerKraken.getMotorVoltage().setUpdateFrequency(1000);
-        rollerKraken.optimizeBusUtilization();
+        rollerConfigured = ConfigurationHealth.apply(
+            "shooter-roller-" + Constants.Shooter.ROLLER_KRAKEN_ID,
+            () -> rollerKraken.getConfigurator().apply(rollerCfg)
+        );
+        rollerKraken.getVelocity().setUpdateFrequency(Constants.PowerLogging.MOTOR_ELECTRICAL_RATE_HZ);
+        rollerKraken.getMotorVoltage().setUpdateFrequency(Constants.PowerLogging.MOTOR_ELECTRICAL_RATE_HZ);
 
         // zeroE
 
@@ -120,12 +134,30 @@ public class ShooterSubsystem extends SubsystemBase {
 
 
 
+    /** Temporary driver override; auto aim may keep updating the target restored on release. */
+    public void setHoodLowerOverride(boolean active) {
+        hoodLowerOverride = active;
+        if (active) setHoodEnabled(true);
+    }
+
+    /** Shoot commands request the latest aiming target; idle operation parks at zero. */
+    public void setShootingHoodRequested(boolean requested) {
+        shootingHoodRequested = requested;
+        if (requested) setHoodEnabled(true);
+    }
+
     public void setTargetPositionRotation(double pos) {
+        if (!Double.isFinite(pos)) {
+            return;
+        }
         targetPosRot = pos;
-        SmartDashboard.putNumber("HoodPosition", pos);
+        SmartDashboard.putNumber("HoodPosition", getTargetHoodPositionRot());
     }
 
     public void setRollerTargetVelocity(double velRps) {
+        if (!Double.isFinite(velRps) || Math.abs(velRps) > Constants.Shooter.MAX_ROLLER_RPS) {
+            return;
+        }
         targetRollerVelRps = velRps;
         SmartDashboard.putNumber("ShooterRPS", velRps);
     }
@@ -136,11 +168,13 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public void enableRoller() {
-        rollerEnabled = rollerKraken != null;
+        rollerEnabled = rollerConfigured && rollerKraken != null;
     }
 
     public void disableRoller() {
+        shootingHoodRequested = false;
         rollerEnabled = false;
+        speedReadiness.reset();
         if (rollerKraken != null) {
             rollerKraken.stopMotor();
         }
@@ -159,25 +193,76 @@ public class ShooterSubsystem extends SubsystemBase {
     }
 
     public boolean atTargetSpeed() {
+        double velocity = getRollerVelocity();
+        return speedReadiness.update(velocity, targetRollerVelRps,
+            rollerConfigured && rollerEnabled && isSignalFresh(rollerKraken.getVelocity()));
+    }
 
-        return Math.abs(rollerKraken.getClosedLoopError().getValueAsDouble()) < Constants.Shooter.ROLLER_TOLERANCE;
+    public boolean isRollerEnabled() {
+        return rollerEnabled;
+    }
+
+    public boolean isHoodEnabled() {
+        return hoodEnabled;
+    }
+
+    public boolean isHoodAtTarget() {
+        double position = getHoodPosition();
+        return hoodConfigured
+            && hoodEnabled
+            && isSignalFresh(hoodKraken.getPosition())
+            && Double.isFinite(position)
+            && Double.isFinite(targetPosRot)
+            && Math.abs(position - getTargetHoodPositionRot()) <= Constants.Shooter.HOOD_POSITION_TOLERANCE_ROT;
+    }
+
+    public double getTargetHoodPositionRot() {
+        return shootingHoodRequested && !hoodLowerOverride ? targetPosRot : 0.0;
+    }
+
+    public double getTargetRollerVelocityRps() {
+        return targetRollerVelRps;
+    }
+
+    public boolean hasFiniteBoundedSetpoints() {
+        return shootingHoodRequested && !hoodLowerOverride && Double.isFinite(targetPosRot)
+            && targetPosRot >= Constants.Shooter.MIN_HOOD_POSITION_ROT
+            && targetPosRot <= Constants.Shooter.MAX_HOOD_POSITION_ROT
+            && Double.isFinite(targetRollerVelRps)
+            && Math.abs(targetRollerVelRps) <= Constants.Shooter.MAX_ROLLER_RPS;
+    }
+
+    private boolean isSignalFresh(com.ctre.phoenix6.BaseStatusSignal signal) {
+        return signal.getStatus().isOK()
+            && signal.getTimestamp().isValid()
+            && signal.getTimestamp().getLatency() <= Constants.Shooter.MAX_MECHANISM_FEEDBACK_AGE_SEC;
     }
 
     @Override
     public void periodic() {
-        if (hoodEnabled) {
-            hoodKraken.setControl(mmPos.withPosition(targetPosRot));
+        if (hoodEnabled && hoodConfigured) {
+            hoodKraken.setControl(mmPos.withPosition(getTargetHoodPositionRot()));
         } else {
             hoodKraken.setControl(new VoltageOut(0)); 
         }
         
-        SmartDashboard.putNumber("HoodPosition", targetPosRot);
+        SmartDashboard.putNumber("HoodPosition", getTargetHoodPositionRot());
+        SmartDashboard.putBoolean("Shooter/HoodLowerOverride", hoodLowerOverride);
+        SmartDashboard.putBoolean("Shooter/ShootingHoodRequested", shootingHoodRequested);
+        SmartDashboard.putNumber("Shooter/AimHoodTargetRot", targetPosRot);
         SmartDashboard.putNumber("ShooterRPS", targetRollerVelRps);
+        double actualRollerRps = getRollerVelocity();
+        SmartDashboard.putNumber("Shooter/TargetRPS", targetRollerVelRps);
+        SmartDashboard.putNumber("Shooter/ActualRPS", actualRollerRps);
+        // Signed motor RPS; error is target minus measured velocity.
+        SmartDashboard.putNumber("Shooter/ErrorRPS", targetRollerVelRps - actualRollerRps);
         SmartDashboard.putBoolean("Turret/Kaden2", hoodEnabled);
 
 
-        if (rollerEnabled && rollerKraken != null) {
+        if (rollerEnabled && rollerConfigured && rollerKraken != null) {
             rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps));
+        } else if (!rollerConfigured) {
+            rollerKraken.stopMotor();
         }
     }
 }

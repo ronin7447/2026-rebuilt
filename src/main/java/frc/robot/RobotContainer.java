@@ -6,6 +6,7 @@ package frc.robot;
 
 import java.util.Set;
 
+import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -17,8 +18,11 @@ import com.pathplanner.lib.util.PathPlannerLogging;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -33,6 +37,7 @@ import frc.robot.commands.compositions.AutoAimTurretCommand;
 import frc.robot.commands.compositions.ShootCommand;
 import frc.robot.commands.intake.AntiJamPulse;
 import frc.robot.commands.intake.ManipulateIntake;
+import frc.robot.commands.shooter.LaunchSpeedCalibrationCommand;
 import frc.robot.constants.Constants;
 import frc.robot.constants.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
@@ -42,10 +47,13 @@ import frc.robot.subsystems.OuttakeSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 import frc.robot.subsystems.TurretSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.util.sotm.ShotReadinessSnapshot;
+import frc.robot.util.sotm.ShootingDriveLimiter;
 
 public class RobotContainer {
     private double MaxSpeed = Constants.Drivebase.MAX_SPEED; // 1.0 * kSpeedAt12Volts desired top speed
     private double MaxAngularRate = Constants.Drivebase.MAX_ANGULAR_RATE;
+    private final ShootingDriveLimiter shootingDriveLimiter = new ShootingDriveLimiter();
 
     /* Setting up bindings for necessary control of the swerve drive platform */
     private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
@@ -81,13 +89,17 @@ public class RobotContainer {
     public final IndexerSubsystem m_IndexerSubsystem = new IndexerSubsystem();
     public final OuttakeSubsystem m_OuttakeSubsystem = new OuttakeSubsystem();
 
-    private boolean hoodForTrenchDown = false;
+    private final Command launchSpeedCalibration = new LaunchSpeedCalibrationCommand(
+        m_ShooterSubsystem, m_TurretSubsystem, m_OuttakeSubsystem, m_IndexerSubsystem
+    ).until(() -> !DriverStation.isTeleopEnabled());
     private boolean shootDriveLimitActive = false;
     private final SendableChooser<Command> autoChooser;
     private final Autopilot autopilot = new Autopilot(drivetrain);
     private final Field2d pathPlannerField = new Field2d();
+    private final PowerHealthRecorder powerHealthRecorder;
 
     public RobotContainer() {
+        powerHealthRecorder = PowerHealthRecorder.create(this);
         registerNamedCommands();
         autoChooser = configureAutonomousChooser();
         configureDashboardTelemetry();
@@ -101,6 +113,7 @@ public class RobotContainer {
     }
 
     private void registerNamedCommands() {
+        NamedCommands.registerCommand("AutopilotToBumpExit", autopilot.goToBumpExit());
         // NamedCommands.registerCommand("RunShooter", Commands.runOnce(() -> {
         //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
         //     m_ShooterSubsystem.enableRoller();
@@ -112,7 +125,13 @@ public class RobotContainer {
         // }, m_ShooterSubsystem));
 
         NamedCommands.registerCommand("EnableIntake", new ManipulateIntake(true, m_IntakeSubsystem));
-        NamedCommands.registerCommand("DisableIntake", new ManipulateIntake(false, m_IntakeSubsystem));
+        NamedCommands.registerCommand("DisableIntake",
+            Commands.runOnce(() -> {
+                m_IntakeSubsystem.disableRoller();
+                m_IntakeSubsystem.setRollerReverseRequested(false);
+                m_IntakeSubsystem.setIntakePosition(Constants.Intake.INTAKE_COLLAPSED_POS);
+                m_IntakeSubsystem.enableExtension();
+            }, m_IntakeSubsystem));
 
         // NamedCommands.registerCommand("RunOuttake", Commands.runOnce(() -> {
         //     m_OuttakeSubsystem.setRollerTargetVelocity(Constants.Outtake.ROLLER_VELOCITY);
@@ -136,7 +155,14 @@ public class RobotContainer {
 
         NamedCommands.registerCommand(
             "ShootSequence",
-            new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem)
+            new ShootCommand(
+                m_ShooterSubsystem,
+                m_IndexerSubsystem,
+                m_OuttakeSubsystem,
+                this::captureShotReadiness,
+                () -> false,
+                Timer::getFPGATimestamp
+            )
         );
 
         NamedCommands.registerCommand("EndShootSequence", Commands.runOnce(() -> {
@@ -226,11 +252,31 @@ public class RobotContainer {
                 double currentMaxSpeed = getTeleopLinearSpeedLimit();
                 double currentMaxAngularRate = getTeleopAngularSpeedLimit();
 
-                return drive.withVelocityX(-joystick.getLeftY() * currentMaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * currentMaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * currentMaxAngularRate); // Drive counterclockwise with negative X (left)
+                boolean shooting = hubShootingDriveLimitsActive();
+                ChassisSpeeds requested = new ChassisSpeeds(-joystick.getLeftY() * currentMaxSpeed,
+                    -joystick.getLeftX() * currentMaxSpeed, -joystick.getRightX() * currentMaxAngularRate);
+                if (!shooting) {
+                    // Track the command actually applied after the normal request deadbands.
+                    if (Math.hypot(requested.vxMetersPerSecond, requested.vyMetersPerSecond)
+                        <= Constants.Drivebase.DRIVE_DEADBAND) {
+                        requested.vxMetersPerSecond = 0.0;
+                        requested.vyMetersPerSecond = 0.0;
+                    }
+                    if (Math.abs(requested.omegaRadiansPerSecond) <= Constants.Drivebase.ROTATIONAL_DEADBAND) {
+                        requested.omegaRadiansPerSecond = 0.0;
+                    }
+                }
+                ChassisSpeeds limited = shootingDriveLimiter.calculate(requested, shooting,
+                    Timer.getFPGATimestamp(), currentMaxSpeed, currentMaxAngularRate,
+                    Constants.Drivebase.SHOOT_MAX_ACCEL_MPS2,
+                    Constants.Drivebase.SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2);
+                return drive.withDeadband(shooting ? 0.0 : Constants.Drivebase.DRIVE_DEADBAND)
+                    .withRotationalDeadband(shooting ? 0.0 : Constants.Drivebase.ROTATIONAL_DEADBAND)
+                    .withVelocityX(limited.vxMetersPerSecond)
+                    .withVelocityY(limited.vyMetersPerSecond)
+                    .withRotationalRate(limited.omegaRadiansPerSecond);
             }
-            )
+            ).beforeStarting(this::resetShootingDriveLimiter)
         );
 
         // Idle while the robot is disabled. This ensures the configured
@@ -240,7 +286,7 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle).ignoringDisable(true)
         );
 
-        joystick.x().whileTrue(drivetrain.applyRequest(() -> brake));
+        // X is reserved for the held intake reverse below.
         // joystick.x().whileTrue(drivetrain.applyRequest(() ->
         //     point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
         // ));
@@ -256,117 +302,92 @@ public class RobotContainer {
 
         // Reset the field-centric heading on POV LEFT.
         joystick.povLeft().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric)); 
-        joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.zeroEncoder();
-        })))));
-        /* Right Bumper: Enable Intake */
-        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem));
+        joystick.povRight().onTrue(Commands.runOnce(m_TurretSubsystem::zeroEncoder)
+            .onlyIf(this::calibrationControlsIdle));
+        /* Right Bumper: Extend pivot only; roller remains independently controlled. */
+        joystick.rightBumper().onTrue(new ManipulateIntake(true, m_IntakeSubsystem, false));
 
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
         joystick.rightTrigger().whileTrue(createDriverShootCommand());
+        SmartDashboard.putString("Feed/OverrideControl", "Hold right trigger + right-stick click to force feed immediately");
 
-        joystick.leftTrigger().whileTrue((Commands.sequence((Commands.runOnce(() -> {
-            // m_IntakeSubsystem.disableRoller();
-            m_IntakeSubsystem.runRoller(Constants.Intake.ROLLER_VELOCITY * -0.5);
-        })))));
-        joystick.leftTrigger().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IntakeSubsystem.disableRoller();
-        })))));
-        //  joystick.leftTrigger().onFalse((Commands.sequence((Commands.runOnce(() -> {
-        //     m_IntakeSubsystem.disableRoller();
-        // })))));
+        // Roller-only override deliberately shares no pivot requirement with intake/shoot commands.
+        joystick.x().and(() -> DriverStation.isTeleopEnabled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean())
+            .whileTrue(Commands.startEnd(
+                () -> m_IntakeSubsystem.setRollerReverseRequested(true),
+                () -> m_IntakeSubsystem.setRollerReverseRequested(false)
+            ));
 
-        joystick.a().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            if (!hoodForTrenchDown) {
-                // we lower it down
-                hoodForTrenchDown = true;
-                m_TurretSubsystem.setAutoAimSuppressed(true); // disable the autoaim
-                // m_TurretSubsystem.
-                m_ShooterSubsystem.setTargetPositionRotation(Constants.Shooter.MAX_HOOD_POSITION_ROT);
-                System.out.println("driver move down the hood for trench");
-            } else {
-                hoodForTrenchDown = false;
-                m_TurretSubsystem.setAutoAimSuppressed(false);
-             System.out.println("driver move down the hood for trench");
-            }
-            
-        })))));
+        // Held forward request owns no pivot requirement; X reverse takes precedence in periodic.
+        joystick.leftTrigger().and(() -> DriverStation.isTeleopEnabled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean())
+            .whileTrue(Commands.runEnd(m_IntakeSubsystem::enableRoller, m_IntakeSubsystem::disableRoller));
+        // Do not carry a latched autonomous intake-roller request into hold-to-run teleop controls.
+        RobotModeTriggers.teleop().onTrue(Commands.runOnce(m_IntakeSubsystem::disableRoller));
 
-        // joystick.b().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_OuttakeSubsystem.disableRoller();
-        //     m_OuttakeSubsystem.setRollerTargetVelocity(0);
-        // })))));
-        joystick.b().whileTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_IntakeSubsystem.disableExtension();
-            m_IntakeSubsystem.disableRoller();
-        })))));
+        // Temporary hood-only override; no shooter requirement so it does not cancel the held shoot command.
+        joystick.a().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
+            .whileTrue(Commands.startEnd(
+                () -> m_ShooterSubsystem.setHoodLowerOverride(true),
+                () -> m_ShooterSubsystem.setHoodLowerOverride(false)
+            ));
+        // Continuous stop while held gives B priority over simultaneous mechanism inputs.
+        // joystick.b().or(joystick.back()).whileTrue(createCalibrationStopCommand());
 
-        // joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_ShooterSubsystem.enableRoller();
-        //     m_ShooterSubsystem.setRollerTargetVelocity(Constants.Shooter.ROLLER_VELOCITY);
-        // })))));
-
-        // joystick.povRight().onTrue((Commands.sequence((Commands.runOnce(() -> {
-        //     m_ShooterSubsystem.disableRoller();
-        //     m_ShooterSubsystem.setRollerTargetVelocity(0);
-        // })))));
-
-        joystick.povDown().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.setAutoAimSuppressed(false);
-            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getTurretPositionRotations()), false);
-            DriverStation.reportError(String.valueOf(m_TurretSubsystem.getKraken().getPosition().getValueAsDouble()), false);
-        })))));
-        joystick.povUp().onTrue((Commands.sequence((Commands.runOnce(() -> {
-            m_TurretSubsystem.setAutoAimSuppressed(true);
-        })))));
-
-        /* Right Trigger (while holdiing): Starts Shooter + Outtake + Indexer */
-        // joystick.a().whileTrue(new ShootCommand(m_ShooterSubsystem, m_IndexerSubsystem, m_OuttakeSubsystem));
-
-        // for tuning: run a constant velocity sweep for SysId when right bumper is pressed.
-        // joystick.rightBumper().onTrue(constantVelocitySweep());
-
-        // joystick.rightStick().onTrue(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(true)));
-        // joystick.rightStick().onFalse(Commands.runOnce(() -> m_TurretSubsystem.setAutoAimSuppressed(false)));
-
-        // joystick.x().onTrue((Commands.runOnce(() -> {
-        //     m_IntakeSubsystem.zeroEncoder();
-        // })));
+        joystick.povDown().onTrue(Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(false)
+        ).onlyIf(this::calibrationControlsIdle));
+        joystick.povUp().onTrue(Commands.runOnce(
+            () -> m_TurretSubsystem.setAutoAimSuppressed(true)
+        ).onlyIf(this::calibrationControlsIdle));
 
         joystick.y().whileTrue(createAutopilotCommand(new Pose2d(3.2, 4.0, Rotation2d.fromDegrees(2.0))));
 
 
-        // zero hood and turret
-        joystick.start().onTrue(Commands.runOnce(
-            () -> {
-                m_TurretSubsystem.zeroEncoder();
-                m_ShooterSubsystem.zeroEncoder();
-            }
-        ).andThen(()->Commands.waitSeconds(2)).andThen(()->{
-            m_TurretSubsystem.setPositionMode(true);
-            m_ShooterSubsystem.setHoodEnabled(true);
-        }));
-
-        // disable hood and turret
-        joystick.back().onTrue(Commands.runOnce(
-            () -> {
-                m_TurretSubsystem.setPositionMode(false);
-                m_ShooterSubsystem.setHoodEnabled(false);
-            }
-        ));
-
+        // Roller-only override: do not cancel the shoot command or reset aiming encoders.
+        joystick.start().and(() -> DriverStation.isTeleopEnabled() && calibrationControlsIdle())
+            .whileTrue(Commands.startEnd(
+                () -> m_IndexerSubsystem.setManualHoldRequested(true),
+                () -> m_IndexerSubsystem.setManualHoldRequested(false)
+            ));
 
         drivetrain.registerTelemetry(logger::telemeterize);
+    }
+
+    private boolean calibrationControlsIdle() {
+        return !launchSpeedCalibration.isScheduled()
+            && !joystick.b().getAsBoolean() && !joystick.back().getAsBoolean();
+    }
+
+    private Command createCalibrationStopCommand() {
+        return Commands.run(() -> {
+            m_ShooterSubsystem.disableRoller();
+            m_ShooterSubsystem.setRollerTargetVelocity(0.0);
+            m_OuttakeSubsystem.disableRoller();
+            m_OuttakeSubsystem.setRollerTargetVelocity(0.0);
+            m_IndexerSubsystem.disableRoller();
+            m_IndexerSubsystem.setRollerTargetVelocity(0.0);
+            m_ShooterSubsystem.setHoodEnabled(false);
+            m_TurretSubsystem.setPositionMode(false);
+            m_TurretSubsystem.setAutoAimSuppressed(true);
+            m_TurretSubsystem.invalidateAimState("calibration-stopped");
+            m_IntakeSubsystem.disableExtension();
+            m_IntakeSubsystem.disableRoller();
+            m_IntakeSubsystem.setRollerReverseRequested(false);
+        }, m_ShooterSubsystem, m_TurretSubsystem, m_OuttakeSubsystem,
+            m_IndexerSubsystem, m_IntakeSubsystem)
+            .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming);
     }
 
     private Command createDriverShootCommand() {
         Command antiJamCommand = Constants.Intake.ANTI_JAM_PULSE_CYCLES > 0
             ? Commands.sequence(
-                Commands.waitUntil(() -> !joystick.leftTrigger().getAsBoolean()),
+                Commands.waitUntil(() -> !joystick.x().getAsBoolean()),
                 new AntiJamPulse(m_IntakeSubsystem)
-                    .until(() -> joystick.leftTrigger().getAsBoolean())
+                    .until(() -> joystick.x().getAsBoolean())
             ).repeatedly()
             : Commands.none();
 
@@ -374,25 +395,93 @@ public class RobotContainer {
             new ShootCommand(
                 m_ShooterSubsystem,
                 m_IndexerSubsystem,
-                m_OuttakeSubsystem
+                m_OuttakeSubsystem,
+                this::captureShotReadiness,
+                () -> joystick.getHID().getRightStickButton(),
+                Timer::getFPGATimestamp
             ),
             antiJamCommand
         ).beforeStarting(() -> shootDriveLimitActive = true)
             .finallyDo(interrupted -> shootDriveLimitActive = false);
     }
 
+    private boolean hubShootingDriveLimitsActive() {
+        return DriverStation.isTeleopEnabled() && shootDriveLimitActive
+            && "HUB".equals(m_TurretSubsystem.getTargetModeName());
+    }
+
     private double getTeleopLinearSpeedLimit() {
-        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+        if (hubShootingDriveLimitsActive()) {
             return MaxSpeed * Constants.Drivebase.SHOOT_LINEAR_SPEED_LIMIT_SCALE;
         }
         return MaxSpeed;
     }
 
+    private void resetShootingDriveLimiter() {
+        var state = drivetrain.getStateCopy();
+        ChassisSpeeds fieldSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, state.Pose.getRotation());
+        Translation2d operatorVelocity = new Translation2d(fieldSpeeds.vxMetersPerSecond,
+            fieldSpeeds.vyMetersPerSecond).rotateBy(drivetrain.getOperatorForwardDirection().unaryMinus());
+        shootingDriveLimiter.reset(new ChassisSpeeds(operatorVelocity.getX(), operatorVelocity.getY(),
+            fieldSpeeds.omegaRadiansPerSecond), Timer.getFPGATimestamp());
+    }
+
     private double getTeleopAngularSpeedLimit() {
-        if (DriverStation.isTeleopEnabled() && shootDriveLimitActive) {
+        if (hubShootingDriveLimitsActive()) {
             return MaxAngularRate * Constants.Drivebase.SHOOT_ANGULAR_SPEED_LIMIT_SCALE;
         }
         return MaxAngularRate;
+    }
+
+    private ShotReadinessSnapshot captureShotReadiness() {
+        double nowSec = Timer.getFPGATimestamp();
+        double evaluationTimestampSec = m_TurretSubsystem.getLastAimEvaluationTimestampSec();
+        double solutionAgeSec = Double.isFinite(evaluationTimestampSec)
+            ? nowSec - evaluationTimestampSec
+            : Double.POSITIVE_INFINITY;
+        boolean boundedSetpoints = m_TurretSubsystem.hasFiniteBoundedSetpoint()
+            && m_ShooterSubsystem.hasFiniteBoundedSetpoints();
+        var motion = drivetrain.getShotMotionEstimate();
+        boolean passback = "NEUTRAL_BACK".equals(m_TurretSubsystem.getTargetModeName())
+            || "OPPONENT_PASS_BACK".equals(m_TurretSubsystem.getTargetModeName());
+        // Passback has no shooting-specific speed/acceleration gate; motion freshness is still checked.
+        var motionBlockers = motion.shootingBlockers(Utils.getCurrentTimeSeconds(),
+            Constants.ShotMap.MAX_MOTION_AGE_SEC, Constants.ShotMap.BASE_RELEASE_LATENCY_SEC,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_SPEED_MPS,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_ACCEL_MPS2,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_OMEGA_RAD_PER_SEC,
+            passback ? Double.POSITIVE_INFINITY : Constants.ShotMap.MAX_SHOOT_ALPHA_RAD_PER_SEC2);
+        SmartDashboard.putBoolean("Feed/MotionWithinLimits", motionBlockers.isEmpty());
+        SmartDashboard.putString("Feed/MotionBlockers", String.join(",", motionBlockers));
+        SmartDashboard.putNumber("SOTM/MotionAgeSec", Utils.getCurrentTimeSeconds() - motion.timestampSec());
+        SmartDashboard.putNumber("SOTM/RawAccelerationMps2", motion.rawLinearAccelMps2());
+        SmartDashboard.putNumber("SOTM/RawAngularAccelerationRadPerSec2", motion.rawAngularAccelRadPerSec2());
+        if (motion.motion() != null) {
+            SmartDashboard.putNumber("SOTM/FilteredAccelerationXMps2", motion.motion().fieldAccelXMps2());
+            SmartDashboard.putNumber("SOTM/FilteredAccelerationYMps2", motion.motion().fieldAccelYMps2());
+            SmartDashboard.putNumber("SOTM/FilteredAngularAccelerationRadPerSec2", motion.motion().angularAccelRadPerSec2());
+        }
+        ShotReadinessSnapshot rawReadiness = ShotReadinessSnapshot.evaluate(
+            nowSec,
+            DriverStation.isEnabled(),
+            m_TurretSubsystem.isShotSolutionValid() && m_TurretSubsystem.hasFiniteMappedSetpoints(),
+            solutionAgeSec,
+            m_ShooterSubsystem.isRollerEnabled(),
+            m_ShooterSubsystem.atTargetSpeed(),
+            m_ShooterSubsystem.isHoodEnabled(),
+            m_ShooterSubsystem.isHoodAtTarget(),
+            m_TurretSubsystem.isAutoAimActive(),
+            !Constants.ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT || m_TurretSubsystem.isTurretAtAimGoal(),
+            !m_TurretSubsystem.isOnSoftwareLimit(),
+            boundedSetpoints,
+            m_vision.getVisionAgeSec(),
+            Constants.ShotMap.MAX_SOLUTION_AGE_SEC
+        ).withMotionBlockers(motionBlockers);
+        SmartDashboard.putBoolean("Feed/PassbackReadinessBypassed", passback);
+        SmartDashboard.putString("Feed/PassbackBypassedWarnings", passback ? rawReadiness.blockerSummary() : "");
+        boolean hub = "HUB".equals(m_TurretSubsystem.getTargetModeName());
+        SmartDashboard.putString("Feed/HubReadinessWarnings", hub ? rawReadiness.blockerSummary() : "");
+        return passback ? rawReadiness.forPassbackFeed() : (hub ? rawReadiness.forHubFeed(Constants.ShotMap.FEED_REQUIRE_TURRET_ALIGNMENT) : rawReadiness);
     }
 
     private Command createAutopilotCommand(Pose2d goal) {
@@ -431,6 +520,41 @@ public class RobotContainer {
     public Command getAutonomousCommand() {
         Command selectedAuto = autoChooser.getSelected();
         return selectedAuto != null ? selectedAuto : Commands.none();
+    }
+
+    public void periodic() {
+        powerHealthRecorder.periodic();
+    }
+
+    PowerHealthRecorder.Context recorderContext() {
+        String mode = DriverStation.isAutonomousEnabled()
+            ? "autonomous"
+            : (DriverStation.isTeleopEnabled() ? "teleop" : (DriverStation.isTestEnabled() ? "test" : "disabled"));
+        var speeds = drivetrain.getStateCopy().Speeds;
+        var shotMotion = drivetrain.getShotMotionEstimate();
+        return new PowerHealthRecorder.Context(
+            DriverStation.isEnabled(),
+            mode,
+            DriverStation.getMatchTime(),
+            SmartDashboard.getBoolean("Feed/ShootRequested", false),
+            SmartDashboard.getBoolean("Feed/Permitted", false),
+            SmartDashboard.getBoolean("Feed/OverrideActive", false),
+            SmartDashboard.getNumber("Feed/TransitionTimestampSec", Double.NaN),
+            m_ShooterSubsystem.getTargetRollerVelocityRps(),
+            m_TurretSubsystem.getTargetModeName(),
+            m_TurretSubsystem.getShotModelName(),
+            m_TurretSubsystem.getShotReason(),
+            speeds.vxMetersPerSecond,
+            speeds.vyMetersPerSecond,
+            speeds.omegaRadiansPerSecond,
+            m_vision.getVisionAgeSec(),
+            m_IntakeSubsystem.isExtensionEnabled(),
+            m_IntakeSubsystem.isRollerEnabled(),
+            m_IntakeSubsystem.getHomingStatus().name(),
+            shotMotion,
+            Utils.getCurrentTimeSeconds() - shotMotion.timestampSec(),
+            SmartDashboard.getString("Feed/Blockers", "not-evaluated")
+        );
     }
 
     

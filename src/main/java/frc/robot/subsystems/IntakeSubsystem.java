@@ -15,10 +15,12 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
+import frc.robot.util.ConfigurationHealth;
 import static edu.wpi.first.units.Units.*;
 
 public class IntakeSubsystem extends SubsystemBase {
@@ -36,8 +38,13 @@ public class IntakeSubsystem extends SubsystemBase {
 
     private boolean mmPosEnabled = false;
     private boolean rollerEnabled = false;
+    private boolean rollerReverseRequested = false;
     private int currentLevel = 0;
     private ExtensionProfile activeExtensionProfile = ExtensionProfile.EXTEND;
+    private HomingStatus homingStatus = HomingStatus.NOT_RUN;
+    private final boolean extensionMasterConfigured;
+    private final boolean extensionFollowerConfigured;
+    private final boolean rollerConfigured;
     
     public IntakeSubsystem() {
 
@@ -65,21 +72,22 @@ public class IntakeSubsystem extends SubsystemBase {
         motionMagicConfigsFollower.MotionMagicAcceleration = Constants.Intake.EXTENSION_EXTEND_ACCELERATION;
         motionMagicConfigsFollower.MotionMagicJerk = Constants.Intake.EXTENSION_EXTEND_JERK;
 
-        extensionKrakenMaster.getConfigurator().apply(cfgFollower);
-        extensionKrakenFollower.getConfigurator().apply(cfgFollower);
+        extensionMasterConfigured = ConfigurationHealth.apply(
+            "intake-extension-master-" + Constants.Intake.EXTENSION_KRAKEN_MASTER_ID,
+            () -> extensionKrakenMaster.getConfigurator().apply(cfgFollower)
+        );
+        extensionFollowerConfigured = ConfigurationHealth.apply(
+            "intake-extension-follower-" + Constants.Intake.EXTENSION_KRAKEN_FOLLOWER_ID,
+            () -> extensionKrakenFollower.getConfigurator().apply(cfgFollower)
+        );
         
         extensionKrakenMaster.getPosition().setUpdateFrequency(100);
         extensionKrakenMaster.getVelocity().setUpdateFrequency(100);
-        extensionKrakenMaster.getMotorVoltage().setUpdateFrequency(1000);
-        extensionKrakenMaster.optimizeBusUtilization();
+        extensionKrakenMaster.getMotorVoltage().setUpdateFrequency(Constants.PowerLogging.MOTOR_ELECTRICAL_RATE_HZ);
 
         extensionKrakenFollower.getPosition().setUpdateFrequency(100);
         extensionKrakenFollower.getVelocity().setUpdateFrequency(100);
-        extensionKrakenFollower.getMotorVoltage().setUpdateFrequency(1000);
-        extensionKrakenFollower.optimizeBusUtilization();
-
-        extensionKrakenMaster.setNeutralMode(NeutralModeValue.Brake);
-        extensionKrakenFollower.setNeutralMode(NeutralModeValue.Brake);
+        extensionKrakenFollower.getMotorVoltage().setUpdateFrequency(Constants.PowerLogging.MOTOR_ELECTRICAL_RATE_HZ);
 
         // in init function
         var rollerTalonFXConfigs = new TalonFXConfiguration().withCurrentLimits(
@@ -106,7 +114,10 @@ public class IntakeSubsystem extends SubsystemBase {
         stallTimer.stop();
         stallTimer.reset();
 
-        rollerKraken.getConfigurator().apply(rollerTalonFXConfigs);
+        rollerConfigured = ConfigurationHealth.apply(
+            "intake-roller-" + Constants.Intake.ROLLER_KRAKEN_ID,
+            () -> rollerKraken.getConfigurator().apply(rollerTalonFXConfigs)
+        );
 
         zeroEncoder();
     }
@@ -121,8 +132,13 @@ public class IntakeSubsystem extends SubsystemBase {
         return extensionKrakenFollower;
     }
 
-    public void runRoller(double vel) {
-        rollerKraken.setControl(rollerVel.withVelocity(vel));
+    public TalonFX getRollerKraken() {
+        return rollerKraken;
+    }
+
+    /** Overrides only the roller; preserves the latest normal forward/stop request. */
+    public void setRollerReverseRequested(boolean reverse) {
+        rollerReverseRequested = reverse && rollerConfigured;
     }
 
     public double getIntakePosition() {
@@ -130,7 +146,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void enableExtension() {
-        mmPosEnabled = true;
+        mmPosEnabled = extensionMasterConfigured;
     }
 
     public void disableExtension() {
@@ -140,7 +156,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
 
     public void enableRoller() {
-        rollerEnabled = true;
+        rollerEnabled = rollerConfigured;
     }
 
     public void disableRoller() {
@@ -193,8 +209,12 @@ public class IntakeSubsystem extends SubsystemBase {
             motionMagicConfigs.MotionMagicJerk = Constants.Intake.EXTENSION_EXTEND_JERK;
         }
 
-        extensionKrakenMaster.getConfigurator().apply(motionMagicConfigs);
-        activeExtensionProfile = desiredProfile;
+        if (ConfigurationHealth.apply(
+            "intake-extension-profile-" + Constants.Intake.EXTENSION_KRAKEN_MASTER_ID,
+            () -> extensionKrakenMaster.getConfigurator().apply(motionMagicConfigs)
+        )) {
+            activeExtensionProfile = desiredProfile;
+        }
     }
 
     public int getCurrentLevel() {
@@ -226,27 +246,76 @@ public class IntakeSubsystem extends SubsystemBase {
         return stallTimer.hasElapsed(Constants.Intake.STALL_TIME_S);
     }
 
+    public void resetStallDetection() {
+        stallTimer.stop();
+        stallTimer.reset();
+    }
+
+    public boolean beginHoming() {
+        disableExtension();
+        disableRoller();
+        setRollerReverseRequested(false);
+        resetStallDetection();
+        homingStatus = HomingStatus.RUNNING;
+        if (extensionMasterConfigured && extensionFollowerConfigured) {
+            extensionKrakenMaster.setControl(new VoltageOut(Constants.Intake.HOMING_VOLTAGE));
+            return true;
+        } else {
+            homingStatus = HomingStatus.INTERRUPTED;
+            return false;
+        }
+    }
+
+    public void finishHoming(HomingStatus status) {
+        extensionKrakenMaster.setControl(new VoltageOut(0.0));
+        homingStatus = status;
+        if (status == HomingStatus.SUCCESS) {
+            zeroEncoder();
+        }
+    }
+
+    public HomingStatus getHomingStatus() {
+        return homingStatus;
+    }
+
+    public boolean isExtensionEnabled() {
+        return mmPosEnabled;
+    }
+
+    public boolean isRollerEnabled() {
+        return rollerEnabled || rollerReverseRequested;
+    }
+
     @Override
     public void periodic() {
 
-        if (mmPosEnabled) {
+        if (mmPosEnabled && extensionMasterConfigured) {
 
             extensionKrakenMaster.setControl(mmPos.withPosition(targetPosRot));
         }
 
-        extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Opposed));
+        if (extensionFollowerConfigured) {
+            extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Opposed));
+        }
         // extensionKrakenFollower.setControl(new Follower(Constants.Intake.EXTENSION_KRAKEN_MASTER_ID, MotorAlignmentValue.Aligned));
         
-        if (rollerEnabled) {
-
-            rollerKraken.setControl(rollerVel.withVelocity(Constants.Intake.ROLLER_VELOCITY));
-        } else {
-
-            rollerKraken.setControl(rollerVel.withVelocity(0));     
+        if (DriverStation.isDisabled()) {
+            rollerReverseRequested = false;
         }
+        double rollerTargetRps = rollerReverseRequested ? Constants.Intake.ROLLER_REVERSE_VELOCITY
+            : (rollerEnabled ? Constants.Intake.ROLLER_VELOCITY : 0.0);
+        if (rollerConfigured) {
+            rollerKraken.setControl(rollerVel.withVelocity(rollerTargetRps));
+        } else {
+            rollerKraken.stopMotor();
+        }
+
+        SmartDashboard.putBoolean("Intake/RollerReverseRequested", rollerReverseRequested);
+        SmartDashboard.putNumber("Intake/RollerTargetRPS", rollerTargetRps);
 
         SmartDashboard.putNumber("StatorCurrent-ExtensionMaster", getExtensionKrakenMaster().getStatorCurrent().getValueAsDouble());
         SmartDashboard.putNumber("StatorCurrent-ExtensionFollower", getExtensionKrakenFollower().getStatorCurrent().getValueAsDouble());
+        SmartDashboard.putString("Intake/HomingStatus", homingStatus.name());
 
 
         
@@ -255,5 +324,13 @@ public class IntakeSubsystem extends SubsystemBase {
     private enum ExtensionProfile {
         EXTEND,
         COLLAPSE
+    }
+
+    public enum HomingStatus {
+        NOT_RUN,
+        RUNNING,
+        SUCCESS,
+        TIMEOUT,
+        INTERRUPTED
     }
 }

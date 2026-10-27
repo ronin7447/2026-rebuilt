@@ -1,0 +1,15 @@
+schema_version,id,target_type,pose_x_m,pose_y_m,heading_deg,field_vx_mps,field_vy_mps,omega_radps,field_ax_mps2,field_ay_mps2,alpha_radps2,robot_pitch_deg,robot_roll_deg,target_x_m,target_y_m,target_z_m,expected_feasible,expected_source,expected_crossing_sec,tolerance_sec
+1,hub-blue-zero,HUB,1.0,4.0,0,0,0,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.144190706,0.000002
+1,hub-red-approach,HUB,15.0,4.0,180,-1,0,0,0,0,0,0,0,12.51204,4.03479,2.13,true,GENERATED_POLYNOMIAL,0.841596847,0.000002
+1,hub-lateral-positive,HUB,1.0,4.0,0,0,1.5,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.350401919,0.000002
+1,hub-lateral-negative,HUB,1.0,4.0,0,0,-1.5,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.390854911,0.000002
+1,hub-offcenter-rotation,HUB,1.0,4.0,0,0,0,1.2,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.092908773,0.000002
+1,hub-pitch-roll,HUB,1.0,4.0,0,0,0,0,0,0,0,6,-4,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.144190706,0.000002
+1,hub-receding,HUB,1.0,4.0,0,-1,0,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.333584989,0.000002
+1,hub-accelerating,HUB,1.0,4.0,0,0,0,0,2,-1,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,1.096904026,0.000002
+1,hub-close-range,HUB,3.1,4.03479,0,0,0,0,0,0,0,0,0,4.02844,4.03479,2.13,true,DIRECT_CANDIDATE,0.753697203,0.000002
+1,hub-domain-boundary,HUB,2.69353,4.25069,0,0,0,0,0,0,0,0,0,4.02844,4.03479,2.13,true,GENERATED_POLYNOMIAL,0.738473071,0.000002
+1,hub-lateral-opening-reject,HUB,1.0,4.0,0,0,2.4,0,0,0,0,0,0,4.02844,4.03479,2.13,false,GENERATED_POLYNOMIAL,2.213758799,0.000002
+1,passback-blue-upper,PASSBACK,6.0,4.0,0,0.5,-0.4,0,0,0,0,0,0,0.48,6.0,0.5,true,DIRECT_CANDIDATE,1.566991410,0.000002
+1,passback-red-lower,PASSBACK,10.0,4.0,180,-0.5,0.4,0,0,0,0,0,0,16.1,2.5,0.5,true,DIRECT_CANDIDATE,1.617628263,0.000002
+1,nonfinite-omega,HUB,1.0,4.0,0,0,0,NaN,0,0,0,0,0,4.02844,4.03479,2.13,false,NONE,NaN,0.000002

@@ -9,11 +9,17 @@ public class ManipulateIntake extends Command {
 
     boolean extend;
     IntakeSubsystem intake;
+    private final boolean startRollerAfterExtension;
 
     public ManipulateIntake(boolean extend, IntakeSubsystem intake) {
+        this(extend, intake, true);
+    }
+
+    public ManipulateIntake(boolean extend, IntakeSubsystem intake, boolean startRollerAfterExtension) {
 
         this.extend = extend;
         this.intake = intake;
+        this.startRollerAfterExtension = startRollerAfterExtension;
 
         addRequirements(intake);
     }
@@ -76,7 +82,7 @@ public class ManipulateIntake extends Command {
         }
 
         if (extend) {
-            intake.enableRoller();
+            if (startRollerAfterExtension) intake.enableRoller();
             intake.disableExtension();
         }
     }

@@ -1,0 +1,5 @@
+timestamp_ms,pdh_voltage_v,pdh_total_current_a,browned_out
+100,6.8,100,true
+0,12.5,0,false
+50,7.2,80,false
+150,8.0,20,false
