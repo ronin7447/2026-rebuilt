@@ -8,7 +8,7 @@ public final class FieldDestinationConstants {
 
     // Absolute blue-origin field coordinates; deliberately not alliance-flipped.
     public static final Pose2d BUMP_EXIT_TARGET =
-        new Pose2d(14.0, 5.5, Rotation2d.fromDegrees(45.0));
+        new Pose2d(1.3, 2.4, Rotation2d.fromDegrees(45.0));
 
     public static final Pose2d RED_LEFT =
         new Pose2d(14.8, 6.1, Rotation2d.fromDegrees(180));
