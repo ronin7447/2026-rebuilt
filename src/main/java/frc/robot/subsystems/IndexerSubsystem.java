@@ -6,6 +6,7 @@ import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.TalonFX;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.Constants;
 import frc.robot.util.ConfigurationHealth;
@@ -18,6 +19,7 @@ public class IndexerSubsystem extends SubsystemBase {
     private final MotionMagicVelocityVoltage rollerVel = new MotionMagicVelocityVoltage(0.0);
     private double targetRollerVelRps = Constants.Indexer.ROLLER_VELOCITY;
     private boolean rollerEnabled = false;
+    private boolean manualHoldRequested = false;
     private final boolean configured;
 
 
@@ -70,6 +72,11 @@ public class IndexerSubsystem extends SubsystemBase {
         enableRoller();
     }
 
+    /** Independent held override; normal shoot-command requests remain available on release. */
+    public void setManualHoldRequested(boolean requested) {
+        manualHoldRequested = requested && configured;
+    }
+
     public void enableRoller() {
         rollerEnabled = configured && rollerKraken != null;
     }
@@ -90,16 +97,19 @@ public class IndexerSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (DriverStation.isDisabled()) manualHoldRequested = false;
+        double effectiveTarget = manualHoldRequested ? Constants.Indexer.MANUAL_HOLD_VELOCITY_RPS : targetRollerVelRps;
         String controlStatus = "disabled";
-        if (rollerEnabled && configured && rollerKraken != null) {
-            controlStatus = rollerKraken.setControl(rollerVel.withVelocity(targetRollerVelRps)).getName();
-        } else if (!configured) {
+        if ((rollerEnabled || manualHoldRequested) && configured && rollerKraken != null) {
+            controlStatus = rollerKraken.setControl(rollerVel.withVelocity(effectiveTarget)).getName();
+        } else {
             rollerKraken.stopMotor();
-            controlStatus = "configuration-failed";
+            if (!configured) controlStatus = "configuration-failed";
         }
         SmartDashboard.putBoolean("Spindexer/Configured", configured);
-        SmartDashboard.putBoolean("Spindexer/Enabled", rollerEnabled);
-        SmartDashboard.putNumber("Spindexer/TargetRPS", targetRollerVelRps);
+        SmartDashboard.putBoolean("Spindexer/Enabled", rollerEnabled || manualHoldRequested);
+        SmartDashboard.putBoolean("Spindexer/ManualHoldRequested", manualHoldRequested);
+        SmartDashboard.putNumber("Spindexer/TargetRPS", effectiveTarget);
         SmartDashboard.putNumber("Spindexer/ActualRPS", getRollerVelocity());
         SmartDashboard.putString("Spindexer/ControlStatus", controlStatus);
     }

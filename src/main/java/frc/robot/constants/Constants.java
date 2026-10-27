@@ -335,12 +335,12 @@ public final class Constants {
         // Master motor position reached during an optional retract pulse.
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             INTAKE_COLLAPSED_POS;
-        public static final int ANTI_JAM_PULSE_CYCLES = 0; // Retract/deploy cycles per pulse; zero disables automatic pulsing.
-        public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25; // Maximum wait for each anti-jam position step.
-        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
+        public static final int ANTI_JAM_PULSE_CYCLES = 1; // Positive enables repeated feeding pulses; zero disables.
+        public static final double ANTI_JAM_FEED_DELAY_SEC = 2.0; // Continuous feeding time before pivot pulses begin.
+        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.15; // Time between pivot target changes; does not wait for arrival.
 
         public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
-        public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while left trigger is held.
+        public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while X is held; reverse takes priority over LT forward.
     }
 
     public static final class Shooter {
@@ -478,6 +478,7 @@ public final class Constants {
         public static final double ROLLER_KI = 0.00; // Integral velocity gain in V/motor rotation.
         public static final double ROLLER_KD = 0.00; // Derivative velocity gain in V/(motor rot/s^2).
         public static final double ROLLER_VELOCITY = -100.0; // Target motor rot/s; actual spinner speed depends on the unverified pulley ratio.
+        public static final double MANUAL_HOLD_VELOCITY_RPS = 30.0; // Held Start-button reverse, opposite normal -100 RPS feeding.
         public static final double ROLLER_ACCELERATION = 800.0; // Spindexer acceleration cap in motor rot/s^2.
         public static final double ROLLER_JERK = 0.0; // Motor rot/s^3; zero disables S-curve smoothing.
         public static final int ROLLER_KRAKEN_ID = 36; // Spindexer motor CAN ID on CANivore1.
