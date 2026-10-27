@@ -1,50 +1,69 @@
 package frc.robot.commands.intake;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.constants.Constants;
 import frc.robot.subsystems.IntakeSubsystem;
 
-public class AntiJamPulse extends SequentialCommandGroup {
+/** Timed pivot pulses while feeding; never waits for the pivot to arrive. */
+public class AntiJamPulse extends Command {
     private final IntakeSubsystem intake;
+    private final BooleanSupplier feeding;
+    private final BooleanSupplier inhibited;
+    private boolean originallyExtended;
+    private boolean pulsing;
+    private boolean retracted;
+    private double feedingSince;
+    private double stepSince;
 
-    public AntiJamPulse(IntakeSubsystem intake) {
+    public AntiJamPulse(IntakeSubsystem intake, BooleanSupplier feeding, BooleanSupplier inhibited) {
         this.intake = intake;
-
-        if (Constants.Intake.ANTI_JAM_PULSE_CYCLES <= 0) {
-            addCommands(Commands.none());
-            return;
-        }
-
-        List<Command> pulseSequence = new ArrayList<>();
-        pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS, false));
-
-        for (int cycle = 0; cycle < Constants.Intake.ANTI_JAM_PULSE_CYCLES; cycle++) {
-            pulseSequence.add(moveTo(Constants.Intake.ANTI_JAM_PULSE_RETRACT_POS, true));
-            pulseSequence.add(moveTo(Constants.Intake.INTAKE_EXTENDED_POS, false));
-        }
-
-        addCommands(
-            Commands.sequence(pulseSequence.toArray(Command[]::new))
-                .finallyDo(interrupted -> {
-                    if (interrupted) {
-                        intake.commandExtensionPosition(Constants.Intake.INTAKE_EXTENDED_POS);
-                    }
-                })
-        );
+        this.feeding = feeding;
+        this.inhibited = inhibited;
         addRequirements(intake);
     }
 
-    private Command moveTo(double targetRot, boolean stopOnStall) {
-        return Commands.sequence(
-            Commands.runOnce(() -> intake.commandExtensionPosition(targetRot), intake),
-            Commands.waitUntil(() -> intake.isExtensionAtTarget() || (stopOnStall && intake.isStallDetected()))
-                .withTimeout(Constants.Intake.ANTI_JAM_PULSE_STEP_TIMEOUT_SEC),
-            Commands.waitSeconds(Constants.Intake.ANTI_JAM_PULSE_DWELL_SEC)
-        );
+    @Override
+    public void initialize() {
+        originallyExtended = Math.abs(intake.getTargetRot() - Constants.Intake.INTAKE_EXTENDED_POS)
+            <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE;
+        pulsing = false;
+        feedingSince = Double.NaN;
+    }
+
+    @Override
+    public void execute() {
+        if (!originallyExtended || Constants.Intake.ANTI_JAM_PULSE_CYCLES <= 0) return;
+        double now = Timer.getFPGATimestamp();
+        if (inhibited.getAsBoolean() || !feeding.getAsBoolean()) {
+            restoreExtended();
+            feedingSince = Double.NaN;
+            return;
+        }
+        if (Double.isNaN(feedingSince)) feedingSince = now;
+        if (now - feedingSince < Constants.Intake.ANTI_JAM_FEED_DELAY_SEC) return;
+        if (!pulsing) {
+            pulsing = true;
+            retracted = true;
+            stepSince = now;
+            intake.commandExtensionPosition(Constants.Intake.ANTI_JAM_PULSE_RETRACT_POS);
+        } else if (now - stepSince >= Constants.Intake.ANTI_JAM_PULSE_DWELL_SEC) {
+            retracted = !retracted;
+            stepSince = now;
+            intake.commandExtensionPosition(retracted
+                ? Constants.Intake.ANTI_JAM_PULSE_RETRACT_POS : Constants.Intake.INTAKE_EXTENDED_POS);
+        }
+    }
+
+    private void restoreExtended() {
+        if (pulsing) intake.commandExtensionPosition(Constants.Intake.INTAKE_EXTENDED_POS);
+        pulsing = false;
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        restoreExtended();
     }
 }

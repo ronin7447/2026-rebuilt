@@ -335,9 +335,9 @@ public final class Constants {
         // Master motor position reached during an optional retract pulse.
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
             INTAKE_COLLAPSED_POS;
-        public static final int ANTI_JAM_PULSE_CYCLES = 0; // Retract/deploy cycles per pulse; zero disables automatic pulsing.
-        public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25; // Maximum wait for each anti-jam position step.
-        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
+        public static final int ANTI_JAM_PULSE_CYCLES = 1; // Positive enables repeated feeding pulses; zero disables.
+        public static final double ANTI_JAM_FEED_DELAY_SEC = 2.0; // Continuous feeding time before pivot pulses begin.
+        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.15; // Time between pivot target changes; does not wait for arrival.
 
         public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
         public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while X is held; reverse takes priority over LT forward.

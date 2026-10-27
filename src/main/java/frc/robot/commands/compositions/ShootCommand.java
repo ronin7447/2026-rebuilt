@@ -21,6 +21,12 @@ public class ShootCommand extends Command {
     private final Supplier<ShotReadinessSnapshot> readinessSupplier;
     private final BooleanSupplier manualOverrideSupplier;
     private final DoubleSupplier clockSec;
+    private boolean feeding;
+
+    public boolean isFeeding() {
+        return feeding;
+    }
+
     private final FeedSequencer sequencer = new FeedSequencer(
         Constants.ShotMap.FEED_RECOVERY_READY_TIME_SEC,
         Constants.ShotMap.OUTTAKE_DELAY_AFTER_READY_SEC,
@@ -78,6 +84,7 @@ public class ShootCommand extends Command {
 
     @Override
     public void initialize() {
+        feeding = false;
         sequencer.reset();
         shooterSubsystem.setShootingHoodRequested(true);
         SmartDashboard.putBoolean("Feed/ShootRequested", true);
@@ -99,6 +106,7 @@ public class ShootCommand extends Command {
             manualOverrideSupplier.getAsBoolean(),
             Constants.ShotMap.FEED_INTERLOCK_ENABLED
         );
+        feeding = state.outtakeEnabled() && state.indexerEnabled();
         if (state.outtakeEnabled()) outtakeSubsystem.enableRoller();
         else outtakeSubsystem.disableRoller();
         if (state.indexerEnabled()) indexerSubsystem.enableRoller();
@@ -118,6 +126,7 @@ public class ShootCommand extends Command {
 
     @Override
     public void end(boolean interrupted) {
+        feeding = false;
         shooterSubsystem.setShootingHoodRequested(false);
         shooterSubsystem.disableRoller();
         outtakeSubsystem.disableRoller();
