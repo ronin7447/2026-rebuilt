@@ -334,7 +334,7 @@ public final class Constants {
         public static final double INTAKE_EXTENDED_POS = 1.500; // Deployed master motor position, relative to collapsed zero.
         // Master motor position reached during an optional retract pulse.
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
-            INTAKE_COLLAPSED_POS;
+            1.1;
         public static final int ANTI_JAM_PULSE_CYCLES = 1; // Positive enables repeated feeding pulses; zero disables.
         public static final double ANTI_JAM_FEED_DELAY_SEC = 2.0; // Continuous feeding time before pivot pulses begin.
         public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.15; // Time between pivot target changes; does not wait for arrival.
