@@ -310,7 +310,7 @@ public class RobotContainer {
         /* Left Bumper: Disable Intake */
         joystick.leftBumper().onTrue(new ManipulateIntake(false, m_IntakeSubsystem));
 
-        joystick.rightTrigger().whileTrue(createDriverShootCommand());
+        configureDriverShootCommands();
         SmartDashboard.putString("Feed/OverrideControl", "Hold right trigger + right-stick click to force feed immediately");
 
         // Roller-only override deliberately shares no pivot requirement with intake/shoot commands.
@@ -382,7 +382,7 @@ public class RobotContainer {
             .withInterruptBehavior(Command.InterruptionBehavior.kCancelIncoming);
     }
 
-    private Command createDriverShootCommand() {
+    private void configureDriverShootCommands() {
         ShootCommand shootCommand = new ShootCommand(
             m_ShooterSubsystem,
             m_IndexerSubsystem,
@@ -391,12 +391,18 @@ public class RobotContainer {
             () -> joystick.getHID().getRightStickButton(),
             Timer::getFPGATimestamp
         );
-        return Commands.deadline(
-            shootCommand,
-            new AntiJamPulse(m_IntakeSubsystem, shootCommand::isFeeding,
-                () -> joystick.leftTrigger().getAsBoolean() || joystick.x().getAsBoolean())
-        ).beforeStarting(() -> shootDriveLimitActive = true)
-            .finallyDo(interrupted -> shootDriveLimitActive = false);
+        // Separate scheduled commands: manual pivot commands may cancel pulsing, never shooting.
+        joystick.rightTrigger().whileTrue(
+            shootCommand.beforeStarting(() -> shootDriveLimitActive = true)
+                .finallyDo(interrupted -> shootDriveLimitActive = false));
+        if (Constants.Intake.ANTI_JAM_PULSE_CYCLES > 0) {
+            joystick.rightTrigger().whileTrue(
+                new AntiJamPulse(m_IntakeSubsystem, shootCommand::isFeeding,
+                    () -> joystick.leftTrigger().getAsBoolean() || joystick.x().getAsBoolean())
+                    .onlyIf(() -> Math.abs(m_IntakeSubsystem.getTargetRot()
+                        - Constants.Intake.INTAKE_EXTENDED_POS)
+                        <= Constants.Intake.INTAKE_TARGET_ROT_TOLERANCE));
+        }
     }
 
     private boolean hubShootingDriveLimitsActive() {
