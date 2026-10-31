@@ -10,6 +10,29 @@ import frc.robot.util.ShooterSpeedReadiness;
 
 class FeedSequencerTest {
     @Test
+    void configuredFeedingContinuesThroughSharpTurnMotionBlockers() {
+        var sequencer = new FeedSequencer(Constants.ShotMap.FEED_RECOVERY_READY_TIME_SEC,
+            Constants.ShotMap.OUTTAKE_DELAY_AFTER_READY_SEC,
+            Constants.ShotMap.INDEXER_DELAY_AFTER_OUTTAKE_SEC,
+            Constants.ShotMap.CONTINUE_FEED_AFTER_INITIAL_READY);
+        double startedAt = Constants.ShotMap.OUTTAKE_DELAY_AFTER_READY_SEC
+            + Constants.ShotMap.INDEXER_DELAY_AFTER_OUTTAKE_SEC;
+        sequencer.update(0, ready(), false, Constants.ShotMap.FEED_INTERLOCK_ENABLED);
+        assertTrue(sequencer.update(startedAt, ready(), false,
+            Constants.ShotMap.FEED_INTERLOCK_ENABLED).indexerEnabled());
+        var sharpTurn = ready().withMotionBlockers(List.of(
+            "robot-acceleration", "robot-speed", "robot-angular-acceleration", "robot-angular-speed"));
+        assertFalse(sharpTurn.ready());
+        for (int i = 1; i <= 50; i++) {
+            var state = sequencer.update(startedAt + i * 0.02, sharpTurn, false,
+                Constants.ShotMap.FEED_INTERLOCK_ENABLED);
+            assertTrue(state.outtakeEnabled());
+            assertTrue(state.indexerEnabled());
+            assertFalse(state.overrideActive());
+        }
+    }
+
+    @Test
     void floatingFlywheelStartsQuicklyAndDoesNotRepeatedlyRestageFeed() {
         var speed = new ShooterSpeedReadiness(Constants.Shooter.ROLLER_START_TOLERANCE_RPS,
             Constants.Shooter.ROLLER_START_TOLERANCE_SCALE,

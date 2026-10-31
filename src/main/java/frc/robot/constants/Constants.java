@@ -28,7 +28,7 @@ public final class Constants {
 
         public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.70; // Shooting fraction of normal speed: 0.70 = 70%, 1.0 = full speed.
         public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.50; // Shooting fraction of normal yaw rate: 0.50 = 50%, 1.0 = full rate.
-        public static final double SHOOT_MAX_ACCEL_MPS2 = 2.0; // Teleop shooting command ramp limit in m/s^2.
+        public static final double SHOOT_MAX_ACCEL_MPS2 = 2.0; // Teleop shooting speed-magnitude ramp limit in m/s^2; direction responds immediately.
         public static final double SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(180.0); // Teleop shooting yaw ramp limit in rad/s^2.
 
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75; // Use final pose alignment instead of pathfinding within this distance.

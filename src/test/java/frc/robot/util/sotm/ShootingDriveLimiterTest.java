@@ -28,15 +28,43 @@ class ShootingDriveLimiterTest {
     }
 
     @Test
-    void enteringShootingAndReversingDirectionRampFromPriorCommand() {
+    void enteringShootingRampsSpeedButReversesDirectionImmediately() {
         var limiter = new ShootingDriveLimiter();
         limiter.calculate(new ChassisSpeeds(3, 0, 2), false, 1, 1, 0.8, 1, 2);
         var result = calculate(limiter, new ChassisSpeeds(-1, 0, -0.8), 1.02);
-        assertEquals(2.98, result.vxMetersPerSecond, 1e-9);
+        assertEquals(-2.98, result.vxMetersPerSecond, 1e-9);
         assertEquals(1.96, result.omegaRadiansPerSecond, 1e-9);
         // Deceleration takes time; readiness checks actual motion throughout this transition.
-        assertEquals(2.96, calculate(limiter, new ChassisSpeeds(), 5).vxMetersPerSecond, 1e-9);
-        assertEquals(2.96, calculate(limiter, new ChassisSpeeds(), 4).vxMetersPerSecond, 1e-9);
+        assertEquals(-2.96, calculate(limiter, new ChassisSpeeds(), 5).vxMetersPerSecond, 1e-9);
+        assertEquals(-2.96, calculate(limiter, new ChassisSpeeds(), 4).vxMetersPerSecond, 1e-9);
+    }
+
+    @Test
+    void steeringRespondsImmediatelyWhileSpeedStillRamps() {
+        var limiter = new ShootingDriveLimiter();
+        limiter.reset(new ChassisSpeeds(0.5, 0, 0), 0);
+        var turn = calculate(limiter, new ChassisSpeeds(0, 1, 0), 0.02);
+        assertEquals(0, turn.vxMetersPerSecond, 1e-9);
+        assertEquals(0.52, turn.vyMetersPerSecond, 1e-9);
+        var reverse = calculate(limiter, new ChassisSpeeds(0, -0.52, 0), 0.04);
+        assertEquals(0, reverse.vxMetersPerSecond, 1e-9);
+        assertEquals(-0.52, reverse.vyMetersPerSecond, 1e-9);
+    }
+
+    @Test
+    void releasingStickRampsToRestWithoutChangingDirection() {
+        var limiter = new ShootingDriveLimiter();
+        limiter.reset(new ChassisSpeeds(0.03, 0.04, 0), 0);
+        var slowing = calculate(limiter, new ChassisSpeeds(), 0.02);
+        assertEquals(0.018, slowing.vxMetersPerSecond, 1e-9);
+        assertEquals(0.024, slowing.vyMetersPerSecond, 1e-9);
+        calculate(limiter, new ChassisSpeeds(), 0.04);
+        var stopped = calculate(limiter, new ChassisSpeeds(), 0.06);
+        assertEquals(0, stopped.vxMetersPerSecond, 1e-9);
+        assertEquals(0, stopped.vyMetersPerSecond, 1e-9);
+        var resting = calculate(limiter, new ChassisSpeeds(), 0.08);
+        assertEquals(0, resting.vxMetersPerSecond, 1e-9);
+        assertEquals(0, resting.vyMetersPerSecond, 1e-9);
     }
 
     @Test
