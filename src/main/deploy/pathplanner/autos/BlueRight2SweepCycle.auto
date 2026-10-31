@@ -28,12 +28,6 @@
           "data": {
             "commands": [
               {
-                "type": "named",
-                "data": {
-                  "name": "ShootSequence"
-                }
-              },
-              {
                 "type": "sequential",
                 "data": {
                   "commands": [
@@ -44,12 +38,24 @@
                       }
                     },
                     {
+                      "type": "named",
+                      "data": {
+                        "name": "DisableIntake"
+                      }
+                    },
+                    {
                       "type": "wait",
                       "data": {
                         "waitTime": 1.0
                       }
                     }
                   ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
                 }
               }
             ]
@@ -79,19 +85,19 @@
           "data": {
             "commands": [
               {
-                "type": "named",
-                "data": {
-                  "name": "ShootSequence"
-                }
-              },
-              {
                 "type": "sequential",
                 "data": {
                   "commands": [
                     {
                       "type": "wait",
                       "data": {
-                        "waitTime": 6.0
+                        "waitTime": 5.0
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "DisableIntake"
                       }
                     },
                     {
@@ -101,6 +107,12 @@
                       }
                     }
                   ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
                 }
               }
             ]
