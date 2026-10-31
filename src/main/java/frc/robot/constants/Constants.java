@@ -95,8 +95,8 @@ public final class Constants {
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0; // Aim tolerance in turret turns; currently unused.
 
         // motor soft limits relative to the calibrated forward reference position
-        public static final double TALON_SOFT_LIMIT_LOW = -0.2; // Lower motor-rotation bound relative to the forward reference.
-        public static final double TALON_SOFT_LIMIT_HIGH = 4.20; // Upper motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_LOW = -0.05; // Lower motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_HIGH = 4.1; // Upper motor-rotation bound relative to the forward reference.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_LOW = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_LOW; // Lower controller soft limit in encoder motor rotations.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_HIGH = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_HIGH; // Upper controller soft limit in encoder motor rotations.
 
