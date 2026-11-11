@@ -39,7 +39,6 @@ public class IntakeSubsystem extends SubsystemBase {
     private boolean mmPosEnabled = false;
     private boolean rollerEnabled = false;
     private boolean rollerReverseRequested = false;
-    private int currentLevel = 0;
     private ExtensionProfile activeExtensionProfile = ExtensionProfile.EXTEND;
     private HomingStatus homingStatus = HomingStatus.NOT_RUN;
     private final boolean extensionMasterConfigured;
@@ -217,10 +216,6 @@ public class IntakeSubsystem extends SubsystemBase {
         }
     }
 
-    public int getCurrentLevel() {
-        return currentLevel;
-    }
-    
     public boolean isStallDetected() {
         StatusSignal<Current> statorCurrentSig = extensionKrakenMaster.getStatorCurrent();
         StatusSignal<AngularVelocity> velocitySig = extensionKrakenMaster.getVelocity();
