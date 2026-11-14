@@ -22,13 +22,13 @@ public final class Constants {
         public static final double BUMP_AUTOPILOT_MAX_SPEED_MPS = 4.5; // Pathfinding speed cap for AutopilotToBumpExit.
         public static final double BUMP_AUTOPILOT_MAX_ACCEL_MPS2 = 5.0; // Pathfinding acceleration cap for AutopilotToBumpExit.
         public static final double MAX_SPEED = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // Normal full-stick translation cap in m/s; 50% of configured 12 V speed.
-        public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(0.90).in(RadiansPerSecond); // Normal full-stick yaw cap in rad/s; 0.90 turns per second.
+        public static final double MAX_ANGULAR_RATE = RotationsPerSecond.of(1.0).in(RadiansPerSecond); // Normal full-stick yaw cap in rad/s; 0.90 turns per second.
         public static final double DRIVE_DEADBAND = MAX_SPEED * 0.15; // Translation deadband in m/s; 15% of normal speed cap.
         public static final double ROTATIONAL_DEADBAND = MAX_ANGULAR_RATE * 0.15; // Yaw deadband in rad/s; 15% of normal yaw cap.
 
         public static final double SHOOT_LINEAR_SPEED_LIMIT_SCALE = 0.70; // Shooting fraction of normal speed: 0.70 = 70%, 1.0 = full speed.
         public static final double SHOOT_ANGULAR_SPEED_LIMIT_SCALE = 0.50; // Shooting fraction of normal yaw rate: 0.50 = 50%, 1.0 = full rate.
-        public static final double SHOOT_MAX_ACCEL_MPS2 = 2.0; // Teleop shooting command ramp limit in m/s^2.
+        public static final double SHOOT_MAX_ACCEL_MPS2 = 2.0; // Teleop shooting speed-magnitude ramp limit in m/s^2; direction responds immediately.
         public static final double SHOOT_MAX_ANGULAR_ACCEL_RAD_PER_SEC2 = Units.degreesToRadians(180.0); // Teleop shooting yaw ramp limit in rad/s^2.
 
         public static final double SHORT_RANGE_ALIGN_DISTANCE_METERS = 0.75; // Use final pose alignment instead of pathfinding within this distance.
@@ -55,8 +55,8 @@ public final class Constants {
     public static final class Turret {
         public static final int TURRET_KRAKEN_ID = 37; // Turret motor CAN ID on CANivore1.
         public static final double STALL_CURRENT_A = 6.0; // Minimum stator amps for the optional stall detector.
-        public static final double STATOR_CURRENT_LIMIT_A = 50.0; // Motor torque/heating limit in amps.
-        public static final double SUPPLY_CURRENT_LIMIT_A = 15.0; // Battery-current limit in amps.
+        public static final double STATOR_CURRENT_LIMIT_A = 65.0; // Motor torque/heating limit in amps.
+        public static final double SUPPLY_CURRENT_LIMIT_A = 18.0; // Battery-current limit in amps.
         public static final double STALL_VEL_RPS = 0.25; // Maximum motor rot/s considered stalled; not a normal-move cutoff.
         public static final double STALL_TIME_S = 0.10; // Continuous low-speed/high-current dwell for stall detection.
         public static final double KS = 0.18; // Static-friction feedforward in volts.
@@ -95,8 +95,8 @@ public final class Constants {
         public static final double POSITION_TOLERANCE_ROT = AIM_TOLERANCE_DEG / 360.0; // Aim tolerance in turret turns; currently unused.
 
         // motor soft limits relative to the calibrated forward reference position
-        public static final double TALON_SOFT_LIMIT_LOW = -0.74; // Lower motor-rotation bound relative to the forward reference.
-        public static final double TALON_SOFT_LIMIT_HIGH = 4.019; // Upper motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_LOW = -0.05; // Lower motor-rotation bound relative to the forward reference.
+        public static final double TALON_SOFT_LIMIT_HIGH = 4.1; // Upper motor-rotation bound relative to the forward reference.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_LOW = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_LOW; // Lower controller soft limit in encoder motor rotations.
         public static final double ABSOLUTE_TALON_SOFT_LIMIT_HIGH = FORWARD_REFERENCE_MOTOR_ROTATIONS + TALON_SOFT_LIMIT_HIGH; // Upper controller soft limit in encoder motor rotations.
 
@@ -334,10 +334,10 @@ public final class Constants {
         public static final double INTAKE_EXTENDED_POS = 1.500; // Deployed master motor position, relative to collapsed zero.
         // Master motor position reached during an optional retract pulse.
         public static final double ANTI_JAM_PULSE_RETRACT_POS =
-            INTAKE_COLLAPSED_POS;
-        public static final int ANTI_JAM_PULSE_CYCLES = 0; // Retract/deploy cycles per pulse; zero disables automatic pulsing.
-        public static final double ANTI_JAM_PULSE_STEP_TIMEOUT_SEC = 0.25; // Maximum wait for each anti-jam position step.
-        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.05; // Pause after each anti-jam position step.
+            0;
+        public static final int ANTI_JAM_PULSE_CYCLES = 0; // Positive enables repeated feeding pulses; zero disables.
+        public static final double ANTI_JAM_FEED_DELAY_SEC = 2.0; // Continuous feeding time before pivot pulses begin.
+        public static final double ANTI_JAM_PULSE_DWELL_SEC = 0.15; // Time between pivot target changes; does not wait for arrival.
 
         public static final double ROLLER_VELOCITY = 42.0; // Forward intake roller target in motor rot/s.
         public static final double ROLLER_REVERSE_VELOCITY = -21.0; // Intake roller motor rot/s while X is held; reverse takes priority over LT forward.
@@ -455,7 +455,7 @@ public final class Constants {
     }
 
     public static final class Outtake {
-        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 40.0; // Final-feed motor torque/heating limit in amps.
+        public static final double ROLLER_STATOR_CURRENT_LIMIT_A = 60.0; // Final-feed motor torque/heating limit in amps.
         public static final double ROLLER_SUPPLY_CURRENT_LIMIT_A = 25.0; // Final-feed motor battery-current limit in amps.
         public static final double ROLLER_KS = 0.25; // Static-friction feedforward in volts.
         public static final double ROLLER_KV = 0.12; // Velocity feedforward in V/(motor rot/s).

@@ -23,6 +23,11 @@ public class TunerConstants {
     public static final double DRIVE_SUPPLY_CURRENT_LIMIT_A = 50.0;
     public static final double STEER_STATOR_CURRENT_LIMIT_A = 40.0;
     public static final double STEER_SUPPLY_CURRENT_LIMIT_A = 40.0;
+
+    // public static final double DRIVE_STATOR_CURRENT_LIMIT_A = 120.0;
+    // public static final double DRIVE_SUPPLY_CURRENT_LIMIT_A = 120.0;
+    // public static final double STEER_STATOR_CURRENT_LIMIT_A = 120.0;
+    // public static final double STEER_SUPPLY_CURRENT_LIMIT_A = 120.0;
     // Both sets of gains need to be tuned to your individual robot.
 
     // The steer motor uses any SwerveModule.SteerRequestType control request with the

@@ -28,19 +28,13 @@
           "data": {
             "commands": [
               {
-                "type": "named",
-                "data": {
-                  "name": "ShootSequence"
-                }
-              },
-              {
                 "type": "sequential",
                 "data": {
                   "commands": [
                     {
                       "type": "wait",
                       "data": {
-                        "waitTime": 5.0
+                        "waitTime": 4.5
                       }
                     },
                     {
@@ -56,6 +50,12 @@
                       }
                     }
                   ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
                 }
               }
             ]
@@ -85,12 +85,6 @@
           "data": {
             "commands": [
               {
-                "type": "named",
-                "data": {
-                  "name": "ShootSequence"
-                }
-              },
-              {
                 "type": "sequential",
                 "data": {
                   "commands": [
@@ -113,6 +107,12 @@
                       }
                     }
                   ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "ShootSequence"
                 }
               }
             ]
